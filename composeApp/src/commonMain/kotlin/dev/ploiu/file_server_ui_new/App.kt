@@ -18,8 +18,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.compose_multiplatform
 
-@Composable
 @Preview
+@Composable
 fun App() {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }

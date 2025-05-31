@@ -43,6 +43,8 @@ kotlin {
             implementation(libs.retrofit)
             implementation(libs.retrofit.jackson)
             implementation(libs.dagger)
+            implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+            implementation("org.slf4j:slf4j-simple:2.0.3")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
