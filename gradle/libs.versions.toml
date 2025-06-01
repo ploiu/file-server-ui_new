@@ -13,15 +13,18 @@ androidx-testExt = "1.2.1"
 composeHotReload = "1.0.0-alpha10"
 composeMultiplatform = "1.8.1"
 kotlin = "2.1.21"
+kotlinLoggingJvm = "7.0.3"
 kotlinx-coroutines = "1.10.2"
 junit-jupiter = "5.12.2"
 jackson = "2.17.0"
 okhttp = "4.12.0"
 retrofit = "2.9.0"
 dagger = "2.56.2"
+slf4jSimple = "2.0.12"
 
 
 [libraries]
+kotlin-logging-jvm = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlinLoggingJvm" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -44,6 +47,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 retrofit-jackson = { module = "com.squareup.retrofit2:converter-jackson", version.ref = "retrofit" }
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-processor = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4jSimple" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import dagger.Module
 import dagger.Provides
+import dev.ploiu.file_server_ui_new.ApiService
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.FolderClient
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Module
-interface ClientModule {
+interface ApiModule {
  companion object {
      @Provides
      @OptIn(ExperimentalEncodingApi::class)
@@ -54,5 +55,8 @@ interface ClientModule {
 
      @Provides
      fun folderClient(retrofit: Retrofit): FolderClient = retrofit.create(FolderClient::class.java)
+
+     @Provides
+     fun apiService(client: ApiClient, config: ServerConfig) = ApiService(config, client)
  }
 }

@@ -6,7 +6,7 @@ import dev.ploiu.file_server_ui_new.config.ServerConfig
 import file_server_ui_new.composeapp.generated.resources.Res
 import kotlinx.coroutines.runBlocking
 import java.util.*
-import javax.inject.Singleton
+import jakarta.inject.Singleton
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -18,7 +18,7 @@ data class Auth(val username: String, val password: String) {
 }
 
 @Module
-interface Configuration {
+interface ConfigModule {
     companion object {
 
         @Provides

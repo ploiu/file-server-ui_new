@@ -8,8 +8,9 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    id("com.google.devtools.ksp")
 }
-
+// TODO look into koin because ksp and dagger don't like kmp
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -21,8 +22,11 @@ kotlin {
     jvm("desktop")
     
     sourceSets {
-        val desktopMain by getting
-        
+        val desktopMain by getting {
+            kotlin.srcDir("build/generated/ksp/desktop/desktopMain/java")
+        }
+
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -43,8 +47,8 @@ kotlin {
             implementation(libs.retrofit)
             implementation(libs.retrofit.jackson)
             implementation(libs.dagger)
-            implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
-            implementation("org.slf4j:slf4j-simple:2.0.3")
+            implementation(libs.kotlin.logging.jvm)
+            implementation(libs.slf4j.simple)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -52,7 +56,7 @@ kotlin {
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-
+            implementation(libs.dagger)
         }
     }
 }
@@ -86,10 +90,10 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-    annotationProcessor(libs.dagger.processor)
 
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+    ksp(libs.dagger.processor)
 }
 
 compose.desktop {
