@@ -3,9 +3,8 @@ package dev.ploiu.file_server_ui_new
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
 import io.github.oshai.kotlinlogging.KotlinLogging
-import jakarta.inject.Inject
 
-class ApiService @Inject constructor(val serverConfig: ServerConfig, val client: ApiClient) {
+class ApiService constructor(val serverConfig: ServerConfig, val client: ApiClient) {
     private val log = KotlinLogging.logger {  }
 
     suspend fun getApiInfo() = client.getApiInfo()

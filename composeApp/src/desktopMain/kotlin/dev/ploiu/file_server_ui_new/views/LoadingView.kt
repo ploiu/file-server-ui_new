@@ -1,16 +1,18 @@
 package dev.ploiu.file_server_ui_new.views
 
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.ploiu.file_server_ui_new.ApiService
-import dev.ploiu.file_server_ui_new.Global
-import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 enum class VersionCheckResult {
     LOADING,
@@ -20,21 +22,28 @@ enum class VersionCheckResult {
 
 data class LoadingState(val checkResult: VersionCheckResult)
 
-class LoadingView @Inject constructor (var apiService: ApiService) : ViewModel() {
+class LoadingView constructor(var apiService: ApiService) : ViewModel() {
     private val _state = MutableStateFlow(LoadingState(VersionCheckResult.LOADING))
     val state: StateFlow<LoadingState> = _state.asStateFlow()
 
     fun versionCheck() = viewModelScope.launch {
         val versionMatches = apiService.isCompatibleWithServer()
-        if(versionMatches) {
-            _state.value = LoadingState(VersionCheckResult.COMPATIBLE)
+        val compatibility = if (versionMatches) {
+            VersionCheckResult.COMPATIBLE
         } else {
-            _state.value = LoadingState(VersionCheckResult.INCOMPATIBLE)
+            VersionCheckResult.INCOMPATIBLE
         }
+        _state.update { LoadingState(compatibility) }
     }
 }
 
 @Composable
-fun LoadingScreen() {
-    val modey by remember { Global.appComponent.loadingView()}
+fun LoadingScreen(model: LoadingView = koinViewModel()) {
+    val state = model.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        model.versionCheck()
+    }
+
+    Text(state.value.checkResult.name)
 }

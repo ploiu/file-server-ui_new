@@ -1,0 +1,9 @@
+package dev.ploiu.file_server_ui_new
+
+import dev.ploiu.file_server_ui_new.views.LoadingView
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
+
+val componentViewModule = module {
+    viewModelOf(::LoadingView)
+}

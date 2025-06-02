@@ -1,15 +1,15 @@
 package dev.ploiu.file_server_ui_new.config
 
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.oshai.kotlinlogging.KotlinLogging.logger
-import jakarta.inject.Singleton
-import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
 import java.util.stream.Collectors
 
-@Singleton
-class ServerConfig(val baseUrl: String, val compatibleVersion: String, val host: String, val port: Int, val certificateHash: String) {
+class ServerConfig(
+    val baseUrl: String,
+    val compatibleVersion: String,
+    val host: String,
+    val port: Int,
+) {
     fun generateCompatibleVersionPattern(): Pattern {
         // our regex builder will only work if the whole version follows the right property
         val versionMatcher = Pattern.compile("^\\d+(\\.(\\d+|x)){2}$")

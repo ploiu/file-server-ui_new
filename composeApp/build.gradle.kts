@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    id("com.google.devtools.ksp")
 }
 // TODO look into koin because ksp and dagger don't like kmp
 kotlin {
@@ -18,14 +17,11 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
-    
-    jvm("desktop")
-    
-    sourceSets {
-        val desktopMain by getting {
-            kotlin.srcDir("build/generated/ksp/desktop/desktopMain/java")
-        }
 
+    jvm("desktop")
+
+    sourceSets {
+        val desktopMain by getting
 
         androidMain.dependencies {
             implementation(compose.preview)
@@ -40,15 +36,17 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.jackson.core)
-            implementation(libs.jackson.databind)
+            implementation(libs.jackson.module.kotlin)
             implementation(libs.jackson.jdk8)
             implementation(libs.okhttp)
             implementation(libs.retrofit)
             implementation(libs.retrofit.jackson)
-            implementation(libs.dagger)
             implementation(libs.kotlin.logging.jvm)
             implementation(libs.slf4j.simple)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.composeVM)
+            implementation(libs.squareup.okhttp.tls)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -56,9 +54,12 @@ kotlin {
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation(libs.dagger)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.composeVM)
+
         }
     }
+
 }
 
 android {
@@ -93,7 +94,6 @@ dependencies {
 
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
-    ksp(libs.dagger.processor)
 }
 
 compose.desktop {
