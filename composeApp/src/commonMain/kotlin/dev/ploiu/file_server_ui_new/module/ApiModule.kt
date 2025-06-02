@@ -2,12 +2,13 @@ package dev.ploiu.file_server_ui_new.module
 
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import dev.ploiu.file_server_ui_new.ApiService
+import dev.ploiu.file_server_ui_new.service.ApiService
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.client.TagClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
+import dev.ploiu.file_server_ui_new.service.FolderService
 import file_server_ui_new.composeapp.generated.resources.Res
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -29,7 +30,8 @@ val clientModule = module {
 }
 
 val serviceModule = module {
-    single<ApiService> { apiService(get(), get()) }
+    single<ApiService> { ApiService(get(), get()) }
+    single<FolderService> { FolderService(get()) }
 }
 
 fun readServerCerts(): HandshakeCertificates = runBlocking {
@@ -71,5 +73,3 @@ fun tagClient(retrofit: Retrofit): TagClient = retrofit.create(TagClient::class.
 fun fileClient(retrofit: Retrofit): FileClient = retrofit.create(FileClient::class.java)
 
 fun folderClient(retrofit: Retrofit): FolderClient = retrofit.create(FolderClient::class.java)
-
-fun apiService(client: ApiClient, config: ServerConfig) = ApiService(config, client)

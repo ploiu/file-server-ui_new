@@ -1,12 +1,14 @@
 package dev.ploiu.file_server_ui_new.views
 
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.ploiu.file_server_ui_new.ApiService
+import dev.ploiu.file_server_ui_new.service.ApiService
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,8 +44,11 @@ fun LoadingScreen(model: LoadingView = koinViewModel()) {
     val state = model.state.collectAsState()
 
     LaunchedEffect(Unit) {
+        delay(5_000)
         model.versionCheck()
     }
+
+    CircularProgressIndicator()
 
     Text(state.value.checkResult.name)
 }

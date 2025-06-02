@@ -8,8 +8,9 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
 }
-// TODO look into koin because ksp and dagger don't like kmp
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -47,6 +48,8 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.koin.composeVM)
             implementation(libs.squareup.okhttp.tls)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.compose.navigation)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
