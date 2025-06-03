@@ -1,22 +1,22 @@
 package dev.ploiu.file_server_ui_new.module
 
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import dev.ploiu.file_server_ui_new.service.ApiService
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.client.TagClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
+import dev.ploiu.file_server_ui_new.service.ApiService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import file_server_ui_new.composeapp.generated.resources.Res
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.decodeCertificatePem
 import org.koin.dsl.module
 import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.text.Charsets.UTF_8
@@ -61,7 +61,7 @@ fun retrofitClient(serverConfig: ServerConfig, auth: Auth): Retrofit {
         .build()
     return Retrofit.Builder()
         .baseUrl(serverConfig.baseUrl)
-        .addConverterFactory(JacksonConverterFactory.create(jacksonObjectMapper().registerModule(Jdk8Module())))
+        .addConverterFactory(Json.asConverterFactory("application/json; charset=utf-8".toMediaType()))
         .client(client)
         .build()
 }
