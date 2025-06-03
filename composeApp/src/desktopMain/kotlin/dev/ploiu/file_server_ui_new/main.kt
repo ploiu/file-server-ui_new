@@ -1,6 +1,5 @@
 package dev.ploiu.file_server_ui_new
 
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -12,19 +11,18 @@ import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
 import dev.ploiu.file_server_ui_new.module.serviceModule
+import dev.ploiu.file_server_ui_new.views.FolderList
+import dev.ploiu.file_server_ui_new.views.FolderRoute
 import dev.ploiu.file_server_ui_new.views.FolderView
-import dev.ploiu.file_server_ui_new.views.LoadingScreen
-import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
-import org.koin.core.*
 import org.koin.core.parameter.parametersOf
-import org.koin.java.KoinJavaComponent.inject
 
 @Composable
 actual fun ShowPlatformView() = NavigationHost()
 
 fun main() = application {
+    // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared, and I want the user to type username + password on the android version
     startKoin {
         modules(configModule, clientModule, serviceModule, componentViewModule)
     }
@@ -36,22 +34,13 @@ fun main() = application {
     }
 }
 
-// TODO refactor out
-@Serializable
-data class FolderRoute(val id: Long)
-
 @Composable
 fun NavigationHost(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = FolderRoute(0)) {
-        composable<FolderRoute> {backStack ->
+        composable<FolderRoute> { backStack ->
             val route: FolderRoute = backStack.toRoute()
             val viewModel: FolderView = koinInject<FolderView> { parametersOf(route.id) }
-            Test(viewModel)
+            FolderList(viewModel) { navController.navigate(FolderRoute(it.id)) }
         }
     }
-}
-
-@Composable
-fun Test(view: FolderView) {
-    Text(view.toString())
 }

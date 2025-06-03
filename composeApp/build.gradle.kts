@@ -50,6 +50,7 @@ kotlin {
             implementation(libs.squareup.okhttp.tls)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.compose.navigation)
+            implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

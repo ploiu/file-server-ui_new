@@ -8,7 +8,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.ploiu.file_server_ui_new.service.ApiService
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +43,6 @@ fun LoadingScreen(model: LoadingView = koinViewModel()) {
     val state = model.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        delay(5_000)
         model.versionCheck()
     }
 

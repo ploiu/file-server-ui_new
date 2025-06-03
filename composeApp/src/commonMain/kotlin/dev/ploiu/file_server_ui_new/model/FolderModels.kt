@@ -5,9 +5,9 @@ data class FolderApi(
     val parentId: Long?,
     val path: String,
     val name: String,
-    val folders: Collection<FolderApi>,
-    val files: Collection<FileApi>,
-    val tags: Collection<Tag>
+    val folders: List<FolderApi>,
+    val files: List<FileApi>,
+    val tags: List<Tag>
 )
 
 data class CreateFolder (
