@@ -15,6 +15,7 @@ import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FolderService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,14 +37,16 @@ data class FolderState(val loadingState: FolderLoadingState, val folder: FolderA
 
 // TODO look into moving this view model to the common code
 class FolderView(var folderService: FolderService, val folderId: Long): ViewModel() {
+    private val log = KotlinLogging.logger { }
     private val _state = MutableStateFlow(FolderState(FolderLoadingState.LOADING, null))
     val state: StateFlow<FolderState> = _state.asStateFlow()
 
     fun getFolder() = viewModelScope.launch(Dispatchers.IO) {
+        // TODO isn't there another way around this with kotlin's special scope stuff? something something add it to Dispatchers.IO
         try {
             _state.update { it -> it.copy(loadingState = FolderLoadingState.LOADED, folder = folderService.getFolder(folderId)) }
         } catch(e: Exception) {
-            System.err.println(e)
+            log.error(e) { "Failed to get folder information" }
         }
     }
 }
