@@ -8,6 +8,7 @@ import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -19,6 +20,7 @@ import retrofit2.Response
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
+@MockKExtension.CheckUnnecessaryStub
 class FolderServiceTests {
 
     private val folderClient = mockk<FolderClient>()

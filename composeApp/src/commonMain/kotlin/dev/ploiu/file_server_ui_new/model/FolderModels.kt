@@ -3,7 +3,6 @@ package dev.ploiu.file_server_ui_new.model
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
-@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class FolderApi(
     val id: Long,

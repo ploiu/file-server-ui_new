@@ -3,6 +3,7 @@ package dev.ploiu.file_server_ui_new.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,7 +47,7 @@ fun formatFileName(name: String) = name.replace("leftParenthese", "(").replace("
 
 @Composable
 fun FileEntry(file: FileApi, preview: ByteArray? = null) {
-    Surface(tonalElevation = 5.dp) {
+    Surface(tonalElevation = 5.dp, modifier = Modifier.padding(8.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             // TODO I might have to migrate all of these assets to svg for desktop. No clue how they'll look on android though
             Image(

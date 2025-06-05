@@ -6,10 +6,8 @@ import kotlinx.serialization.Serializable
 import java.io.File
 
 @Serializable
-@ExperimentalSerializationApi
 data class FileApi(
     val id: Long,
-    @EncodeDefault
     val folderId: Long = 0,
     val name: String,
     val tags: Collection<Tag>,

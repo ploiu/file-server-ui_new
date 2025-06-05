@@ -1,6 +1,7 @@
 package dev.ploiu.file_server_ui_new.views
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -62,11 +63,18 @@ fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
         val children: List<Any> =
             folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
         LazyVerticalGrid(
-            columns = GridCells.FixedSize(125.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 16.dp
+            ),
+            columns = GridCells.Adaptive(150.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(children) { child ->
+                // make all items have the same height
                 when (child) {
                     is FolderApi -> FolderEntry(child) { onFolderNav(it) }
                     is FileApi -> FileEntry(file = child)
