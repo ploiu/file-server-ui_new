@@ -1,10 +1,15 @@
 package dev.ploiu.file_server_ui_new.views
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +58,34 @@ class FolderView(var folderService: FolderService, val folderId: Long): ViewMode
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
+fun FileEntryWithTooltip(file: FileApi) {
+    TooltipArea(
+        tooltip = {
+            Surface(
+                tonalElevation = 10.dp,
+                color = MaterialTheme.colorScheme.tertiary
+            ) { Text(file.name) }
+        }) {
+        FileEntry(file)
+    }
+}
+
+@Composable
+@OptIn(ExperimentalFoundationApi::class)
+fun FolderEntryWithTooltip(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
+    TooltipArea(
+        tooltip = {
+            Surface(
+                tonalElevation = 10.dp,
+                color = MaterialTheme.colorScheme.tertiary
+            ) { Text(folder.name) }
+        }) {
+        FolderEntry(folder, onClick)
+    }
+}
+
+@Composable
 fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
     val (_, folder) = model.state.collectAsState().value
 
@@ -76,8 +109,8 @@ fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
             items(children) { child ->
                 // make all items have the same height
                 when (child) {
-                    is FolderApi -> FolderEntry(child) { onFolderNav(it) }
-                    is FileApi -> FileEntry(file = child)
+                    is FolderApi -> FolderEntryWithTooltip(child) { onFolderNav(it) }
+                    is FileApi -> FileEntryWithTooltip(child)
                 }
             }
         }

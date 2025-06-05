@@ -1,10 +1,7 @@
 package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.formatFileOrFolderName
 import dev.ploiu.file_server_ui_new.model.FileApi
 import file_server_ui_new.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
@@ -43,20 +41,29 @@ private fun determineIcon(file: FileApi): DrawableResource {
     }
 }
 
-fun formatFileName(name: String) = name.replace("leftParenthese", "(").replace("rightParenthese", ")")
-
 @Composable
 fun FileEntry(file: FileApi, preview: ByteArray? = null) {
-    Surface(tonalElevation = 5.dp, modifier = Modifier.padding(8.dp)) {
+
+    Surface(
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.height(8.dp))
             // TODO I might have to migrate all of these assets to svg for desktop. No clue how they'll look on android though
             Image(
                 painter = painterResource(determineIcon(file)),
                 contentDescription = "file icon",
-                Modifier.width(64.dp).height(64.dp),
+                Modifier.width(96.dp).height(96.dp),
                 contentScale = ContentScale.Fit
             )
-            Text(formatFileName(file.name), textAlign = TextAlign.Center, maxLines = 3)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                formatFileOrFolderName(file.name),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                minLines = 2
+            )
         }
     }
 }

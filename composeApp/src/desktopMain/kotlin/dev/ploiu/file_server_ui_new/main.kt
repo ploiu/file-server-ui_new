@@ -36,7 +36,7 @@ actual fun AppTheme(
 fun main() = application {
     // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared, and I want the user to type username + password on the android version
     startKoin {
-        modules(configModule, clientModule, serviceModule, componentViewModule)
+        modules(configModule, clientModule, serviceModule, componentViewModule, desktopServiceModule)
     }
     Window(
         onCloseRequest = ::exitApplication,
