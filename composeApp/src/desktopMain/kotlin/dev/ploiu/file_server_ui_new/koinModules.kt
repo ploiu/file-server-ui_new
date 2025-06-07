@@ -9,7 +9,7 @@ import org.koin.dsl.module
 
 val componentViewModule = module {
     viewModelOf(::LoadingView)
-    viewModel { (folderId: Long) -> FolderView(get(), folderId) }
+    viewModel { (folderId: Long) -> FolderView(get(), get(), folderId) }
 }
 
 val desktopServiceModule = module {

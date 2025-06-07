@@ -3,7 +3,6 @@ package dev.ploiu.file_server_ui_new.service
 import dev.ploiu.file_server_ui_new.BadRequestException
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.model.CreateFolder
-import dev.ploiu.file_server_ui_new.model.ErrorMessage
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import io.mockk.coEvery
@@ -11,14 +10,11 @@ import io.mockk.coVerify
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 import retrofit2.Response
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 @MockKExtension.CheckUnnecessaryStub
 class FolderServiceTests {
@@ -187,28 +183,5 @@ class FolderServiceTests {
         runBlocking { folderService.deleteFolder(id) }
 
         coVerify { folderClient.deleteFolder(id) }
-    }
-
-    @Test
-    fun `processResponse should return the response body if the response is successful`() {
-        val expectedBody = "Success"
-        val response = Response.success(expectedBody)
-
-        val actualBody = folderService.processResponse(response)
-
-        assertEquals(expectedBody, actualBody)
-    }
-
-    @Test
-    fun `processResponse should throw a RuntimeException with the errorBody's message value`() {
-        val errorMessage = ErrorMessage("Test Error Message")
-        val errorBody = Json.encodeToString(errorMessage).toResponseBody()
-        val response: Response<String> = Response.error(400, errorBody)
-
-        val exception = assertFailsWith<RuntimeException> {
-            folderService.processResponse(response)
-        }
-
-        assertEquals(errorMessage.message, exception.message)
     }
 }

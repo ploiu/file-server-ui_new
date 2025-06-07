@@ -5,12 +5,13 @@ import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FileRequest
 import okhttp3.MultipartBody
 import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.http.*
 
 interface FileClient {
     @Streaming
     @GET("/files/preview/{id}")
-    suspend fun getFilePreview(@Path("id") id: Long): ResponseBody
+    suspend fun getFilePreview(@Path("id") id: Long): Response<ResponseBody>
 
     @GET("/files/metadata")
     suspend fun search(

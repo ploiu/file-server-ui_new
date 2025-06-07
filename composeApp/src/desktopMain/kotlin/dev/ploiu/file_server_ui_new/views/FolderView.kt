@@ -21,6 +21,7 @@ import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FolderService
+import dev.ploiu.file_server_ui_new.service.PreviewService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,27 +40,38 @@ enum class FolderLoadingState {
     ERROR
 }
 
-data class FolderState(val loadingState: FolderLoadingState, val folder: FolderApi?)
+data class FolderState(val loadingState: FolderLoadingState, val folder: FolderApi?, val previews: Map<Long, ByteArray>)
 
 // TODO look into moving this view model to the common code
-class FolderView(var folderService: FolderService, val folderId: Long): ViewModel() {
+class FolderView(var folderService: FolderService, var previewService: PreviewService, val folderId: Long) :
+    ViewModel() {
     private val log = KotlinLogging.logger { }
-    private val _state = MutableStateFlow(FolderState(FolderLoadingState.LOADING, null))
+    private val _state = MutableStateFlow(FolderState(FolderLoadingState.LOADING, null, emptyMap()))
     val state: StateFlow<FolderState> = _state.asStateFlow()
 
     fun getFolder() = viewModelScope.launch(Dispatchers.IO) {
-        // TODO isn't there another way around this with kotlin's special scope stuff? something something add it to Dispatchers.IO
+        // TODO isn't there another way around this error handling with kotlin's special scope stuff? something something add it to Dispatchers.IO
         try {
-            _state.update { it -> it.copy(loadingState = FolderLoadingState.LOADED, folder = folderService.getFolder(folderId)) }
+            val folder = folderService.getFolder(folderId)
+            launch {
+                _state.update { it.copy(previews = getPreviews(folder)) }
+            }
+            _state.update { it -> it.copy(loadingState = FolderLoadingState.LOADED, folder = folder) }
         } catch(e: Exception) {
             log.error(e) { "Failed to get folder information" }
         }
+    }
+
+    private suspend fun getPreviews(folder: FolderApi): Map<Long, ByteArray> {
+        val previews = previewService.getFolderPreview(folder)
+        log.info { "previews downloaded!: " + previews.size }
+        return previews
     }
 }
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun FileEntryWithTooltip(file: FileApi) {
+fun FileEntryWithTooltip(file: FileApi, preview: ByteArray?) {
     TooltipArea(
         tooltip = {
             Surface(
@@ -67,7 +79,7 @@ fun FileEntryWithTooltip(file: FileApi) {
                 color = MaterialTheme.colorScheme.tertiary
             ) { Text(file.name) }
         }) {
-        FileEntry(file)
+        FileEntry(file, preview)
     }
 }
 
@@ -87,7 +99,7 @@ fun FolderEntryWithTooltip(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
 
 @Composable
 fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
-    val (_, folder) = model.state.collectAsState().value
+    val (_, folder, previews) = model.state.collectAsState().value
 
     LaunchedEffect(Unit) {
         model.getFolder()
@@ -110,7 +122,7 @@ fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
                 // make all items have the same height
                 when (child) {
                     is FolderApi -> FolderEntryWithTooltip(child) { onFolderNav(it) }
-                    is FileApi -> FileEntryWithTooltip(child)
+                    is FileApi -> FileEntryWithTooltip(child, previews[child.id])
                 }
             }
         }

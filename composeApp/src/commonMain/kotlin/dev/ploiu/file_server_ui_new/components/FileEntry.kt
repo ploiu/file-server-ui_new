@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -15,6 +16,7 @@ import dev.ploiu.file_server_ui_new.model.FileApi
 import file_server_ui_new.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.skia.Image
 
 private fun determineIcon(file: FileApi): DrawableResource {
     return when (file.fileType.lowercase()) {
@@ -41,9 +43,10 @@ private fun determineIcon(file: FileApi): DrawableResource {
     }
 }
 
+fun ByteArray.toImageBitmap() = Image.makeFromEncoded(this).toComposeImageBitmap()
+
 @Composable
 fun FileEntry(file: FileApi, preview: ByteArray? = null) {
-
     Surface(
         tonalElevation = 2.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -51,12 +54,21 @@ fun FileEntry(file: FileApi, preview: ByteArray? = null) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
             // TODO I might have to migrate all of these assets to svg for desktop. No clue how they'll look on android though
-            Image(
-                painter = painterResource(determineIcon(file)),
-                contentDescription = "file icon",
-                Modifier.width(96.dp).height(96.dp),
-                contentScale = ContentScale.Fit
-            )
+            if (preview == null) {
+                Image(
+                    painter = painterResource(determineIcon(file)),
+                    contentDescription = "file icon",
+                    Modifier.width(96.dp).height(96.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Image(
+                    bitmap = preview.toImageBitmap(),
+                    contentDescription = "file preview",
+                    modifier = Modifier.width(96.dp).height(96.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 formatFileOrFolderName(file.name),
