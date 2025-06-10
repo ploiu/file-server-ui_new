@@ -82,7 +82,8 @@ class FolderServiceTests {
     @Test
     fun `getPreviewsForFolder should call client getPreviewsForFolder with passed id`() {
         val id = 123L
-        val expectedPreviews = mapOf(1L to "preview".encodeToByteArray())
+        val previewAsShorts = "preview".toCharArray().map { it.code.toShort() }.toTypedArray()
+        val expectedPreviews = mapOf(1L to previewAsShorts)
         coEvery { folderClient.getPreviewsForFolder(id) } returns Response.success(expectedPreviews)
 
         runBlocking { folderService.getPreviewsForFolder(id) }

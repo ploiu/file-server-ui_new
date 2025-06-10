@@ -43,6 +43,7 @@ private fun determineIcon(file: FileApi): DrawableResource {
     }
 }
 
+// TODO android doesn't like this
 fun ByteArray.toImageBitmap() = Image.makeFromEncoded(this).toComposeImageBitmap()
 
 @Composable

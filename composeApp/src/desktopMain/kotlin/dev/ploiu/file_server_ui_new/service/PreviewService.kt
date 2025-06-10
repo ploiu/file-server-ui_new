@@ -16,9 +16,13 @@ private data class CachedReadResult(
     val toDeleteFromDisk: Collection<File>
 )
 
-class PreviewService(private val folderService: FolderService, private val fileClient: FileClient) {
+class PreviewService(
+    private val folderService: FolderService,
+    private val fileClient: FileClient,
+    private val directoryService: DirectoryService
+) {
     private val log = KotlinLogging.logger { }
-    private val cacheDir = File(System.getProperty("user.home") + "/.ploiu-file-server/cache")
+    private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
 
     init {
         if (!cacheDir.exists()) {
@@ -29,7 +33,7 @@ class PreviewService(private val folderService: FolderService, private val fileC
     /**
      * creates a file handle that points to the preview cache dir for the passed folder. This does not create the folder itself.
      */
-    fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString() + "/previews")
+    fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString())
 
     @Throws(ApiException::class)
     suspend fun getFolderPreview(folder: FolderApi): Map<Long, ByteArray> = coroutineScope {

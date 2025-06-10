@@ -23,12 +23,14 @@ kotlin {
 
     sourceSets {
         val desktopMain by getting
+        val desktopTest by getting
 
         val commonTest by getting {
             dependencies {
                 implementation(libs.junit.jupiter.api)
                 implementation("io.mockk:mockk:1.14.2")
-                implementation(libs.kotlin.testJunit)
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
 
@@ -60,9 +62,6 @@ kotlin {
             implementation(libs.retrofit.kotlinx.converter)
             implementation(libs.compose.navigation)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
-        }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

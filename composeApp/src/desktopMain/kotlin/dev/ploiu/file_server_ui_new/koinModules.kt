@@ -1,5 +1,6 @@
 package dev.ploiu.file_server_ui_new
 
+import dev.ploiu.file_server_ui_new.service.DirectoryService
 import dev.ploiu.file_server_ui_new.service.PreviewService
 import dev.ploiu.file_server_ui_new.views.FolderView
 import dev.ploiu.file_server_ui_new.views.LoadingView
@@ -13,5 +14,6 @@ val componentViewModule = module {
 }
 
 val desktopServiceModule = module {
-    single<PreviewService> { PreviewService(get(), get()) }
+    single<PreviewService> { PreviewService(get(), get(), get()) }
+    single<DirectoryService> { DirectoryService() }
 }
