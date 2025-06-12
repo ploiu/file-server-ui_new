@@ -111,7 +111,7 @@ fun FolderList(model: FolderView, onFolderNav: (f: FolderApi) -> Unit) {
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = 16.dp,
+                top = 8.dp,
                 bottom = 16.dp
             ),
             columns = GridCells.Adaptive(150.dp),

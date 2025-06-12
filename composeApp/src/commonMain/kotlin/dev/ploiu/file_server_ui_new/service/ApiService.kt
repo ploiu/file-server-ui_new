@@ -4,7 +4,7 @@ import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
 import io.github.oshai.kotlinlogging.KotlinLogging
 
-class ApiService constructor(val serverConfig: ServerConfig, val client: ApiClient) {
+class ApiService(val serverConfig: ServerConfig, val client: ApiClient) {
     private val log = KotlinLogging.logger {  }
 
     suspend fun getApiInfo() = client.getApiInfo()

@@ -1,7 +1,8 @@
 package dev.ploiu.file_server_ui_new
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.navigation.NavHostController
@@ -9,16 +10,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
 import dev.ploiu.file_server_ui_new.module.serviceModule
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
-import dev.ploiu.file_server_ui_new.views.FolderList
-import dev.ploiu.file_server_ui_new.views.FolderRoute
-import dev.ploiu.file_server_ui_new.views.FolderView
+import dev.ploiu.file_server_ui_new.views.*
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
+import java.util.*
 
 @Composable
 actual fun ShowPlatformView() = NavigationHost()
@@ -48,11 +49,54 @@ fun main() = application {
 
 @Composable
 fun NavigationHost(navController: NavHostController = rememberNavController()) {
-    NavHost(navController = navController, startDestination = FolderRoute(0)) {
-        composable<FolderRoute> { backStack ->
-            val route: FolderRoute = backStack.toRoute()
-            val viewModel: FolderView = koinInject<FolderView> { parametersOf(route.id) }
-            FolderList(viewModel) { navController.navigate(FolderRoute(it.id)) }
+    var navBarState: NavState by remember {
+        mutableStateOf(
+            NavState(
+                LinkedList<FolderApi>(
+                    listOf(
+                        // using a fake representation of the root folder here so that we don't have to break structure to pull it.
+                        // Also since it's just for nav, it doesn't matter if we don't have the children here
+                        FolderApi(
+                            0,
+                            null,
+                            "root",
+                            "~",
+                            emptyList(),
+                            emptyList(),
+                            emptyList()
+                        )
+                    )
+                )
+            )
+        )
+    }
+    Column {
+        NavBar(navBarState) {
+            // TODO instead of forward or backward, we need to take an actual folder id and nav to it
+            when (it) {
+                NavBarDirection.BACKWARD -> {
+                    if(navBarState.folders.size == 1) {
+                        return@NavBar
+                    }
+                    val newFolders = navBarState.folders.toMutableList()
+                    newFolders.removeLast()
+                    navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
+                    navController.navigate(FolderRoute(newFolders.last().id))
+                }
+                NavBarDirection.FORWARD -> TODO()
+            }
+        }
+        NavHost(navController = navController, startDestination = FolderRoute(0)) {
+            composable<FolderRoute> { backStack ->
+                val route: FolderRoute = backStack.toRoute()
+                val viewModel: FolderView = koinInject<FolderView> { parametersOf(route.id) }
+                FolderList(viewModel) {
+                    navController.navigate(FolderRoute(it.id))
+                    val newFolders = navBarState.folders.toMutableList()
+                    newFolders.add(it)
+                    navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
+                }
+            }
         }
     }
 }
