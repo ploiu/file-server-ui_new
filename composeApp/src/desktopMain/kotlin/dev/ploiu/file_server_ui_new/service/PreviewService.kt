@@ -111,7 +111,6 @@ class PreviewService(
             return CachedReadResult(emptyMap(), metadataFileIds, emptyList())
         }
         val apiFileIndex = folder.files.associateBy { it.id }
-        log.info {"FILES: " + folderCache.listFiles().map {it.name}}
         val cachedFilesIndex = folderCache.listFiles().associateBy { it.name.replace(".png", "").toLong() }
         val missingFromDisk = apiFileIndex.keys - cachedFilesIndex.keys
         val toDeleteFromDisk = (cachedFilesIndex.keys - apiFileIndex.keys).map { cachedFilesIndex.getValue(it) }

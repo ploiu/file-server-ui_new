@@ -57,16 +57,12 @@ class FolderView(var folderService: FolderService, var previewService: PreviewSe
                 _state.update { it.copy(previews = getPreviews(folder)) }
             }
             _state.update { it -> it.copy(loadingState = FolderLoadingState.LOADED, folder = folder) }
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             log.error(e) { "Failed to get folder information" }
         }
     }
 
-    private suspend fun getPreviews(folder: FolderApi): Map<Long, ByteArray> {
-        val previews = previewService.getFolderPreview(folder)
-        log.info { "previews downloaded!: " + previews.size }
-        return previews
-    }
+    private suspend fun getPreviews(folder: FolderApi) = previewService.getFolderPreview(folder)
 }
 
 @Composable

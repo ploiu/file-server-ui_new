@@ -1,4 +1,5 @@
 package dev.ploiu.file_server_ui_new.ui.theme
+
 import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xFF545A92)

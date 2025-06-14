@@ -12,6 +12,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 expect fun ShowPlatformView()
+
 @Composable
 expect fun AppTheme(
     content: @Composable () -> Unit

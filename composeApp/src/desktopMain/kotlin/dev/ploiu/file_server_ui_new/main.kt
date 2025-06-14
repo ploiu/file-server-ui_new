@@ -71,22 +71,20 @@ fun NavigationHost(navController: NavHostController = rememberNavController()) {
         )
     }
     Column {
-        NavBar(navBarState) {
-            // TODO instead of forward or backward, we need to take an actual folder id and nav to it
-            when (it) {
-                NavBarDirection.BACKWARD -> {
-                    if(navBarState.folders.size == 1) {
-                        return@NavBar
-                    }
-                    val newFolders = navBarState.folders.toMutableList()
-                    newFolders.removeLast()
-                    navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
-                    navController.navigate(FolderRoute(newFolders.last().id))
-                }
-                NavBarDirection.FORWARD -> TODO()
+        NavBar(navBarState) { folder ->
+            val index = navBarState.folders.indexOfFirst { it.id == folder.id }
+            if (index != -1) {
+                val newFolders = navBarState.folders.subList(0, index + 1)
+                navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
             }
+            navController.navigate(FolderRoute(folder.id))
         }
-        NavHost(navController = navController, startDestination = FolderRoute(0)) {
+        NavHost(navController = navController, startDestination = LoadingRoute()) {
+            composable<LoadingRoute> {
+                LoadingScreen {
+                    navController.navigate(FolderRoute(0))
+                }
+            }
             composable<FolderRoute> { backStack ->
                 val route: FolderRoute = backStack.toRoute()
                 val viewModel: FolderView = koinInject<FolderView> { parametersOf(route.id) }

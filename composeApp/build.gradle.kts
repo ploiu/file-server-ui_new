@@ -47,8 +47,6 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.jackson.module.kotlin)
-            implementation(libs.jackson.jdk8)
             implementation(libs.okhttp)
             implementation(libs.retrofit)
             implementation(libs.retrofit.jackson)
@@ -61,14 +59,14 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.retrofit.kotlinx.converter)
             implementation(libs.compose.navigation)
-            implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.koin.compose)
             implementation(libs.koin.composeVM)
-
+            implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
+            implementation(libs.jetbrains.compose.material.icons)
         }
     }
 

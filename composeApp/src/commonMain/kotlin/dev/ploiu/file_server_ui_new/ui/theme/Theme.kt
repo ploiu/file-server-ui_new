@@ -88,7 +88,6 @@ val darkScheme = darkColorScheme(
 )
 
 
-
 val mediumContrastLightColorScheme = lightColorScheme(
     primary = primaryLightMediumContrast,
     onPrimary = onPrimaryLightMediumContrast,

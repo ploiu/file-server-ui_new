@@ -1,7 +1,5 @@
 package dev.ploiu.file_server_ui_new.model
 
-import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -17,14 +15,14 @@ data class FileApi(
 )
 
 @Serializable
-data class FileRequest (
+data class FileRequest(
     val id: Long,
     val folderId: Long,
     val name: String,
     val tags: Collection<Tag>
 )
 
-data class CreateFileRequest (
+data class CreateFileRequest(
     val file: File,
     val extension: String,
     val folderId: Long?

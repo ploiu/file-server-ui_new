@@ -16,11 +16,6 @@ import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import java.util.*
 
-enum class NavBarDirection {
-    FORWARD,
-    BACKWARD
-}
-
 /**
  * represents the current state of folder history.
  *
@@ -29,7 +24,7 @@ enum class NavBarDirection {
 data class NavState(val folders: LinkedList<FolderApi>)
 
 @Composable
-fun NavBar(state: NavState, clickEntry: (direction: NavBarDirection) -> Unit) {
+fun NavBar(state: NavState, clickEntry: (FolderApi) -> Unit) {
     // TODO support dragging + dropping folders + files to an entry in the navbar
     FlowRow(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
         for (index in state.folders.indices) {
@@ -45,7 +40,7 @@ fun NavBar(state: NavState, clickEntry: (direction: NavBarDirection) -> Unit) {
                         // only navigate if they don't click the current folder
                         if (index < state.folders.size - 1) {
                             // always backward here because we never show child folders in this bar
-                            clickEntry(NavBarDirection.BACKWARD)
+                            clickEntry(folder)
                         }
                     },
             )

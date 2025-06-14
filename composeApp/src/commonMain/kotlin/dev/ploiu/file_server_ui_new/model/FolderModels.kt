@@ -1,6 +1,5 @@
 package dev.ploiu.file_server_ui_new.model
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,14 +14,14 @@ data class FolderApi(
 )
 
 @Serializable
-data class CreateFolder (
+data class CreateFolder(
     val name: String,
     val parentId: Long,
     val tags: Collection<Tag>
 )
 
 @Serializable
-data class UpdateFolder (
+data class UpdateFolder(
     val id: Long,
     val name: String,
     val parentId: Long,

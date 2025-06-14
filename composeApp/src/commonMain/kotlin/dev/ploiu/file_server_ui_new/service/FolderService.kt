@@ -14,7 +14,7 @@ class FolderService(val client: FolderClient) {
     private val log = KotlinLogging.logger {}
 
     suspend fun getFolder(id: Long): FolderApi {
-        if(id < 0) {
+        if (id < 0) {
             throw BadRequestException("id ($id) must be >= 0")
         }
         return processResponse(client.getFolder(id))

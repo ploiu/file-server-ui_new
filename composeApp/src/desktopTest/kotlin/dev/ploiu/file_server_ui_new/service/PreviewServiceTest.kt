@@ -69,7 +69,7 @@ class PreviewServiceTest {
             val previewService = PreviewService(folderService, fileClient, directoryService)
             previewService.getFolderPreview(folder)
             assertFalse { oldFile.exists() }
-    }
+        }
 
     @Test
     fun `previews that are still in FolderApi are not removed from the disk`() = runTest {
@@ -126,7 +126,7 @@ class PreviewServiceTest {
             coVerify(exactly = fileIds.size) { fileClient.getFilePreview(any()) }
             // Should not call getPreviewsForFolder
             coVerify(exactly = 0) { folderService.getPreviewsForFolder(any()) }
-    }
+        }
 
     @Test
     fun `when attempting to download an individual preview, if the client returns null, that file should not be cached`() =
