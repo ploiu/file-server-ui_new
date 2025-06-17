@@ -1,22 +1,19 @@
 package dev.ploiu.file_server_ui_new.service
 
-import dev.ploiu.file_server_ui_new.BadRequestException
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import retrofit2.Response
-import kotlin.test.Test
 
-@MockKExtension.CheckUnnecessaryStub
 class FolderServiceTests {
 
     private val folderClient = mockk<FolderClient>()
@@ -24,15 +21,19 @@ class FolderServiceTests {
 
     @Test
     fun `deleteFolder should not allow deleting root folder`() {
-        assertThrows(BadRequestException::class.java) {
-            runBlocking { folderService.deleteFolder(0) }
+        runBlocking {
+            val result = folderService.deleteFolder(0)
+            assertTrue(result.isErr)
+            assertEquals("id (0) must be > 0", result.error)
         }
     }
 
     @Test
-    fun `getFolder should throw an exception if id is less than 0`() {
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.getFolder(-1) }
+    fun `getFolder should return an Err if id is less than 0`() {
+        runBlocking {
+            val result = folderService.getFolder(-1)
+            assertTrue(result.isErr)
+            assertEquals("id (-1) must be >= 0", result.error)
         }
     }
 
@@ -50,15 +51,19 @@ class FolderServiceTests {
         )
         coEvery { folderClient.getFolder(id) } returns Response.success(expectedFolder)
 
-        runBlocking { folderService.getFolder(id) }
+        runBlocking {
+            folderService.getFolder(id)
+        }
 
         coVerify { folderClient.getFolder(id) }
     }
 
     @Test
-    fun `downloadFolder should throw an exception if id is less than 1`() {
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.downloadFolder(0) }
+    fun `downloadFolder should return an Err if id is less than 1`() {
+        runBlocking {
+            val result = folderService.downloadFolder(0)
+            assertTrue(result.isErr)
+            assertEquals("id (0) must be > 0", result.error)
         }
     }
 
@@ -73,9 +78,11 @@ class FolderServiceTests {
     }
 
     @Test
-    fun `getPreviewsForFolder should throw an exception if passed id is less than 0`() {
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.getPreviewsForFolder(-1) }
+    fun `getPreviewsForFolder should return an Err if passed id is less than 0`() {
+        runBlocking {
+            val result = folderService.getPreviewsForFolder(-1)
+            assertTrue(result.isErr)
+            assertEquals("id (-1) must be >= 0", result.error)
         }
     }
 
@@ -92,18 +99,22 @@ class FolderServiceTests {
     }
 
     @Test
-    fun `createFolder should throw an exception if the parentId is less than 0`() {
+    fun `createFolder should return an Err if the parentId is less than 0`() {
         val createFolder = CreateFolder(name = "Test Folder", parentId = -1L, tags = emptyList())
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.createFolder(createFolder) }
+        runBlocking {
+            val result = folderService.createFolder(createFolder)
+            assertTrue(result.isErr)
+            assertEquals("parentId (-1) must be >= 0", result.error)
         }
     }
 
     @Test
-    fun `createFolder should throw a BadRequestException if the name is a blank String`() {
+    fun `createFolder should return a Err if the name is a blank String`() {
         val createFolder = CreateFolder(name = " ", parentId = 1L, tags = emptyList())
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.createFolder(createFolder) }
+        runBlocking {
+            val result = folderService.createFolder(createFolder)
+            assertTrue(result.isErr)
+            assertEquals("name cannot be blank", result.error)
         }
     }
 
@@ -127,26 +138,32 @@ class FolderServiceTests {
     }
 
     @Test
-    fun `updateFolder should throw an exception if the passed id is less than 1`() {
+    fun `updateFolder should return an Err if the passed id is less than 1`() {
         val updateFolder = UpdateFolder(id = 0, name = "Test Folder", parentId = 0L, tags = emptyList())
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.updateFolder(updateFolder) }
+        runBlocking {
+            val result = folderService.updateFolder(updateFolder)
+            assertTrue(result.isErr)
+            assertEquals("id (0) must be > 0", result.error)
         }
     }
 
     @Test
-    fun `updateFolder should throw a BadRequestException if the passed parentId is less than 0`() {
+    fun `updateFolder should return a Err if the passed parentId is less than 0`() {
         val updateFolder = UpdateFolder(id = 1, name = "Test Folder", parentId = -1, tags = emptyList())
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.updateFolder(updateFolder) }
+        runBlocking {
+            val result = folderService.updateFolder(updateFolder)
+            assertTrue(result.isErr)
+            assertEquals("parentId (-1) must be >= 0", result.error)
         }
     }
 
     @Test
-    fun `updateFolder should throw a BadRequestException if the passed name is a blank String`() {
+    fun `updateFolder should return a Err if the passed name is a blank String`() {
         val updateFolder = UpdateFolder(id = 1, name = " ", parentId = 1L, tags = emptyList())
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.updateFolder(updateFolder) }
+        runBlocking {
+            val result = folderService.updateFolder(updateFolder)
+            assertTrue(result.isErr)
+            assertEquals("name cannot be empty", result.error)
         }
     }
 
@@ -170,9 +187,11 @@ class FolderServiceTests {
     }
 
     @Test
-    fun `deleteFolder should throw an exception if the passed id is less than 1`() {
-        assertThrows<BadRequestException> {
-            runBlocking { folderService.deleteFolder(0) }
+    fun `deleteFolder should return an Err if the passed id is less than 1`() {
+        runBlocking {
+            val result = folderService.deleteFolder(0)
+            assertTrue(result.isErr)
+            assertEquals("id (0) must be > 0", result.error)
         }
     }
 

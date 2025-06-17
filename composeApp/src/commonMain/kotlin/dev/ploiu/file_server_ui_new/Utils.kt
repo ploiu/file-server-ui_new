@@ -1,5 +1,8 @@
 package dev.ploiu.file_server_ui_new
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import dev.ploiu.file_server_ui_new.model.ErrorMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
@@ -27,6 +30,14 @@ fun formatFileOrFolderName(name: String) =
     trimToSize(name.replace("leftParenthese", "(").replace("rightParenthese", ")"))
 
 /**
+ * Meant to give both the human-readable message from the server and the actual status code a response returned,
+ * for when the server returns a non-2xx status code
+ *
+ * @see [ErrorMessage] for the raw format the server returns response bodies as
+ */
+data class ApiError(val statusCode: Int, val message: String)
+
+/**
  * Processes a Retrofit [Response] and returns the body if the response is successful.
  *
  * @param response The Retrofit response to process.
@@ -34,12 +45,12 @@ fun formatFileOrFolderName(name: String) =
  * @throws RuntimeException if the response is not successful and an error message is parsed.
  * @throws Exception if parsing the error message fails.
  */
-fun <T> processResponse(response: Response<out T>): T {
-    if (response.isSuccessful) {
-        return response.body()!!
+fun <T> processResponse(response: Response<out T>): Result<T, ApiError> {
+    return if (response.isSuccessful) {
+        Ok(response.body()!!)
     } else {
         val errorMessage = parseErrorFromResponse(response)
-        throw RuntimeException(errorMessage.message)
+        Err(ApiError(response.code(), errorMessage.message))
     }
 }
 

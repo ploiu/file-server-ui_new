@@ -1,3 +1,4 @@
+import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -31,6 +32,9 @@ kotlin {
                 implementation("io.mockk:mockk:1.14.2")
                 implementation(libs.kotlin.test)
                 implementation(libs.kotlinx.coroutines.test)
+                // TODO https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html#how-compose-multiplatform-testing-is-different-from-jetpack-compose
+                @OptIn(ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
             }
         }
 
@@ -59,6 +63,8 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.retrofit.kotlinx.converter)
             implementation(libs.compose.navigation)
+            implementation(libs.kotlin.result)
+            implementation(libs.kotlin.result.coroutines)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

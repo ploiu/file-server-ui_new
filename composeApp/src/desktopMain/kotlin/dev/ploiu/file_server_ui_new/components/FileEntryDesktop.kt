@@ -9,11 +9,37 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FileApi
+import file_server_ui_new.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.skia.Image
 
-// TODO android doesn't like this
 fun ByteArray.toImageBitmap() = Image.makeFromEncoded(this).toComposeImageBitmap()
+
+fun determineIcon(file: FileApi): DrawableResource {
+    return when (file.fileType.lowercase()) {
+        "application" -> Res.drawable.application
+        "archive" -> Res.drawable.archive
+        "audio" -> Res.drawable.audio
+        "cad" -> Res.drawable.cad
+        "code" -> Res.drawable.code
+        "configuration" -> Res.drawable.configuration
+        "diagram" -> Res.drawable.diagram
+        "document" -> Res.drawable.document
+        "font" -> Res.drawable.font
+        "rom" -> Res.drawable.rom
+        "image" -> Res.drawable.image
+        "material" -> Res.drawable.material
+        "model" -> Res.drawable.model
+        "object" -> Res.drawable.`object`
+        "presentation" -> Res.drawable.presentation
+        "savefile" -> Res.drawable.savefile
+        "spreadsheet" -> Res.drawable.spreadsheet
+        "text" -> Res.drawable.text
+        "video" -> Res.drawable.video_svg
+        else -> Res.drawable.unknown
+    }
+}
 
 @Composable
 actual fun PickFileImage(file: FileApi, preview: ByteArray?) {
@@ -23,7 +49,7 @@ actual fun PickFileImage(file: FileApi, preview: ByteArray?) {
             painter = painterResource(determineIcon(file)),
             contentDescription = "file icon",
             Modifier.width(96.dp).height(96.dp),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Fit,
         )
     } else {
         Image(

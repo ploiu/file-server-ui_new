@@ -1,17 +1,20 @@
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.ApiException
 import dev.ploiu.file_server_ui_new.client.FileClient
+import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.parseErrorFromResponse
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.file.Files
 
 
 private data class CachedReadResult(
-    val read: Map<Long, ByteArray>,
+    val read: BatchFolderPreview,
     val missingFromDisk: Collection<Long>,
     val toDeleteFromDisk: Collection<File>
 )
@@ -21,7 +24,6 @@ class PreviewService(
     private val fileClient: FileClient,
     directoryService: DirectoryService
 ) {
-    private val log = KotlinLogging.logger { }
     private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
 
     init {
@@ -36,7 +38,7 @@ class PreviewService(
     fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString())
 
     @Throws(ApiException::class)
-    suspend fun getFolderPreview(folder: FolderApi): Map<Long, ByteArray> = coroutineScope {
+    suspend fun getFolderPreview(folder: FolderApi): Result<BatchFolderPreview, String> = coroutineScope {
         val folderCacheDir = folderCacheDir(folder)
         if (!folderCacheDir.exists()) {
             folderCacheDir.mkdirs()
@@ -69,13 +71,13 @@ class PreviewService(
                     .forEach { diskCache.put(it.first, it.second) }
 
             }
-            diskCache
+            Ok(diskCache)
         } else {
             folderCacheDir.deleteRecursively()
             folderCacheDir.mkdirs()
-            val downloadedFolderCache = folderService.getPreviewsForFolder(folder.id)
-            buildInitialCacheForFolder(folderCacheDir, downloadedFolderCache)
-            downloadedFolderCache
+            folderService
+                .getPreviewsForFolder(folder.id)
+                .onSuccess { buildInitialCacheForFolder(folderCacheDir, it) }
         }
     }
 

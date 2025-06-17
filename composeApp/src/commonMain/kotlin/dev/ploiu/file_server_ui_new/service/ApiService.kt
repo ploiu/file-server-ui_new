@@ -21,7 +21,8 @@ class ApiService(val serverConfig: ServerConfig, val client: ApiClient) {
     suspend fun getApiInfo() = client.getApiInfo()
 
     suspend fun isCompatibleWithServer(): ServerCompatibilityResult {
-        log.info("Checking if server is compatible with client (looking for pattern ${serverConfig.compatibleVersion}")
+        log.info("Checking if server is compatible with client (looking for pattern ${serverConfig.compatibleVersion})")
+        // 🦎
         val gex = serverConfig.generateCompatibleVersionPattern()
         val serverVersion = try {
             getApiInfo().version

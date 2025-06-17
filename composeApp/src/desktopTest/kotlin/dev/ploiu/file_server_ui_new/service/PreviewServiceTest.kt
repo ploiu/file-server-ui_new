@@ -1,5 +1,7 @@
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.unwrap
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -110,13 +112,13 @@ class PreviewServiceTest {
                 Response.success(200, ResponseBody.create(null, previewBytes))
             }
             // Should not call getPreviewsForFolder
-            coEvery { folderService.getPreviewsForFolder(any()) } returns emptyMap()
+            coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
 
             val previewService = PreviewService(folderService, fileClient, directoryService)
             val result = previewService.getFolderPreview(folder)
 
             // All previews should be downloaded and stored
-            assertEquals(fileIds.toSet(), result.keys)
+            assertEquals(fileIds.toSet(), result.unwrap().keys)
             fileIds.forEach {
                 val file = File("./testDirs/${getTestName()}/cache/1/$it.png")
                 assertTrue(file.exists())
@@ -142,13 +144,13 @@ class PreviewServiceTest {
             )
             // Simulate no preview available (404)
             coEvery { fileClient.getFilePreview(fileId) } returns Response.error(404, ResponseBody.create(null, ""))
-            coEvery { folderService.getPreviewsForFolder(any()) } returns emptyMap()
+            coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
             val previewService = PreviewService(folderService, fileClient, directoryService)
             val result = previewService.getFolderPreview(folder)
             // Should not cache the file
             val cachedFile = File("./testDirs/${getTestName()}/cache/1/$fileId.png")
             assertFalse(cachedFile.exists())
-            assertTrue(result.isEmpty())
+            assertTrue(result.unwrap().isEmpty())
         }
 
     @Test

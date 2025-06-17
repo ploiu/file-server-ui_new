@@ -27,3 +27,5 @@ data class UpdateFolder(
     val parentId: Long,
     val tags: Collection<Tag>
 )
+
+typealias BatchFolderPreview = Map<Long, ByteArray>
