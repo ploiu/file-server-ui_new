@@ -27,6 +27,7 @@ class ApiService(val serverConfig: ServerConfig, val client: ApiClient) {
         val serverVersion = try {
             getApiInfo().version
         } catch (e: Exception) {
+            log.error(e) { "Failed to check server version" }
             return ErrorResult(e)
         }
         log.info("server version is $serverVersion")

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
@@ -137,14 +140,17 @@ fun FolderList(model: FolderView, onFolderNav: (FolderApi) -> Unit) {
     }
 
     when (pageState) {
-        is LoadingFolderView -> {
-            Column {
-                CircularProgressIndicator()
-            }
+        is LoadingFolderView -> Column {
+            CircularProgressIndicator()
         }
 
         is LoadedFolderView -> LoadedFolderList(folder!!, previews, onFolderNav)
-        is ErrorState -> TODO("error dialog explaining the issue")
+        is ErrorState -> Dialog(
+            title = "An Error Occurred",
+            text = pageState.message,
+            icon = Icons.Default.Error,
+            iconColor = MaterialTheme.colorScheme.error
+        )
     }
 }
 
