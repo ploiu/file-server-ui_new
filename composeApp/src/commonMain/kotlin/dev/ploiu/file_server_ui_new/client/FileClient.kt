@@ -18,7 +18,7 @@ interface FileClient {
         @Query("search") search: String,
         @Query("tags") tags: Collection<String>,
         @Query("attributes") attributes: Collection<Attribute>
-    ): Collection<FileApi>
+    ): Response<Collection<FileApi>>
 
     @Multipart
     @POST("/files")
@@ -26,17 +26,17 @@ interface FileClient {
         @Part file: MultipartBody.Part,
         @Part extension: MultipartBody.Part,
         @Part folderId: MultipartBody.Part
-    ): FileApi
+    ): Response<FileApi>
 
     @GET("/files/metadata/{id}")
-    suspend fun getMetadata(@Path("id") id: Long): FileApi?
+    suspend fun getMetadata(@Path("id") id: Long): Response<FileApi>
 
     @Streaming
     @GET("/files/{id}")
-    fun getFileContents(@Path("id") id: Long): ResponseBody
+    fun getFileContents(@Path("id") id: Long): Response<ResponseBody>
 
     @PUT("/files")
-    suspend fun updateFile(@Body file: FileRequest): FileApi
+    suspend fun updateFile(@Body file: FileRequest): Response<FileApi>
 
     @DELETE("/files/{id}")
     suspend fun deleteFile(@Path("id") id: Long)

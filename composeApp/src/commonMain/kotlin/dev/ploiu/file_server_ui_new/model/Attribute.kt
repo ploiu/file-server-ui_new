@@ -91,5 +91,30 @@ class Attribute(field: String, private val op: EqualityOperator, value: String) 
     companion object {
         val BYTE_MULT_PATTERN: Pattern =
             Pattern.compile("^(?<number>[0-9]*)(?<mult>ki?b|mi?b|gi?b|ti?b|pi?b)$", Pattern.CASE_INSENSITIVE)
+
+        fun builder() = Builder()
+    }
+
+    class Builder {
+        private lateinit var field: String
+        private lateinit var op: EqualityOperator
+        private lateinit var value: String
+
+        fun field(field: String): Builder {
+            this.field = field
+            return this
+        }
+
+        fun op(op: EqualityOperator): Builder {
+            this.op = op
+            return this
+        }
+
+        fun value(value: String): Builder {
+            this.value = value
+            return  this
+        }
+
+        fun build() = Attribute(field, op, value)
     }
 }

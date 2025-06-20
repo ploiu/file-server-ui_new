@@ -47,7 +47,7 @@ data class FolderRoute(val id: Long)
 sealed interface FolderViewState
 class LoadingFolderView : FolderViewState
 class LoadedFolderView : FolderViewState
-data class ErrorState(val message: String) : FolderViewState
+data class ErroredFolderView(val message: String) : FolderViewState
 
 data class FolderState(
     val pageState: FolderViewState,
@@ -78,7 +78,7 @@ class FolderView(var folderService: FolderService, var previewService: PreviewSe
             }
             .onFailure { error ->
                 launch {
-                    _state.update { it.copy(pageState = ErrorState(error)) }
+                    _state.update { it.copy(pageState = ErroredFolderView(error)) }
                 }
                 log.error { "Failed to get folder information: $error" }
             }
@@ -145,7 +145,7 @@ fun FolderList(model: FolderView, onFolderNav: (FolderApi) -> Unit) {
         }
 
         is LoadedFolderView -> LoadedFolderList(folder!!, previews, onFolderNav)
-        is ErrorState -> Dialog(
+        is ErroredFolderView -> Dialog(
             title = "An Error Occurred",
             text = pageState.message,
             icon = Icons.Default.Error,
