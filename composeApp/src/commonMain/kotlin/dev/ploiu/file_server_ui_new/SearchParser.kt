@@ -55,6 +55,7 @@ data class Search(val text: String, val tags: Collection<String>, val attributes
  */
 object SearchParser {
     private const val OP_GEX = "[=<>!]"
+    private val MULTIPLE_SPACES = " +".toRegex()
 
     /**
      * parses the passed String into a [Search] object to be passed to the backend server
@@ -63,32 +64,35 @@ object SearchParser {
      * @return
      */
     fun parse(search: String): Search {
-        var search = search
-        search = search.trim { it <= ' ' }.replace(" {2,}".toRegex(), " ")
-        val tokens = tokenize(search)
-        // searchText is always just gonna be a concatenation of normal text so it's ok to have 1 dedicated to it
+        val tokens = tokenize(search.trim().replace(MULTIPLE_SPACES, " "))
+        // searchText is always just going to be a concatenation of normal text so it's ok to have 1 dedicated to it
         val searchText = StringBuilder()
         val tags = mutableListOf<String>()
         val attributes = mutableListOf<Attribute>()
         var index = 0
         while (index < tokens.size) {
             val current = tokens[index]
-            if (current.type === TokenTypes.NORMAL) {
-                index = handleNormalTokens(tokens, index, searchText)
-            } else if (current.type === TokenTypes.TAG_START) {
-                val builder = StringBuilder()
-                index = handleTagTokens(tokens, index, builder)
-                tags += builder.toString()
-            } else if (current.type === TokenTypes.ATTRIBUTE_START) {
-                val builder = Attribute.builder()
-                index = handleAttributeTokens(tokens, index, builder)
-                attributes += builder.build()
-            } else {
-                // unknown, skip
-                index++
+            when (current.type) {
+                TokenTypes.NORMAL -> index = handleNormalTokens(tokens, index, searchText)
+                TokenTypes.TAG_START -> {
+                    val builder = StringBuilder()
+                    index = handleTagTokens(tokens, index, builder)
+                    tags += builder.toString()
+                }
+
+                TokenTypes.ATTRIBUTE_START -> {
+                    val builder = Attribute.builder()
+                    index = handleAttributeTokens(tokens, index, builder)
+                    attributes += builder.build()
+                }
+
+                else -> {
+                    // unknown, skip
+                    index++
+                }
             }
         }
-        val cleanedText = searchText.toString().trim { it <= ' ' }.replace(" +".toRegex(), " ")
+        val cleanedText = searchText.toString().trim().replace(MULTIPLE_SPACES, " ")
         return Search(cleanedText, tags, attributes)
     }
 
@@ -98,13 +102,12 @@ object SearchParser {
      * @param search
      * @return a Token array. This array will have the same length as the input string in the same order of chars as the input string
      */
-    fun tokenize(search: String): Array<Token> {
-        val tokens: Array<Token?> = arrayOfNulls(search.length)
+    fun tokenize(search: String): List<Token> {
+        val tokens = mutableListOf<Token>()
         // stripping extra spaces will let us more easily tokenize and parse later
-        val chars = search.trim { it <= ' ' }.replace(" +".toRegex(), " ").toCharArray()
+        val chars = search.trim().replace(MULTIPLE_SPACES, " ").toCharArray()
         var mode: Modes = Modes.UNSET
-        for (i in chars.indices) {
-            val c = chars[i]
+        chars.forEach { c ->
             val tokenAndMode = when (mode) {
                 Modes.UNSET -> handleUnset(c)
                 Modes.ATTRIBUTE_NAME -> handleAttributeName(c)
@@ -113,11 +116,10 @@ object SearchParser {
                 Modes.ATTRIBUTE_VALUE -> handleAttributeValue(c)
                 Modes.TAG_NAME -> handleTagName(c)
             }
-            tokens[i] = tokenAndMode.token
+            tokens += tokenAndMode.token
             mode = tokenAndMode.mode
         }
-        @Suppress("UNCHECKED_CAST")
-        return tokens as Array<Token>
+        return tokens
     }
 
     /**
@@ -128,13 +130,13 @@ object SearchParser {
      * @param builder this will have the contents of the tokens for normal text
      * @return the new index to iterate from in tokens
      */
-    fun handleNormalTokens(tokens: Array<Token>, start: Int, builder: StringBuilder): Int {
-        var start = start
-        while (start < tokens.size && (tokens[start].type === TokenTypes.NORMAL || tokens[start].type === TokenTypes.SPACE)) {
-            builder.append(tokens[start].value)
-            start++
+    fun handleNormalTokens(tokens: List<Token>, start: Int, builder: StringBuilder): Int {
+        var index = start
+        while (index < tokens.size && (tokens[index].type === TokenTypes.NORMAL || tokens[index].type === TokenTypes.SPACE)) {
+            builder.append(tokens[index].value)
+            index++
         }
-        return start
+        return index
     }
 
     /**
@@ -145,47 +147,47 @@ object SearchParser {
      * @param builder will be populated with the tag name
      * @return the index to continue iterating from
      */
-    fun handleTagTokens(tokens: Array<Token>, start: Int, builder: StringBuilder): Int {
+    fun handleTagTokens(tokens: List<Token>, start: Int, builder: StringBuilder): Int {
         // first char is +, so skip it
-        var start = start + 1
-        while (start < tokens.size && tokens[start].type === TokenTypes.TAG_NAME) {
-            builder.append(tokens[start].value)
-            start++
+        var index = start + 1
+        while (index < tokens.size && tokens[index].type === TokenTypes.TAG_NAME) {
+            builder.append(tokens[index].value)
+            index++
         }
-        return start
+        return index
     }
 
-    fun handleAttributeTokens(tokens: Array<Token>, start: Int, builder: Attribute.Builder): Int {
+    fun handleAttributeTokens(tokens: List<Token>, start: Int, builder: Attribute.Builder): Int {
         // first char is @ which we don't need, so skip it
-        var start = start + 1
+        var index = start + 1
         val nameBuilder = StringBuilder()
         val opBuilder = StringBuilder()
         val valueBuilder = StringBuilder()
-        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_NAME) {
-            nameBuilder.append(tokens[start].value)
-            start++
+        while (index < tokens.size && tokens[index].type === TokenTypes.ATTRIBUTE_NAME) {
+            nameBuilder.append(tokens[index].value)
+            index++
         }
         // there could be spaces in between the name and operator, so we need to skip those
-        while (start < tokens.size && (tokens[start]).type !== TokenTypes.ATTRIBUTE_OP) {
-            start++
+        while (index < tokens.size && (tokens[index]).type !== TokenTypes.ATTRIBUTE_OP) {
+            index++
         }
-        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_OP) {
-            opBuilder.append(tokens[start].value)
-            start++
+        while (index < tokens.size && tokens[index].type === TokenTypes.ATTRIBUTE_OP) {
+            opBuilder.append(tokens[index].value)
+            index++
         }
         // there could be spaces in between the operator and value, so we need to skip those
-        while (start < tokens.size && tokens[start].type !== TokenTypes.ATTRIBUTE_VALUE) {
-            start++
+        while (index < tokens.size && tokens[index].type !== TokenTypes.ATTRIBUTE_VALUE) {
+            index++
         }
-        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_VALUE) {
-            valueBuilder.append(tokens[start].value)
-            start++
+        while (index < tokens.size && tokens[index].type === TokenTypes.ATTRIBUTE_VALUE) {
+            valueBuilder.append(tokens[index].value)
+            index++
         }
         builder
             .field(nameBuilder.toString())
             .op(EqualityOperator.parse(opBuilder.toString()))
             .value(valueBuilder.toString())
-        return start
+        return index
     }
 
     private fun handleUnset(c: Char): TokenAndMode {
