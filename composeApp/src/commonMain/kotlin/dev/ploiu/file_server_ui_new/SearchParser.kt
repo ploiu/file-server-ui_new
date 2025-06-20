@@ -130,11 +130,8 @@ object SearchParser {
      */
     fun handleNormalTokens(tokens: Array<Token>, start: Int, builder: StringBuilder): Int {
         var start = start
-        var current: Token?
-        while (start < tokens.size && ((tokens[start].also {
-                current = it
-            }).type === TokenTypes.NORMAL || current.type === TokenTypes.SPACE)) {
-            builder.append(current.value)
+        while (start < tokens.size && (tokens[start].type === TokenTypes.NORMAL || tokens[start].type === TokenTypes.SPACE)) {
+            builder.append(tokens[start].value)
             start++
         }
         return start
@@ -150,41 +147,38 @@ object SearchParser {
      */
     fun handleTagTokens(tokens: Array<Token>, start: Int, builder: StringBuilder): Int {
         // first char is +, so skip it
-        var start = start
-        start++
-        var current: Token?
-        while (start < tokens.size && (current = tokens[start++]).type === TokenTypes.TAG_NAME) {
-            builder.append(current.value)
+        var start = start + 1
+        while (start < tokens.size && tokens[start].type === TokenTypes.TAG_NAME) {
+            builder.append(tokens[start].value)
+            start++
         }
         return start
     }
 
     fun handleAttributeTokens(tokens: Array<Token>, start: Int, builder: Attribute.Builder): Int {
         // first char is @ which we don't need, so skip it
-        var start = start
-        start++
-        var current: Token?
+        var start = start + 1
         val nameBuilder = StringBuilder()
         val opBuilder = StringBuilder()
         val valueBuilder = StringBuilder()
-        while (start < tokens.size && (tokens[start].also { current = it }).type === TokenTypes.ATTRIBUTE_NAME) {
-            nameBuilder.append(current.value)
+        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_NAME) {
+            nameBuilder.append(tokens[start].value)
             start++
         }
         // there could be spaces in between the name and operator, so we need to skip those
         while (start < tokens.size && (tokens[start]).type !== TokenTypes.ATTRIBUTE_OP) {
             start++
         }
-        while (start < tokens.size && (tokens[start].also { current = it }).type === TokenTypes.ATTRIBUTE_OP) {
-            opBuilder.append(current.value)
+        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_OP) {
+            opBuilder.append(tokens[start].value)
             start++
         }
         // there could be spaces in between the operator and value, so we need to skip those
-        while (start < tokens.size && (tokens[start]).type !== TokenTypes.ATTRIBUTE_VALUE) {
+        while (start < tokens.size && tokens[start].type !== TokenTypes.ATTRIBUTE_VALUE) {
             start++
         }
-        while (start < tokens.size && (tokens[start].also { current = it }).type === TokenTypes.ATTRIBUTE_VALUE) {
-            valueBuilder.append(current.value)
+        while (start < tokens.size && tokens[start].type === TokenTypes.ATTRIBUTE_VALUE) {
+            valueBuilder.append(tokens[start].value)
             start++
         }
         builder

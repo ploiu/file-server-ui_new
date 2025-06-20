@@ -1,11 +1,12 @@
 package dev.ploiu.file_server_ui_new.model
 
+import jdk.internal.org.jline.utils.Colors.s
 import java.util.*
 import java.util.regex.Pattern
 
 class Attribute(field: String, private val op: EqualityOperator, value: String) {
     private val field: String
-    private val value: String?
+    private val value: String
 
     init {
         this.field = mapField(field)
@@ -52,7 +53,7 @@ class Attribute(field: String, private val op: EqualityOperator, value: String) 
         }
     }
 
-    private fun mapValue(value: String): String? {
+    private fun mapValue(value: String): String {
         if ("fileSize" == this.field) {
             return handleFileSizeByteAlias(value)
         }
@@ -116,5 +117,11 @@ class Attribute(field: String, private val op: EqualityOperator, value: String) 
         }
 
         fun build() = Attribute(field, op, value)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if(other == null) return false
+        if(other !is Attribute) return false
+        return other.field == this.field && other.op == this.op && other.value == this.value
     }
 }

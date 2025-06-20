@@ -19,6 +19,6 @@ class FileService(val client: FileClient) {
     }
 
     suspend fun search(inputText: String): Result<Collection<FileApi>, String> {
-
+        TODO()
     }
 }
