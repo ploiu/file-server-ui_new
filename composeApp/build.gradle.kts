@@ -65,6 +65,7 @@ kotlin {
             implementation(libs.compose.navigation)
             implementation(libs.kotlin.result)
             implementation(libs.kotlin.result.coroutines)
+            implementation(libs.jetbrains.compose.material.icons)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -72,7 +73,6 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.koin.composeVM)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
-            implementation(libs.jetbrains.compose.material.icons)
         }
     }
 

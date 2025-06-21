@@ -4,6 +4,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.mapError
 import dev.ploiu.file_server_ui_new.Search
+import dev.ploiu.file_server_ui_new.SearchParser
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.CreateFileRequest
 import dev.ploiu.file_server_ui_new.model.FileApi
@@ -30,8 +31,8 @@ class FileService(val client: FileClient) {
         return res.mapError { it.message }
     }
 
-    suspend fun search(search: Search): Result<Collection<FileApi>, String> {
-        val (text, tags, attributes) = search
+    suspend fun search(searchText: String): Result<Collection<FileApi>, String> {
+        val (text, tags, attributes) = SearchParser.parse(searchText)
         val res = processResponse(client.search(text, tags, attributes))
         return res.mapError { it.message }
     }

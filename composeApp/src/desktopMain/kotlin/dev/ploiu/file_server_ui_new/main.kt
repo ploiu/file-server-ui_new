@@ -5,15 +5,19 @@ import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dev.ploiu.file_server_ui_new.components.FileServerSearchBar
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -47,13 +51,15 @@ actual fun AppTheme(
 
 
 fun main() = application {
-    // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared, and I want the user to type username + password on the android version
+    // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared,
+    //  and I want the user to type username + password on the android version since those devices are more easily losable
     startKoin {
         modules(configModule, clientModule, serviceModule, componentViewModule, desktopServiceModule)
     }
     Window(
         onCloseRequest = ::exitApplication,
         title = "file-server-ui_new",
+        state = rememberWindowState(width = 1200.dp, height = 600.dp)
     ) {
         App()
     }
@@ -83,6 +89,7 @@ fun NavigationHost(navController: NavHostController = rememberNavController()) {
         )
     }
     Column {
+        FileServerSearchBar() { println("Searched $it") }
         NavBar(navBarState) { folder ->
             val index = navBarState.folders.indexOfFirst { it.id == folder.id }
             if (index != -1) {

@@ -48,14 +48,14 @@ actual fun PickFileImage(file: FileApi, preview: ByteArray?) {
         Image(
             painter = painterResource(determineIcon(file)),
             contentDescription = "file icon",
-            Modifier.width(96.dp).height(96.dp),
+            Modifier.width(64.dp).height(64.dp),
             contentScale = ContentScale.Fit,
         )
     } else {
         Image(
             bitmap = preview.toImageBitmap(),
             contentDescription = "file preview",
-            modifier = Modifier.width(96.dp).height(96.dp),
+            modifier = Modifier.width(64.dp).height(64.dp),
             contentScale = ContentScale.Fit
         )
     }

@@ -18,14 +18,14 @@ import org.jetbrains.compose.resources.painterResource
 
 
 @Composable
-fun FolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
+fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: FolderApi) -> Unit) {
     Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth(), onClick = { onClick(folder) }) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
             Image(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
-                Modifier.width(96.dp).height(96.dp),
+                Modifier.width(64.dp).height(64.dp),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.height(8.dp))

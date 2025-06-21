@@ -126,7 +126,7 @@ fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
                     color = MaterialTheme.colorScheme.tertiary
                 ) { Text(folder.name) }
             }) {
-            FolderEntry(folder, onClick)
+            FolderEntry(folder, onClick = onClick)
         }
     }
 }
