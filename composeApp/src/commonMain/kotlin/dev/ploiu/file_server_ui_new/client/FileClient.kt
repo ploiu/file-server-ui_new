@@ -24,7 +24,7 @@ interface FileClient {
     @POST("/files")
     suspend fun createFile(
         @Part file: MultipartBody.Part,
-        @Part extension: MultipartBody.Part,
+        @Part extension: MultipartBody.Part?,
         @Part folderId: MultipartBody.Part
     ): Response<FileApi>
 
@@ -39,5 +39,5 @@ interface FileClient {
     suspend fun updateFile(@Body file: FileRequest): Response<FileApi>
 
     @DELETE("/files/{id}")
-    suspend fun deleteFile(@Path("id") id: Long)
+    suspend fun deleteFile(@Path("id") id: Long): Response<Unit>
 }

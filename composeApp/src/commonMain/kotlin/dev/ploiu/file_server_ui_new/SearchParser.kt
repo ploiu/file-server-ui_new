@@ -72,23 +72,17 @@ object SearchParser {
         var index = 0
         while (index < tokens.size) {
             val current = tokens[index]
-            when (current.type) {
-                TokenTypes.NORMAL -> index = handleNormalTokens(tokens, index, searchText)
+            index = when (current.type) {
+                TokenTypes.NORMAL -> handleNormalTokens(tokens, index, searchText)
                 TokenTypes.TAG_START -> {
-                    val builder = StringBuilder()
-                    index = handleTagTokens(tokens, index, builder)
-                    tags += builder.toString()
+                    handleTagTokens(tokens, index, tags)
                 }
 
-                TokenTypes.ATTRIBUTE_START -> {
-                    val builder = Attribute.builder()
-                    index = handleAttributeTokens(tokens, index, builder)
-                    attributes += builder.build()
-                }
+                TokenTypes.ATTRIBUTE_START -> handleAttributeTokens(tokens, index, attributes)
 
                 else -> {
                     // unknown, skip
-                    index++
+                    index + 1
                 }
             }
         }
@@ -144,20 +138,22 @@ object SearchParser {
      *
      * @param tokens  the tokens to parse through
      * @param start   the index of the tag start (`+` character)
-     * @param builder will be populated with the tag name
+     * @param tags the collection of tags to add to once the tag name is built
      * @return the index to continue iterating from
      */
-    fun handleTagTokens(tokens: List<Token>, start: Int, builder: StringBuilder): Int {
+    fun handleTagTokens(tokens: List<Token>, start: Int, tags: MutableCollection<String>): Int {
         // first char is +, so skip it
         var index = start + 1
+        val builder = StringBuilder()
         while (index < tokens.size && tokens[index].type === TokenTypes.TAG_NAME) {
             builder.append(tokens[index].value)
             index++
         }
+        tags.add(builder.toString())
         return index
     }
 
-    fun handleAttributeTokens(tokens: List<Token>, start: Int, builder: Attribute.Builder): Int {
+    fun handleAttributeTokens(tokens: List<Token>, start: Int, attributes: MutableCollection<Attribute>): Int {
         // first char is @ which we don't need, so skip it
         var index = start + 1
         val nameBuilder = StringBuilder()
@@ -183,10 +179,13 @@ object SearchParser {
             valueBuilder.append(tokens[index].value)
             index++
         }
-        builder
-            .field(nameBuilder.toString())
-            .op(EqualityOperator.parse(opBuilder.toString()))
-            .value(valueBuilder.toString())
+        attributes.add(
+            Attribute(
+                field = nameBuilder.toString(),
+                op = EqualityOperator.parse(opBuilder.toString()),
+                value = valueBuilder.toString()
+            )
+        )
         return index
     }
 

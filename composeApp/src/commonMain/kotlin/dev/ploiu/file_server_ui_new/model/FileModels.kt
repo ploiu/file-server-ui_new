@@ -23,7 +23,7 @@ data class FileRequest(
 )
 
 data class CreateFileRequest(
+    val folderId: Long,
     val file: File,
-    val extension: String,
-    val folderId: Long?
+    val force: Boolean
 )

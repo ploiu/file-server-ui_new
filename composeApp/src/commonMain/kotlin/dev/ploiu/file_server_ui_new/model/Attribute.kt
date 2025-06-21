@@ -1,6 +1,5 @@
 package dev.ploiu.file_server_ui_new.model
 
-import jdk.internal.org.jline.utils.Colors.s
 import java.util.*
 import java.util.regex.Pattern
 
@@ -92,36 +91,15 @@ class Attribute(field: String, private val op: EqualityOperator, value: String) 
     companion object {
         val BYTE_MULT_PATTERN: Pattern =
             Pattern.compile("^(?<number>[0-9]*)(?<mult>ki?b|mi?b|gi?b|ti?b|pi?b)$", Pattern.CASE_INSENSITIVE)
-
-        fun builder() = Builder()
-    }
-
-    class Builder {
-        private lateinit var field: String
-        private lateinit var op: EqualityOperator
-        private lateinit var value: String
-
-        fun field(field: String): Builder {
-            this.field = field
-            return this
-        }
-
-        fun op(op: EqualityOperator): Builder {
-            this.op = op
-            return this
-        }
-
-        fun value(value: String): Builder {
-            this.value = value
-            return  this
-        }
-
-        fun build() = Attribute(field, op, value)
     }
 
     override fun equals(other: Any?): Boolean {
-        if(other == null) return false
-        if(other !is Attribute) return false
+        if (other == null) return false
+        if (other !is Attribute) return false
         return other.field == this.field && other.op == this.op && other.value == this.value
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(field, op, value)
     }
 }

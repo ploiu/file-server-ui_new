@@ -6,6 +6,7 @@ import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.client.TagClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
 import dev.ploiu.file_server_ui_new.service.ApiService
+import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import file_server_ui_new.composeapp.generated.resources.Res
 import kotlinx.coroutines.runBlocking
@@ -32,6 +33,7 @@ val clientModule = module {
 val serviceModule = module {
     single<ApiService> { ApiService(get(), get()) }
     single<FolderService> { FolderService(get()) }
+    single<FileService> { FileService(get()) }
 }
 
 fun readServerCerts(): HandshakeCertificates = runBlocking {

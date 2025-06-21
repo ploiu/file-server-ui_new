@@ -26,6 +26,11 @@ fun trimToSize(name: String, maxLength: Int = 25): String {
     return "$halfName...$otherHalfName$extension"
 }
 
+/**
+ * formats a file or folder name for display on the ui.
+ *
+ * It trims the name down to an acceptable size while also reversing any name changes done to the file on upload (such as replacing "leftParenthese" and "rightParenthese" with ( and ) respectively)
+ */
 fun formatFileOrFolderName(name: String) =
     trimToSize(name.replace("leftParenthese", "(").replace("rightParenthese", ")"))
 
