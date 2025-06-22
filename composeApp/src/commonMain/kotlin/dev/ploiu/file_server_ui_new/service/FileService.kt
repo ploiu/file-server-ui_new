@@ -3,7 +3,6 @@ package dev.ploiu.file_server_ui_new.service
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.mapError
-import dev.ploiu.file_server_ui_new.Search
 import dev.ploiu.file_server_ui_new.SearchParser
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.CreateFileRequest

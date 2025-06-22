@@ -1,13 +1,17 @@
 package dev.ploiu.file_server_ui_new
 
-import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
-import androidx.compose.foundation.LightDefaultContextMenuRepresentation
-import androidx.compose.foundation.LocalContextMenuRepresentation
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -31,7 +35,8 @@ import org.koin.core.parameter.parametersOf
 import java.util.*
 
 @Composable
-actual fun ShowPlatformView() = NavigationHost()
+actual fun ShowPlatformView() {
+}
 
 @Composable
 actual fun AppTheme(
@@ -56,17 +61,42 @@ fun main() = application {
     startKoin {
         modules(configModule, clientModule, serviceModule, componentViewModule, desktopServiceModule)
     }
+    val searchBarFocuser = remember { FocusRequester() }
+
     Window(
         onCloseRequest = ::exitApplication,
         title = "file-server-ui_new",
-        state = rememberWindowState(width = 1200.dp, height = 600.dp)
+        state = rememberWindowState(width = 1200.dp, height = 600.dp),
+        onKeyEvent = {
+            when (it.key) {
+                Key.K -> {
+                    if (it.isCtrlPressed) {
+                        searchBarFocuser.requestFocus()
+                    }
+                }
+
+                else -> {}
+            }
+            true
+        }
     ) {
-        App()
+        AppTheme {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Surface {
+                    NavigationHost(searchBarFocuser = searchBarFocuser)
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun NavigationHost(navController: NavHostController = rememberNavController()) {
+fun NavigationHost(navController: NavHostController = rememberNavController(), searchBarFocuser: FocusRequester) {
     var navBarState: NavState by remember {
         mutableStateOf(
             NavState(
@@ -89,7 +119,10 @@ fun NavigationHost(navController: NavHostController = rememberNavController()) {
         )
     }
     Column {
-        FileServerSearchBar() { println("Searched $it") }
+        // top level components that should show on every view
+        FileServerSearchBar(focusRequester = searchBarFocuser) {
+            TODO("handle searching and navigating to the search view (use the navController passed to this function)")
+        }
         NavBar(navBarState) { folder ->
             val index = navBarState.folders.indexOfFirst { it.id == folder.id }
             if (index != -1) {
@@ -98,6 +131,7 @@ fun NavigationHost(navController: NavHostController = rememberNavController()) {
             }
             navController.navigate(FolderRoute(folder.id))
         }
+        // stuff that changes
         NavHost(navController = navController, startDestination = LoadingRoute()) {
             composable<LoadingRoute> {
                 LoadingScreen {
