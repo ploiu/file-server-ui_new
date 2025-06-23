@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.views
+package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.FlowRow

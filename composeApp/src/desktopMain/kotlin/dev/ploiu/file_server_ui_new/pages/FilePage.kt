@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.views
+package dev.ploiu.file_server_ui_new.pages
 
 import dev.ploiu.file_server_ui_new.model.FileApi
 import kotlinx.serialization.Serializable
@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 data class FileRoute(val id: Long)
 
 sealed interface FileViewState
-class LoadingFileView : FileViewState
-class LoadedFileView : FileViewState
-data class ErroredFileView(val message: String) : FileViewState
+private class LoadingFileView : FileViewState
+private class LoadedFileView : FileViewState
+private data class ErroredFileView(val message: String) : FileViewState
 
 data class FileState(val pageState: FileViewState, val file: FileApi?, val preview: ByteArray) {
     override fun equals(other: Any?): Boolean {

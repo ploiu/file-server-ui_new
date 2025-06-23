@@ -22,21 +22,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.FileServerSearchBar
+import dev.ploiu.file_server_ui_new.components.NavBar
+import dev.ploiu.file_server_ui_new.components.NavState
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
 import dev.ploiu.file_server_ui_new.module.serviceModule
+import dev.ploiu.file_server_ui_new.pages.FolderPage
+import dev.ploiu.file_server_ui_new.pages.LoadingPage
+import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
-import dev.ploiu.file_server_ui_new.views.*
+import dev.ploiu.file_server_ui_new.viewModel.*
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import java.util.*
-
-@Composable
-actual fun ShowPlatformView() {
-}
 
 @Composable
 actual fun AppTheme(
@@ -59,7 +60,7 @@ fun main() = application {
     // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared,
     //  and I want the user to type username + password on the android version since those devices are more easily losable
     startKoin {
-        modules(configModule, clientModule, serviceModule, componentViewModule, desktopServiceModule)
+        modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule)
     }
     val searchBarFocuser = remember { FocusRequester() }
 
@@ -121,7 +122,7 @@ fun NavigationHost(navController: NavHostController = rememberNavController(), s
     Column {
         // top level components that should show on every view
         FileServerSearchBar(focusRequester = searchBarFocuser) {
-            TODO("handle searching and navigating to the search view (use the navController passed to this function)")
+            navController.navigate(SearchResultsRoute(it))
         }
         NavBar(navBarState) { folder ->
             val index = navBarState.folders.indexOfFirst { it.id == folder.id }
@@ -134,19 +135,24 @@ fun NavigationHost(navController: NavHostController = rememberNavController(), s
         // stuff that changes
         NavHost(navController = navController, startDestination = LoadingRoute()) {
             composable<LoadingRoute> {
-                LoadingScreen {
+                LoadingPage {
                     navController.navigate(FolderRoute(0))
                 }
             }
             composable<FolderRoute> { backStack ->
                 val route: FolderRoute = backStack.toRoute()
-                val viewModel: FolderView = koinInject<FolderView> { parametersOf(route.id) }
-                FolderList(viewModel) {
+                val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
+                FolderPage(viewModel) {
                     navController.navigate(FolderRoute(it.id))
                     val newFolders = navBarState.folders.toMutableList()
                     newFolders.add(it)
                     navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
                 }
+            }
+            composable<SearchResultsRoute> { backStack ->
+                val route: SearchResultsRoute = backStack.toRoute()
+                val viewModel = koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
+                SearchResultsPage(viewModel)
             }
         }
     }

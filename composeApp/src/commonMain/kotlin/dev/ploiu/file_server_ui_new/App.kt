@@ -4,10 +4,6 @@ import androidx.compose.runtime.Composable
 
 
 @Composable
-@Deprecated("desktop needs key event handlers, so sharing these functions won't work")
-expect fun ShowPlatformView()
-
-@Composable
 expect fun AppTheme(
     content: @Composable () -> Unit
 )

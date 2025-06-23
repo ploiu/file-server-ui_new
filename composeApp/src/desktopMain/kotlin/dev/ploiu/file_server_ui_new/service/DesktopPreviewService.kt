@@ -1,30 +1,26 @@
 package dev.ploiu.file_server_ui_new.service
 
-import com.github.michaelbull.result.Ok
-import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.*
 import dev.ploiu.file_server_ui_new.ApiException
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.parseErrorFromResponse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.file.Files
 
 
 private data class CachedReadResult(
-    val read: BatchFolderPreview,
-    val missingFromDisk: Collection<Long>,
-    val toDeleteFromDisk: Collection<File>
+    val read: BatchFolderPreview, val missingFromDisk: Collection<Long>, val toDeleteFromDisk: Collection<File>
 )
 
-class PreviewService(
-    private val folderService: FolderService,
-    private val fileClient: FileClient,
-    directoryService: DirectoryService
-) {
+class DesktopPreviewService(
+    private val folderService: FolderService, private val fileClient: FileClient, directoryService: DirectoryService
+) : PreviewService {
     private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
+    private val log = KotlinLogging.logger { }
 
     init {
         if (!cacheDir.exists()) {
@@ -32,13 +28,7 @@ class PreviewService(
         }
     }
 
-    /**
-     * creates a file handle that points to the preview cache dir for the passed folder. This does not create the folder itself.
-     */
-    fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString())
-
-    @Throws(ApiException::class)
-    suspend fun getFolderPreview(folder: FolderApi): Result<BatchFolderPreview, String> = coroutineScope {
+    override suspend fun getFolderPreview(folder: FolderApi): Result<BatchFolderPreview, String> = coroutineScope {
         val folderCacheDir = folderCacheDir(folder)
         if (!folderCacheDir.exists()) {
             folderCacheDir.mkdirs()
@@ -48,8 +38,7 @@ class PreviewService(
             for (toDelete in cached.toDeleteFromDisk) {
                 toDelete.delete()
             }
-        }
-        /* if the number of files to pull is small (<= 20), we can pull them individually batched into even smaller groups.
+        }/* if the number of files to pull is small (<= 20), we can pull them individually batched into even smaller groups.
          The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
         if (cached.missingFromDisk.size <= 20) {
             val diskCache = cached.read.toMutableMap()
@@ -57,27 +46,29 @@ class PreviewService(
             for (chunk in chunked) {
                 chunk.map {
                     async(Dispatchers.IO) {
-                        val bytes = downloadPreview(it)
-                        if (bytes != null) {
-                            val previewLocation = File(folderCacheDir, "$it.png")
-                            Files.write(previewLocation.toPath(), bytes)
-                            Pair(it, bytes)
+                        val downloaded = downloadPreview(it)
+                        if (downloaded.isOk) {
+                            val bytes = downloaded.unwrap()
+                            if (bytes != null) {
+                                val previewLocation = File(folderCacheDir, "$it.png")
+                                Files.write(previewLocation.toPath(), bytes)
+                                Pair(it, bytes)
+                            } else {
+                                null
+                            }
                         } else {
+                            log.error { "Failed to download preview for file id $it: ${downloaded.unwrapError()}" }
                             null
                         }
                     }
-                }.awaitAll()
-                    .filterNotNull()
-                    .forEach { diskCache.put(it.first, it.second) }
+                }.awaitAll().filterNotNull().forEach { diskCache.put(it.first, it.second) }
 
             }
             Ok(diskCache)
         } else {
             folderCacheDir.deleteRecursively()
             folderCacheDir.mkdirs()
-            folderService
-                .getPreviewsForFolder(folder.id)
-                .onSuccess { buildInitialCacheForFolder(folderCacheDir, it) }
+            folderService.getPreviewsForFolder(folder.id).onSuccess { buildInitialCacheForFolder(folderCacheDir, it) }
         }
     }
 
@@ -88,18 +79,21 @@ class PreviewService(
      * @return The preview as a ByteArray, or null if no preview exists (HTTP 404).
      * @throws ApiException if the server returns an error other than 404.
      */
-    @Throws(ApiException::class)
-    suspend fun downloadPreview(fileId: Long): ByteArray? {
+    override suspend fun downloadPreview(fileId: Long): Result<ByteArray?, String> {
         val res = fileClient.getFilePreview(fileId)
         return if (res.isSuccessful) {
-            res.body()!!.bytes()
+            Ok(res.body()!!.bytes())
         } else if (res.code() == 404) { // 404 means there's no preview, but it's not an error, so ignore it
-            null
+            Ok(null)
         } else {
-            val error = parseErrorFromResponse(res)
-            throw ApiException(error.message)
+            Err(parseErrorFromResponse(res).message)
         }
     }
+
+    /**
+     * creates a file handle that points to the preview cache dir for the passed folder. This does not create the folder itself.
+     */
+    private fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString())
 
     /**
      * reads the preview directory for the folder and returns the state of the cached previews:
@@ -117,8 +111,7 @@ class PreviewService(
         val missingFromDisk = apiFileIndex.keys - cachedFilesIndex.keys
         val toDeleteFromDisk = (cachedFilesIndex.keys - apiFileIndex.keys).map { cachedFilesIndex.getValue(it) }
         val fileCache = mutableMapOf<Long, ByteArray>()
-        for ((id, file) in cachedFilesIndex) {
-            // using readBytes here is fine because each preview is only around ~30-50kib
+        for ((id, file) in cachedFilesIndex) { // using readBytes here is fine because each preview is only around ~30-50kib
             fileCache.put(id, file.readBytes())
         }
         return CachedReadResult(fileCache, missingFromDisk, toDeleteFromDisk)

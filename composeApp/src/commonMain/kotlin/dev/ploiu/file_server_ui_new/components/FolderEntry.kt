@@ -25,7 +25,7 @@ fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: F
             Image(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
-                Modifier.width(64.dp).height(64.dp),
+                Modifier.width(96.dp).height(96.dp),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.height(8.dp))

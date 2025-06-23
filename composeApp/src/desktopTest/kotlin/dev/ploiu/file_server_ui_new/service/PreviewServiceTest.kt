@@ -51,7 +51,7 @@ class PreviewServiceTest {
     fun `getFolderPreview creates the folder cache directory if it doesn't exist`() = runTest {
         val folderService: FolderService = mockk()
         val fileClient: FileClient = mockk()
-        val previewService = PreviewService(folderService, fileClient, directoryService)
+        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
         previewService.getFolderPreview(FolderApi(1, 0, "./test", "test", emptyList(), emptyList(), emptyList()))
         assertTrue { File("./testDirs/${getTestName()}/cache/1").exists() }
     }
@@ -68,7 +68,7 @@ class PreviewServiceTest {
             val oldFile = File(dir, "1.png")
             oldFile.createNewFile()
             assertTrue { oldFile.exists() }
-            val previewService = PreviewService(folderService, fileClient, directoryService)
+            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
             previewService.getFolderPreview(folder)
             assertFalse { oldFile.exists() }
         }
@@ -89,7 +89,7 @@ class PreviewServiceTest {
         val validFile = File(dir, "2.png")
         validFile.createNewFile()
         assertTrue { validFile.exists() }
-        val previewService = PreviewService(folderService, fileClient, directoryService)
+        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
         previewService.getFolderPreview(folder)
         assertTrue { validFile.exists() }
         // since all the files on the disk are in the folder api, we shouldn't attempt to download them
@@ -114,7 +114,7 @@ class PreviewServiceTest {
             // Should not call getPreviewsForFolder
             coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
 
-            val previewService = PreviewService(folderService, fileClient, directoryService)
+            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
             val result = previewService.getFolderPreview(folder)
 
             // All previews should be downloaded and stored
@@ -145,7 +145,7 @@ class PreviewServiceTest {
             // Simulate no preview available (404)
             coEvery { fileClient.getFilePreview(fileId) } returns Response.error(404, ResponseBody.create(null, ""))
             coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
-            val previewService = PreviewService(folderService, fileClient, directoryService)
+            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
             val result = previewService.getFolderPreview(folder)
             // Should not cache the file
             val cachedFile = File("./testDirs/${getTestName()}/cache/1/$fileId.png")
@@ -167,10 +167,10 @@ class PreviewServiceTest {
     fun `downloadPreview should return response body bytes if response is successful`() = runTest {
         val fileClient: FileClient = mockk()
         val folderService: FolderService = mockk()
-        val previewService = PreviewService(folderService, fileClient, directoryService)
+        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
         val bytes = byteArrayOf(1, 2, 3)
         coEvery { fileClient.getFilePreview(any()) } returns Response.success(ResponseBody.create(null, bytes))
-        val result = previewService.downloadPreview(123L)
+        val result = previewService.downloadPreview(123L).unwrap()
         assertNotNull(result)
         assertContentEquals(bytes, result)
     }
@@ -179,9 +179,9 @@ class PreviewServiceTest {
     fun `downloadPreview should return null if response code is 404`() = runTest {
         val fileClient: FileClient = mockk()
         val folderService: FolderService = mockk()
-        val previewService = PreviewService(folderService, fileClient, directoryService)
+        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
         coEvery { fileClient.getFilePreview(any()) } returns Response.error(404, ResponseBody.create(null, ""))
-        val result = previewService.downloadPreview(123L)
+        val result = previewService.downloadPreview(123L).unwrap()
         assertNull(result)
     }
 

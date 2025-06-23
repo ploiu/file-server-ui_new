@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.views
+package dev.ploiu.file_server_ui_new.pages
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
@@ -20,71 +20,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.github.michaelbull.result.onFailure
-import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.service.FolderService
-import dev.ploiu.file_server_ui_new.service.PreviewService
-import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import dev.ploiu.file_server_ui_new.viewModel.FolderError
+import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
+import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
+import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 
-@Serializable
-data class FolderRoute(val id: Long)
 
-sealed interface FolderViewState
-class LoadingFolderView : FolderViewState
-class LoadedFolderView : FolderViewState
-data class ErroredFolderView(val message: String) : FolderViewState
+@Composable
+fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
+    val (pageState, previews) = view.state.collectAsState().value
 
-data class FolderState(
-    val pageState: FolderViewState,
-    val folder: FolderApi?,
-    val previews: BatchFolderPreview
-)
+    LaunchedEffect(Unit) {
+        view.loadFolder()
+    }
 
-// TODO look into moving this view model to the common code
-class FolderView(var folderService: FolderService, var previewService: PreviewService, val folderId: Long) :
-    ViewModel() {
-    private val log = KotlinLogging.logger { }
-    private val _state = MutableStateFlow(FolderState(LoadingFolderView(), null, emptyMap()))
-    val state: StateFlow<FolderState> = _state.asStateFlow()
+    when (pageState) {
+        is FolderLoading -> Column {
+            CircularProgressIndicator()
+        }
 
-    fun getFolder() = viewModelScope.launch(Dispatchers.IO) {
-        val folderRes = folderService.getFolder(folderId)
-        folderRes
-            .onSuccess { folder ->
-                launch {
-                    _state.update { it.copy(folder = folder, pageState = LoadedFolderView()) }
-                }
-                previewService.getFolderPreview(folder)
-                    .onSuccess { previews ->
-                        launch {
-                            _state.update { it.copy(previews = previews) }
-                        }
-                    }
-            }
-            .onFailure { error ->
-                launch {
-                    _state.update { it.copy(pageState = ErroredFolderView(error)) }
-                }
-                log.error { "Failed to get folder information: $error" }
-            }
+        is FolderLoaded -> LoadedFolderList(pageState.folder, previews, onFolderNav)
+        is FolderError -> Dialog(
+            title = "An Error Occurred",
+            text = pageState.message,
+            icon = Icons.Default.Error,
+            iconColor = MaterialTheme.colorScheme.error
+        )
     }
 }
-
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
@@ -102,7 +71,7 @@ fun DesktopFileEntry(file: FileApi, preview: ByteArray?) {
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
+private fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
     ContextMenuArea(items = {
         listOf(
             ContextMenuItem("Rename Folder") {
@@ -132,33 +101,11 @@ fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
 }
 
 @Composable
-fun FolderList(model: FolderView, onFolderNav: (FolderApi) -> Unit) {
-    val (pageState, folder, previews) = model.state.collectAsState().value
-
-    LaunchedEffect(Unit) {
-        model.getFolder()
-    }
-
-    when (pageState) {
-        is LoadingFolderView -> Column {
-            CircularProgressIndicator()
-        }
-
-        is LoadedFolderView -> LoadedFolderList(folder!!, previews, onFolderNav)
-        is ErroredFolderView -> Dialog(
-            title = "An Error Occurred",
-            text = pageState.message,
-            icon = Icons.Default.Error,
-            iconColor = MaterialTheme.colorScheme.error
-        )
-    }
-}
-
-@Composable
-internal fun LoadedFolderList(folder: FolderApi, previews: BatchFolderPreview, onFolderNav: (FolderApi) -> Unit) {
+private fun LoadedFolderList(folder: FolderApi, previews: BatchFolderPreview, onFolderNav: (FolderApi) -> Unit) {
     val children: List<Any> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
     LazyVerticalGrid(
+        // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
