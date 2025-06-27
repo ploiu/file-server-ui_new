@@ -41,6 +41,6 @@ fun getServerConfig(propBytes: ByteArray): ServerConfig {
         val host = props.getProperty("server.address")
         val port = props.getProperty("server.port").toInt()
         val compatibleVersion = props.getProperty("server.compatible.version")
-        ServerConfig("https://${host}:${port}", compatibleVersion, host, port)
+        ServerConfig("${host}:${port}", compatibleVersion, host, port)
     }
 }
