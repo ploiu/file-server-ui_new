@@ -28,4 +28,5 @@ data class UpdateFolder(
     val tags: Collection<Tag>
 )
 
-typealias BatchFolderPreview = Map<Long, ByteArray>
+/** keys are file ids, values are the associated preview */
+typealias BatchFilePreview = Map<Long, ByteArray>

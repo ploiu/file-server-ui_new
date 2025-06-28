@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -14,7 +15,9 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.skia.Image
 
-fun ByteArray.toImageBitmap() = Image.makeFromEncoded(this).toComposeImageBitmap()
+fun ByteArray.toImageBitmap(): ImageBitmap {
+    return Image.makeFromEncoded(this).toComposeImageBitmap()
+}
 
 fun determineIcon(file: FileApi): DrawableResource {
     return when (file.fileType.lowercase()) {

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
+import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
@@ -25,7 +25,7 @@ data class FolderLoaded(val folder: FolderApi) : FolderUiState
 data class FolderError(val message: String) : FolderUiState
 
 data class FolderPageUiModel(
-    val pageState: FolderUiState, val previews: BatchFolderPreview
+    val pageState: FolderUiState, val previews: BatchFilePreview
 )
 
 class FolderPageViewModel(val folderService: FolderService, val previewService: PreviewService, val folderId: Long) :

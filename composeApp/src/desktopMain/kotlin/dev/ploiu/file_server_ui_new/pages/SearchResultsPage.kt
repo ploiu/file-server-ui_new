@@ -52,8 +52,7 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(files) {
-                        // TODO previews
-                        DesktopFileEntry(it, null)
+                        DesktopFileEntry(it, pageState.previews[it.id])
                     }
                 }
             } else {
@@ -63,7 +62,6 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        // TODO I'm not sure about this message. I kinda like how google fonts handles this
                         "No Files Found :(",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)

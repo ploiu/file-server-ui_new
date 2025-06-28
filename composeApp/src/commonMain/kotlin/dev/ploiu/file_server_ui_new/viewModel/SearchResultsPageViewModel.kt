@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.unwrap
+import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.PreviewService
@@ -20,7 +22,7 @@ class SearchResultsRoute(val searchTerm: String)
 
 sealed interface SearchResultsUiState
 class SearchResultsLoading : SearchResultsUiState
-class SearchResultsLoaded(val files: Collection<FileApi>) : SearchResultsUiState
+data class SearchResultsLoaded(val files: Collection<FileApi>, val previews: BatchFilePreview) : SearchResultsUiState
 class SearchResultsError(val message: String) : SearchResultsUiState
 
 
@@ -40,8 +42,17 @@ class SearchResultsPageViewModel(
     fun performSearch() = viewModelScope.launch(Dispatchers.IO) {
         val res = fileService.search(searchTerm)
         res.onSuccess { files ->
-            _state.update { it.copy(pageState = SearchResultsLoaded(files)) }
-            // TODO download previews. new method that takes a collection of file IDs and internally batches them to the server. Put in PreviewService
+            _state.update { it.copy(pageState = SearchResultsLoaded(files, mapOf())) }
+            val previews = previewService.getFilePreviews(*files.toTypedArray())
+            if (previews.isOk) {
+                _state.update {
+                    if(it.pageState is SearchResultsLoaded) {
+                        it.copy(pageState = it.pageState.copy(previews = previews.unwrap()))
+                    } else it
+                }
+            } else {
+                TODO("preview error state")
+            }
         }.onFailure { message ->
             _state.update { it.copy(pageState = SearchResultsError(message)) }
         }

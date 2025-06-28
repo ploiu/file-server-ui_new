@@ -1,9 +1,9 @@
 package dev.ploiu.file_server_ui_new.service
 
 import com.github.michaelbull.result.*
-import dev.ploiu.file_server_ui_new.ApiException
 import dev.ploiu.file_server_ui_new.client.FileClient
-import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
+import dev.ploiu.file_server_ui_new.model.BatchFilePreview
+import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.parseErrorFromResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -13,7 +13,7 @@ import java.nio.file.Files
 
 
 private data class CachedReadResult(
-    val read: BatchFolderPreview, val missingFromDisk: Collection<Long>, val toDeleteFromDisk: Collection<File>
+    val read: BatchFilePreview, val missingFromDisk: Collection<Long>, val toDeleteFromDisk: Collection<File>
 )
 
 class DesktopPreviewService(
@@ -22,14 +22,19 @@ class DesktopPreviewService(
     private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
     private val log = KotlinLogging.logger { }
 
+    companion object {
+        /** the number of requests to make at a time for individual file previews. More previews should only be fetched once a chunk is done */
+        const val FILE_PREVIEW_CHUNK_SIZE = 30
+    }
+
     init {
         if (!cacheDir.exists()) {
             cacheDir.mkdirs()
         }
     }
 
-    override suspend fun getFolderPreview(folder: FolderApi): Result<BatchFolderPreview, String> = coroutineScope {
-        val folderCacheDir = folderCacheDir(folder)
+    override suspend fun getFolderPreview(folder: FolderApi): Result<BatchFilePreview, String> = coroutineScope {
+        val folderCacheDir = folderCacheDir(folder.id)
         if (!folderCacheDir.exists()) {
             folderCacheDir.mkdirs()
         }
@@ -40,9 +45,9 @@ class DesktopPreviewService(
             }
         }/* if the number of files to pull is small (<= 20), we can pull them individually batched into even smaller groups.
          The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
-        if (cached.missingFromDisk.size <= 20) {
+        if (cached.missingFromDisk.size <= FILE_PREVIEW_CHUNK_SIZE) {
             val diskCache = cached.read.toMutableMap()
-            val chunked = cached.missingFromDisk.chunked(5)
+            val chunked = cached.missingFromDisk.chunked(cached.missingFromDisk.size / FILE_PREVIEW_CHUNK_SIZE)
             for (chunk in chunked) {
                 chunk.map {
                     async(Dispatchers.IO) {
@@ -72,13 +77,6 @@ class DesktopPreviewService(
         }
     }
 
-    /**
-     * Downloads the preview image for a given file ID. This does not save the preview image to disk.
-     *
-     * @param fileId The ID of the file to download the preview for.
-     * @return The preview as a ByteArray, or null if no preview exists (HTTP 404).
-     * @throws ApiException if the server returns an error other than 404.
-     */
     override suspend fun downloadPreview(fileId: Long): Result<ByteArray?, String> {
         val res = fileClient.getFilePreview(fileId)
         return if (res.isSuccessful) {
@@ -90,10 +88,43 @@ class DesktopPreviewService(
         }
     }
 
+    override suspend fun getFilePreviews(vararg files: FileApi): Result<BatchFilePreview, String> = coroutineScope {
+        // there could be any number of files in this list, so we need to be sure not to overwhelm the server with requests
+        val chunks = files.toSet().chunked(FILE_PREVIEW_CHUNK_SIZE)
+        val cached = mutableMapOf<Long, ByteArray>()
+        for (chunk in chunks) {
+            chunk.map { file ->
+                // by storing the file inside the parent folder's cache dir, we are helping build that folder's cache as well for next time it gets loaded
+                val previewDirectory = folderCacheDir(file.folderId)
+                async(Dispatchers.IO) {
+                    previewDirectory.mkdirs()
+                    val previewLocation = File(previewDirectory, "${file.id}.png")
+                    if (previewLocation.exists()) {
+                        Pair(file.id, previewLocation.readBytes())
+                    } else {
+                        val downloaded = downloadPreview(file.id)
+                        if (downloaded.isOk) {
+                            val bytes = downloaded.unwrap()
+                            if (bytes != null) {
+                                Files.write(previewLocation.toPath(), bytes)
+                                Pair(file.id, bytes)
+                            } else {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    }
+                }
+            }.awaitAll().filterNotNull().forEach { cached.put(it.first, it.second) }
+        }
+        Ok(cached)
+    }
+
     /**
      * creates a file handle that points to the preview cache dir for the passed folder. This does not create the folder itself.
      */
-    private fun folderCacheDir(folder: FolderApi) = File(cacheDir, folder.id.toString())
+    private fun folderCacheDir(folderId: Long) = File(cacheDir, folderId.toString())
 
     /**
      * reads the preview directory for the folder and returns the state of the cached previews:

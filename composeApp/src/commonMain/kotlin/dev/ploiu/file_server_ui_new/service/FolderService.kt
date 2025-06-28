@@ -5,7 +5,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
 import dev.ploiu.file_server_ui_new.client.FolderClient
-import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
+import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
@@ -35,7 +35,7 @@ class FolderService(val client: FolderClient) {
             .mapError { it.message }
     }
 
-    suspend fun getPreviewsForFolder(id: Long): Result<BatchFolderPreview, String> {
+    suspend fun getPreviewsForFolder(id: Long): Result<BatchFilePreview, String> {
         if (id < 0) {
             return Err("id ($id) must be >= 0")
         }

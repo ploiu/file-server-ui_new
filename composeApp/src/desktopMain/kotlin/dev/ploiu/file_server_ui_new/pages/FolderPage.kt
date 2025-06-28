@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
-import dev.ploiu.file_server_ui_new.model.BatchFolderPreview
+import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.viewModel.FolderError
@@ -101,7 +101,7 @@ private fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Uni
 }
 
 @Composable
-private fun LoadedFolderList(folder: FolderApi, previews: BatchFolderPreview, onFolderNav: (FolderApi) -> Unit) {
+private fun LoadedFolderList(folder: FolderApi, previews: BatchFilePreview, onFolderNav: (FolderApi) -> Unit) {
     val children: List<Any> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
     LazyVerticalGrid(
