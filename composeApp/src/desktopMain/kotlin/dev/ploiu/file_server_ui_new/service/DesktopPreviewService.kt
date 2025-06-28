@@ -43,11 +43,11 @@ class DesktopPreviewService(
             for (toDelete in cached.toDeleteFromDisk) {
                 toDelete.delete()
             }
-        }/* if the number of files to pull is small (<= 20), we can pull them individually batched into even smaller groups.
+        }/* if the number of files to pull is small, we can pull them individually batched into even smaller groups.
          The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
-        if (cached.missingFromDisk.size <= FILE_PREVIEW_CHUNK_SIZE) {
+        if (cached.missingFromDisk.size <= 100) {
             val diskCache = cached.read.toMutableMap()
-            val chunked = cached.missingFromDisk.chunked(cached.missingFromDisk.size / FILE_PREVIEW_CHUNK_SIZE)
+            val chunked = cached.missingFromDisk.chunked(FILE_PREVIEW_CHUNK_SIZE)
             for (chunk in chunked) {
                 chunk.map {
                     async(Dispatchers.IO) {

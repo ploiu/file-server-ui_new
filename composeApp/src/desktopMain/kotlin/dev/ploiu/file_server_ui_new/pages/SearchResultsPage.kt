@@ -38,7 +38,7 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
             }
 
         is SearchResultsLoaded -> {
-            val files = pageState.files.sortedByDescending { it.dateCreated }
+            val files = pageState.files
             if (files.isNotEmpty()) {
                 LazyVerticalGrid(
                     contentPadding = PaddingValues(

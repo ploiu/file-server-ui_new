@@ -37,11 +37,7 @@ fun NavBar(state: NavState, clickEntry: (FolderApi) -> Unit) {
                     PointerIcon.Hand
                 )
                     .clickable {
-                        // only navigate if they don't click the current folder
-                        if (index < state.folders.size - 1) {
-                            // always backward here because we never show child folders in this bar
-                            clickEntry(folder)
-                        }
+                        clickEntry(folder)
                     },
             )
             Spacer(modifier = Modifier.width(8.dp))

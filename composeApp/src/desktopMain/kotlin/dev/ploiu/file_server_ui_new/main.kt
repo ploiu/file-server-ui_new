@@ -124,6 +124,7 @@ fun NavigationHost(navController: NavHostController = rememberNavController(), s
         FileServerSearchBar(focusRequester = searchBarFocuser) {
             navController.navigate(SearchResultsRoute(it))
         }
+        // TODO not able to go back after searching for files
         NavBar(navBarState) { folder ->
             val index = navBarState.folders.indexOfFirst { it.id == folder.id }
             if (index != -1) {

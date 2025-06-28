@@ -16,13 +16,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
+import dev.ploiu.file_server_ui_new.components.TextDialog
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -31,13 +30,38 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 
+private sealed interface FolderContextState
+
+private sealed interface FolderContextAction
+class NoFolderAction : FolderContextAction, FolderContextState
+data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+data class InfoFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+
+// This doesn't affect page state in the same way the others do
+data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
 
 @Composable
 fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
     val (pageState, previews) = view.state.collectAsState().value
+    var folderActionState: FolderContextState by remember {
+        mutableStateOf(
+            NoFolderAction()
+        )
+    }
 
     LaunchedEffect(Unit) {
         view.loadFolder()
+    }
+
+    val onFolderContextAction: (FolderContextAction) -> Unit = {
+        when (it) {
+            is DownloadFolderAction -> view.downloadFolder(it.folder)
+            is InfoFolderAction -> folderActionState = it
+            is RenameFolderAction -> folderActionState = it
+            is NoFolderAction -> folderActionState = it
+            is DeleteFolderAction -> folderActionState = it
+        }
     }
 
     when (pageState) {
@@ -45,13 +69,32 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
             CircularProgressIndicator()
         }
 
-        is FolderLoaded -> LoadedFolderList(pageState.folder, previews, onFolderNav)
+        is FolderLoaded -> LoadedFolderList(
+            pageState.folder, previews, onFolderNav, onFolderContextAction
+        )
+
         is FolderError -> Dialog(
             title = "An Error Occurred",
             text = pageState.message,
             icon = Icons.Default.Error,
             iconColor = MaterialTheme.colorScheme.error
         )
+    }
+
+    /* have to create a new variable here because folderActionState is delegated (basically a
+    getter and not a raw value) */
+    when (val action = folderActionState) {
+        is RenameFolderAction -> {
+            TextDialog(
+                title = "Rename Folder",
+                defaultValue = action.folder.name,
+                onCancel = { folderActionState = NoFolderAction() },
+                onConfirm = { println(it) })
+        }
+
+        is InfoFolderAction -> TODO()
+        is DeleteFolderAction -> TODO()
+        is NoFolderAction -> Unit
     }
 }
 
@@ -61,8 +104,7 @@ fun DesktopFileEntry(file: FileApi, preview: ByteArray?) {
     TooltipArea(
         tooltip = {
             Surface(
-                tonalElevation = 10.dp,
-                color = MaterialTheme.colorScheme.tertiary
+                tonalElevation = 10.dp, color = MaterialTheme.colorScheme.tertiary
             ) { Text(file.name) }
         }) {
         FileEntry(file, preview)
@@ -71,28 +113,26 @@ fun DesktopFileEntry(file: FileApi, preview: ByteArray?) {
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-private fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Unit) {
+private fun DesktopFolderEntry(
+    folder: FolderApi,
+    onClick: (f: FolderApi) -> Unit,
+    onContextAction: (FolderContextAction) -> Unit,
+) {
     ContextMenuArea(items = {
-        listOf(
-            ContextMenuItem("Rename Folder") {
-                println("rename clicked")
-            },
-            ContextMenuItem("Delete Folder") {
-                println("delete clicked")
-            },
-            ContextMenuItem("Download Folder") {
-                println("download clicked")
-            },
-            ContextMenuItem("Info") {
-                println("info clicked")
-            }
-        )
+        listOf(ContextMenuItem("Rename Folder") {
+            onContextAction(RenameFolderAction(folder))
+        }, ContextMenuItem("Delete Folder") {
+            onContextAction(DeleteFolderAction(folder))
+        }, ContextMenuItem("Download Folder") {
+            onContextAction(DownloadFolderAction(folder))
+        }, ContextMenuItem("Info") {
+            onContextAction(InfoFolderAction(folder))
+        })
     }) {
         TooltipArea(
             tooltip = {
                 Surface(
-                    tonalElevation = 10.dp,
-                    color = MaterialTheme.colorScheme.tertiary
+                    tonalElevation = 10.dp, color = MaterialTheme.colorScheme.tertiary
                 ) { Text(folder.name) }
             }) {
             FolderEntry(folder, onClick = onClick)
@@ -101,25 +141,30 @@ private fun DesktopFolderEntry(folder: FolderApi, onClick: (f: FolderApi) -> Uni
 }
 
 @Composable
-private fun LoadedFolderList(folder: FolderApi, previews: BatchFilePreview, onFolderNav: (FolderApi) -> Unit) {
+private fun LoadedFolderList(
+    folder: FolderApi,
+    previews: BatchFilePreview,
+    onFolderNav: (FolderApi) -> Unit,
+    onFolderContextAction: (FolderContextAction) -> Unit,
+) {
     val children: List<Any> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
-    LazyVerticalGrid(
-        // if this is changed, be sure to update SearchResultsPage.kt
+    LazyVerticalGrid( // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 8.dp,
-            bottom = 16.dp
+            start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp
         ),
         columns = GridCells.Adaptive(150.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(children) { child ->
-            // make all items have the same height
+        items(children) { child -> // make all items have the same height
             when (child) {
-                is FolderApi -> DesktopFolderEntry(child) { onFolderNav(it) }
+                is FolderApi -> DesktopFolderEntry(
+                    folder = child,
+                    onClick = { onFolderNav(it) },
+                    onContextAction = onFolderContextAction
+                )
+
                 is FileApi -> DesktopFileEntry(child, previews[child.id])
             }
         }

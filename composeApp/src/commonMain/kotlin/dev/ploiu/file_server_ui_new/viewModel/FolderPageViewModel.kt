@@ -25,11 +25,15 @@ data class FolderLoaded(val folder: FolderApi) : FolderUiState
 data class FolderError(val message: String) : FolderUiState
 
 data class FolderPageUiModel(
-    val pageState: FolderUiState, val previews: BatchFilePreview
+    val pageState: FolderUiState,
+    val previews: BatchFilePreview,
 )
 
-class FolderPageViewModel(val folderService: FolderService, val previewService: PreviewService, val folderId: Long) :
-    ViewModel() {
+class FolderPageViewModel(
+    val folderService: FolderService,
+    val previewService: PreviewService,
+    val folderId: Long,
+) : ViewModel() {
     private val log = KotlinLogging.logger { }
     private val _state = MutableStateFlow(FolderPageUiModel(FolderLoading(), emptyMap()))
     val state = _state.asStateFlow()
@@ -45,5 +49,13 @@ class FolderPageViewModel(val folderService: FolderService, val previewService: 
             _state.update { it.copy(pageState = FolderError(error)) }
             log.error { "Failed to get folder information: $error" }
         }
+    }
+
+    /**
+     * handles getting where the user wants to save the folder, downloading the folder from the server,
+     * and writing the folder to the disk at the selected location
+     * */
+    fun downloadFolder(folder: FolderApi) {
+        TODO()
     }
 }
