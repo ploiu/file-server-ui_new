@@ -19,7 +19,10 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: FolderApi) -> Unit) {
-    Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth(), onClick = { onClick(folder) }) {
+    Surface(
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { onClick(folder) }) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
             Image(
@@ -29,7 +32,12 @@ fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: F
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(formatFileOrFolderName(folder.name), textAlign = TextAlign.Center, maxLines = 2, minLines = 2)
+            Text(
+                formatFileOrFolderName(folder.name),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                minLines = 2
+            )
         }
     }
 }

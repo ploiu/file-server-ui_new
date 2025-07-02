@@ -68,8 +68,17 @@ class FileService(val client: FileClient) {
             RequestBody.create(file = file, contentType = mimeType.toMediaTypeOrNull())
         )
         val folderPart = MultipartBody.Part.createFormData("folderId", folderId.toString())
-        val extensionPart = if (extension != null) MultipartBody.Part.createFormData("extension", extension) else null
-        return processResponse(client.createFile(filePart, extensionPart, folderPart)).mapError { it.message }
+        val extensionPart = if (extension != null) MultipartBody.Part.createFormData(
+            "extension",
+            extension
+        ) else null
+        return processResponse(
+            client.createFile(
+                filePart,
+                extensionPart,
+                folderPart
+            )
+        ).mapError { it.message }
     }
 
     /**

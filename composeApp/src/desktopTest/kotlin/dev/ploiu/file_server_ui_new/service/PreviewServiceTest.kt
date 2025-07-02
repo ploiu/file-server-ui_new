@@ -52,7 +52,17 @@ class PreviewServiceTest {
         val folderService: FolderService = mockk()
         val fileClient: FileClient = mockk()
         val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-        previewService.getFolderPreview(FolderApi(1, 0, "./test", "test", emptyList(), emptyList(), emptyList()))
+        previewService.getFolderPreview(
+            FolderApi(
+                1,
+                0,
+                "./test",
+                "test",
+                emptyList(),
+                emptyList(),
+                emptyList()
+            )
+        )
         assertTrue { File("./testDirs/${getTestName()}/cache/1").exists() }
     }
 
@@ -143,7 +153,10 @@ class PreviewServiceTest {
                 ), emptyList()
             )
             // Simulate no preview available (404)
-            coEvery { fileClient.getFilePreview(fileId) } returns Response.error(404, ResponseBody.create(null, ""))
+            coEvery { fileClient.getFilePreview(fileId) } returns Response.error(
+                404,
+                ResponseBody.create(null, "")
+            )
             coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
             val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
             val result = previewService.getFolderPreview(folder)
@@ -169,7 +182,12 @@ class PreviewServiceTest {
         val folderService: FolderService = mockk()
         val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
         val bytes = byteArrayOf(1, 2, 3)
-        coEvery { fileClient.getFilePreview(any()) } returns Response.success(ResponseBody.create(null, bytes))
+        coEvery { fileClient.getFilePreview(any()) } returns Response.success(
+            ResponseBody.create(
+                null,
+                bytes
+            )
+        )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNotNull(result)
         assertContentEquals(bytes, result)
@@ -180,7 +198,10 @@ class PreviewServiceTest {
         val fileClient: FileClient = mockk()
         val folderService: FolderService = mockk()
         val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-        coEvery { fileClient.getFilePreview(any()) } returns Response.error(404, ResponseBody.create(null, ""))
+        coEvery { fileClient.getFilePreview(any()) } returns Response.error(
+            404,
+            ResponseBody.create(null, "")
+        )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNull(result)
     }

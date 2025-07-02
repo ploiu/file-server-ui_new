@@ -17,7 +17,8 @@ class ServerConfig(
             throw RuntimeException("Bad compatible version $compatibleVersion. Version must follow the format #.(#|x).(#|x) format. e.g. 1.2.x")
         }
         val versionRegex =
-            Arrays.stream(compatibleVersion.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
+            Arrays.stream(compatibleVersion.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray())
                 .map { part: String? -> part!!.replace("x", "\\d+") }
                 .collect(Collectors.joining("."))
         return Pattern.compile(versionRegex)

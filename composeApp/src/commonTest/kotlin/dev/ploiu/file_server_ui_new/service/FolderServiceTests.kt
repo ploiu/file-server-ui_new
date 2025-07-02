@@ -125,7 +125,8 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should return an Err if the passed id is less than 1`() = runTest {
-        val updateFolder = UpdateFolder(id = 0, name = "Test Folder", parentId = 0L, tags = emptyList())
+        val updateFolder =
+            UpdateFolder(id = 0, name = "Test Folder", parentId = 0L, tags = emptyList())
         val result = folderService.updateFolder(updateFolder)
         assertTrue(result.isErr)
         assertEquals("id (0) must be > 0", result.error)
@@ -133,7 +134,8 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should return a Err if the passed parentId is less than 0`() = runTest {
-        val updateFolder = UpdateFolder(id = 1, name = "Test Folder", parentId = -1, tags = emptyList())
+        val updateFolder =
+            UpdateFolder(id = 1, name = "Test Folder", parentId = -1, tags = emptyList())
         val result = folderService.updateFolder(updateFolder)
         assertTrue(result.isErr)
         assertEquals("parentId (-1) must be >= 0", result.error)
@@ -149,7 +151,8 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should call client updateFolder with the passed request`() = runTest {
-        val updateFolder = UpdateFolder(id = 1, name = "Test Folder", parentId = 1L, tags = emptyList())
+        val updateFolder =
+            UpdateFolder(id = 1, name = "Test Folder", parentId = 1L, tags = emptyList())
         val expectedFolder = FolderApi(
             id = 1L,
             name = "Test Folder",

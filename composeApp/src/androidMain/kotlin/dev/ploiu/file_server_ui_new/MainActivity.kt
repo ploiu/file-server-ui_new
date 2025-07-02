@@ -20,7 +20,7 @@ import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 
 @Composable
 actual fun AppTheme(
-    content: @Composable() () -> Unit
+    content: @Composable() () -> Unit,
 ) {
     val darkTheme = isSystemInDarkTheme()
     // Dynamic color is available on Android 12+

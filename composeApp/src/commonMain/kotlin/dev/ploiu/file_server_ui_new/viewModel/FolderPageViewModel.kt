@@ -58,4 +58,20 @@ class FolderPageViewModel(
     fun downloadFolder(folder: FolderApi) {
         TODO()
     }
+
+    fun updateFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
+        val currentState = _state.value.pageState
+        if (currentState is FolderLoaded) {
+            _state.update { it.copy(pageState = FolderLoading()) }
+            val updateRes = folderService.updateFolder(folder.toUpdateFolder())
+            updateRes.onSuccess {
+                // TODO going round trip to the server just to update 1 folder might be wasteful.
+                //  Might be better to just update the folder in our existing model without
+                //  having to pull again...will need refresh logic though (ctrl + r)
+                loadFolder()
+            }.onFailure { msg ->
+                _state.update { it.copy(pageState = FolderError(msg)) }
+            }
+        }
+    }
 }

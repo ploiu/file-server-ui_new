@@ -11,7 +11,7 @@ data class FileApi(
     val tags: Collection<Tag>,
     val size: Long,
     val dateCreated: String,
-    val fileType: String
+    val fileType: String,
 )
 
 @Serializable
@@ -19,11 +19,11 @@ data class FileRequest(
     val id: Long,
     val folderId: Long,
     val name: String,
-    val tags: Collection<Tag>
+    val tags: Collection<Tag>,
 )
 
 data class CreateFileRequest(
     val folderId: Long,
     val file: File,
-    val force: Boolean
+    val force: Boolean,
 )

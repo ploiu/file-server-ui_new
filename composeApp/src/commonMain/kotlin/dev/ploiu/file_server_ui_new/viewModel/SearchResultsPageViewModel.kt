@@ -22,26 +22,30 @@ class SearchResultsRoute(val searchTerm: String)
 
 sealed interface SearchResultsUiState
 class SearchResultsLoading : SearchResultsUiState
-data class SearchResultsLoaded(val files: List<FileApi>, val previews: BatchFilePreview) : SearchResultsUiState
+data class SearchResultsLoaded(val files: List<FileApi>, val previews: BatchFilePreview) :
+    SearchResultsUiState
+
 class SearchResultsError(val message: String) : SearchResultsUiState
 
 
 data class SearchResultsPageUiModel(
-    val pageState: SearchResultsUiState, val searchTerm: String
+    val pageState: SearchResultsUiState, val searchTerm: String,
 )
 
 class SearchResultsPageViewModel(
-    val fileService: FileService, val previewService: PreviewService, val searchTerm: String
+    val fileService: FileService, val previewService: PreviewService, val searchTerm: String,
 ) : ViewModel() {
     private val log = KotlinLogging.logger { }
-    private val _state = MutableStateFlow(SearchResultsPageUiModel(SearchResultsLoading(), searchTerm))
+    private val _state =
+        MutableStateFlow(SearchResultsPageUiModel(SearchResultsLoading(), searchTerm))
     val state = _state.asStateFlow()
 
     fun performSearch() = viewModelScope.launch(Dispatchers.IO) {
         val res = fileService.search(searchTerm)
         res.onSuccess { files ->
             val sorted = files.toList()
-                .sortedWith(compareBy<FileApi> { it.name.lowercase() }.thenBy { it.dateCreated }.thenBy { it.id })
+                .sortedWith(compareBy<FileApi> { it.name.lowercase() }.thenBy { it.dateCreated }
+                    .thenBy { it.id })
             _state.update { it.copy(pageState = SearchResultsLoaded(sorted, mapOf())) }
             val previews = previewService.getFilePreviews(*files.toTypedArray())
             if (previews.isOk) {

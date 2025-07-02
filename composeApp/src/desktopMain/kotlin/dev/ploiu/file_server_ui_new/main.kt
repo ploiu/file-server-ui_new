@@ -41,7 +41,7 @@ import java.util.*
 
 @Composable
 actual fun AppTheme(
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkScheme else lightScheme) {
         val contextMenuRepresentation = if (isSystemInDarkTheme()) {
@@ -97,7 +97,10 @@ fun main() = application {
 }
 
 @Composable
-fun NavigationHost(navController: NavHostController = rememberNavController(), searchBarFocuser: FocusRequester) {
+fun NavigationHost(
+    navController: NavHostController = rememberNavController(),
+    searchBarFocuser: FocusRequester,
+) {
     var navBarState: NavState by remember {
         mutableStateOf(
             NavState(
@@ -152,7 +155,8 @@ fun NavigationHost(navController: NavHostController = rememberNavController(), s
             }
             composable<SearchResultsRoute> { backStack ->
                 val route: SearchResultsRoute = backStack.toRoute()
-                val viewModel = koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
+                val viewModel =
+                    koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
                 SearchResultsPage(viewModel)
             }
         }

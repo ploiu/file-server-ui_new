@@ -29,6 +29,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderError
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
+import kotlinx.coroutines.runBlocking
 
 private sealed interface FolderContextState
 
@@ -89,7 +90,13 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
                 title = "Rename Folder",
                 defaultValue = action.folder.name,
                 onCancel = { folderActionState = NoFolderAction() },
-                onConfirm = { println(it) })
+                onConfirm = {
+                    val newFolder = action.folder.copy(name = it)
+                    runBlocking {
+                        folderActionState = NoFolderAction()
+                        view.updateFolder(newFolder)
+                    }
+                })
         }
 
         is InfoFolderAction -> TODO()
@@ -100,7 +107,7 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun DesktopFileEntry(file: FileApi, preview: ByteArray?) {
+fun DesktopFileEntry(file: FileApi, preview: ByteArray? = null) {
     TooltipArea(
         tooltip = {
             Surface(

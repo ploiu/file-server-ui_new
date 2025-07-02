@@ -48,7 +48,11 @@ enum class TokenTypes {
 
 data class Token(val value: Char, val type: TokenTypes)
 
-data class Search(val text: String, val tags: Collection<String>, val attributes: Collection<Attribute>)
+data class Search(
+    val text: String,
+    val tags: Collection<String>,
+    val attributes: Collection<Attribute>,
+)
 
 /**
  * Parses a string input by the user into a search object that represents the type of search the backend can understand
@@ -153,7 +157,11 @@ object SearchParser {
         return index
     }
 
-    fun handleAttributeTokens(tokens: List<Token>, start: Int, attributes: MutableCollection<Attribute>): Int {
+    fun handleAttributeTokens(
+        tokens: List<Token>,
+        start: Int,
+        attributes: MutableCollection<Attribute>,
+    ): Int {
         // first char is @ which we don't need, so skip it
         var index = start + 1
         val nameBuilder = StringBuilder()

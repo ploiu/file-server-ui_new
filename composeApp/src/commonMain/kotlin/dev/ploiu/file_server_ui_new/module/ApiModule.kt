@@ -40,7 +40,8 @@ fun readServerCerts(): HandshakeCertificates = runBlocking {
     // I'm too lazy to figure out how to select only production vs local without adding a new variable to the app.properties, so I'm including both certs
     // TODO probably should just make it a json or toml file instead of a .properties file...I do like toml but probably just because it's associated with rust
     val local = String(Res.readBytes("files/cert_local.x509"), UTF_8).decodeCertificatePem()
-    val production = String(Res.readBytes("files/cert_production.x509"), UTF_8).decodeCertificatePem()
+    val production =
+        String(Res.readBytes("files/cert_production.x509"), UTF_8).decodeCertificatePem()
     HandshakeCertificates.Builder()
         .addTrustedCertificate(local)
         .addTrustedCertificate(production)
@@ -53,7 +54,8 @@ fun retrofitClient(serverConfig: ServerConfig, auth: Auth): Retrofit {
     val client = OkHttpClient.Builder()
         .sslSocketFactory(certificates.sslSocketFactory(), certificates.trustManager)
         .addInterceptor { chain ->
-            val req = chain.request().newBuilder().addHeader("Authorization", auth.basicAuth()).build()
+            val req =
+                chain.request().newBuilder().addHeader("Authorization", auth.basicAuth()).build()
             chain.proceed(req)
         }
         .connectTimeout(1, TimeUnit.DAYS)

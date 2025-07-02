@@ -11,7 +11,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
  */
 sealed class ServerCompatibilityResult
 class CompatibleResult : ServerCompatibilityResult()
-class IncompatibleResult(val serverVersion: String, val compatibleVersion: String) : ServerCompatibilityResult()
+class IncompatibleResult(val serverVersion: String, val compatibleVersion: String) :
+    ServerCompatibilityResult()
+
 data class ErrorResult(val error: Exception) : ServerCompatibilityResult()
 
 

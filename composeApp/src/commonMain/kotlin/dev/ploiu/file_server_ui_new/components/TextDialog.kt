@@ -2,13 +2,15 @@ package dev.ploiu.file_server_ui_new.components
 
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -21,9 +23,17 @@ fun TextDialog(
     onCancel: () -> Unit,
     onConfirm: (String) -> Unit,
     bodyColor: Color? = null,
+    cancelText: String = "Cancel",
+    confirmText: String = "Confirm",
 ) {
     Dialog(onDismissRequest = { onCancel() }) {
         var inputText by remember { mutableStateOf(defaultValue) }
+        val focusRequester = remember { FocusRequester() }
+
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+
         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -52,16 +62,37 @@ fun TextDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = inputText,
-                        onValueChange = { inputText = it }
+                        onValueChange = { inputText = it },
+                        maxLines = 1,
+                        modifier = Modifier.onPreviewKeyEvent {
+                            when (it.key) {
+                                Key.Enter -> {
+                                    onConfirm(inputText.trim())
+                                    true
+                                }
+
+                                else -> false
+                            }
+                        }.focusRequester(focusRequester)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                // TODO cancel and confirm buttons, enter key submit on text field
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth().padding(end = 16.dp, bottom = 16.dp)
+                ) {
+                    TextButton(onClick = onCancel) {
+                        Text(cancelText)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    TextButton(onClick = { onConfirm(inputText.trim()) }) {
+                        Text(confirmText)
+                    }
+                }
             }
         }
     }

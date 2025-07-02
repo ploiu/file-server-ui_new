@@ -17,7 +17,7 @@ interface FileClient {
     suspend fun search(
         @Query("search") search: String,
         @Query("tags") tags: Collection<String>,
-        @Query("attributes") attributes: Collection<Attribute>
+        @Query("attributes") attributes: Collection<Attribute>,
     ): Response<Collection<FileApi>>
 
     @Multipart
@@ -25,7 +25,7 @@ interface FileClient {
     suspend fun createFile(
         @Part file: MultipartBody.Part,
         @Part extension: MultipartBody.Part?,
-        @Part folderId: MultipartBody.Part
+        @Part folderId: MultipartBody.Part,
     ): Response<FileApi>
 
     @GET("/files/metadata/{id}")

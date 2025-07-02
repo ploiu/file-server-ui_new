@@ -10,14 +10,18 @@ data class FolderApi(
     val name: String,
     val folders: List<FolderApi>,
     val files: List<FileApi>,
-    val tags: List<Tag>
-)
+    val tags: List<Tag>,
+) {
+    fun toUpdateFolder() = UpdateFolder(
+        id = id, name = name, parentId = parentId ?: 0, tags = tags
+    )
+}
 
 @Serializable
 data class CreateFolder(
     val name: String,
     val parentId: Long,
-    val tags: Collection<Tag>
+    val tags: Collection<Tag>,
 )
 
 @Serializable
@@ -25,7 +29,7 @@ data class UpdateFolder(
     val id: Long,
     val name: String,
     val parentId: Long,
-    val tags: Collection<Tag>
+    val tags: Collection<Tag>,
 )
 
 /** keys are file ids, values are the associated preview */

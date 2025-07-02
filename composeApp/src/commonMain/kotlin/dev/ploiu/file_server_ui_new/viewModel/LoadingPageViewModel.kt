@@ -24,7 +24,10 @@ enum class LoadingUiState {
     NAVIGATING
 }
 
-data class LoadingPageUiModel(val pageState: LoadingUiState, val checkResult: ServerCompatibilityResult?)
+data class LoadingPageUiModel(
+    val pageState: LoadingUiState,
+    val checkResult: ServerCompatibilityResult?,
+)
 
 class LoadingPageViewModel(var apiService: ApiService) : ViewModel() {
     private val _state = MutableStateFlow(LoadingPageUiModel(LoadingUiState.LOADING, null))

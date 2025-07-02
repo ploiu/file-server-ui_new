@@ -12,7 +12,7 @@ fun Dialog(
     icon: ImageVector,
     iconColor: Color = LocalContentColor.current,
     onDismissRequest: (() -> Unit)? = null,
-    onConfirmation: (() -> Unit)? = null
+    onConfirmation: (() -> Unit)? = null,
 ) {
     AlertDialog(
         icon = {
