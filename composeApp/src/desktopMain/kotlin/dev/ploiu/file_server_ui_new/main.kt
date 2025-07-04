@@ -1,21 +1,25 @@
 package dev.ploiu.file_server_ui_new
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +28,7 @@ import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.FileServerSearchBar
 import dev.ploiu.file_server_ui_new.components.NavBar
 import dev.ploiu.file_server_ui_new.components.NavState
+import dev.ploiu.file_server_ui_new.components.StandardSideSheet
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -50,7 +55,12 @@ actual fun AppTheme(
             LightDefaultContextMenuRepresentation
         }
         CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
-            content()
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                content()
+            }
         }
     }
 }
@@ -82,16 +92,7 @@ fun main() = application {
         }
     ) {
         AppTheme {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Surface {
-                    NavigationHost(searchBarFocuser = searchBarFocuser)
-                }
-            }
+            NavigationHost(searchBarFocuser = searchBarFocuser)
         }
     }
 }
@@ -122,42 +123,56 @@ fun NavigationHost(
             )
         )
     }
-    Column {
-        // top level components that should show on every view
-        FileServerSearchBar(focusRequester = searchBarFocuser) {
-            navController.navigate(SearchResultsRoute(it))
-        }
-        // TODO not able to go back after searching for files
-        NavBar(navBarState) { folder ->
-            val index = navBarState.folders.indexOfFirst { it.id == folder.id }
-            if (index != -1) {
-                val newFolders = navBarState.folders.subList(0, index + 1)
-                navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
+    /* this is a generic container for subcomponents to push whatever view they want to it. This
+    breaks the unidirectional data flow model for compose, but it allows us to keep this
+    generic and allows all the necessary logic to live in the child component tightly
+    coupled with the data. (e.g. showing folder / file info - having to hard code interactions
+    for that here would get messy fast) */
+    var sideSheetContents: @Composable (() -> Unit)? by remember { mutableStateOf(null) }
+    val mainContentWidth = animateFloatAsState(targetValue = if(sideSheetContents == null) 1f else .65f)
+
+    Row {
+        Column(modifier = Modifier.animateContentSize().fillMaxWidth(mainContentWidth.value)) {
+            // top level components that should show on every view
+            FileServerSearchBar(focusRequester = searchBarFocuser) {
+                navController.navigate(SearchResultsRoute(it))
             }
-            navController.navigate(FolderRoute(folder.id))
-        }
-        // stuff that changes
-        NavHost(navController = navController, startDestination = LoadingRoute()) {
-            composable<LoadingRoute> {
-                LoadingPage {
-                    navController.navigate(FolderRoute(0))
-                }
-            }
-            composable<FolderRoute> { backStack ->
-                val route: FolderRoute = backStack.toRoute()
-                val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
-                FolderPage(viewModel) {
-                    navController.navigate(FolderRoute(it.id))
-                    val newFolders = navBarState.folders.toMutableList()
-                    newFolders.add(it)
+            NavBar(navBarState) { folder ->
+                val index = navBarState.folders.indexOfFirst { it.id == folder.id }
+                if (index != -1) {
+                    val newFolders = navBarState.folders.subList(0, index + 1)
                     navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
                 }
+                navController.navigate(FolderRoute(folder.id))
             }
-            composable<SearchResultsRoute> { backStack ->
-                val route: SearchResultsRoute = backStack.toRoute()
-                val viewModel =
-                    koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
-                SearchResultsPage(viewModel)
+            // stuff that changes
+            NavHost(navController = navController, startDestination = LoadingRoute()) {
+                composable<LoadingRoute> {
+                    LoadingPage {
+                        navController.navigate(FolderRoute(0))
+                    }
+                }
+                composable<FolderRoute> { backStack ->
+                    val route: FolderRoute = backStack.toRoute()
+                    val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
+                    FolderPage(view = viewModel, populateSideSheet = { sideSheetContents = it }) {
+                        navController.navigate(FolderRoute(it.id))
+                        val newFolders = navBarState.folders.toMutableList()
+                        newFolders.add(it)
+                        navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
+                    }
+                }
+                composable<SearchResultsRoute> { backStack ->
+                    val route: SearchResultsRoute = backStack.toRoute()
+                    val viewModel =
+                        koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
+                    SearchResultsPage(viewModel)
+                }
+            }
+        }
+        if (sideSheetContents != null) {
+            StandardSideSheet("test side sheet", onCloseAction = {sideSheetContents = null}) {
+                sideSheetContents!!.invoke()
             }
         }
     }

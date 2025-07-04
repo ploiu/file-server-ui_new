@@ -1,9 +1,6 @@
 package dev.ploiu.file_server_ui_new.pages
 
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
@@ -31,8 +30,14 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import kotlinx.coroutines.runBlocking
 
+/**
+ * used to control state for extra elements such as rename/delete dialogs and folder info dialogs
+ */
 private sealed interface FolderContextState
 
+/**
+ * used to control behavior for context menu actions on a folder
+ */
 private sealed interface FolderContextAction
 class NoFolderAction : FolderContextAction, FolderContextState
 data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
@@ -43,7 +48,11 @@ data class InfoFolderAction(val folder: FolderApi) : FolderContextAction, Folder
 data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
 
 @Composable
-fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
+fun FolderPage(
+    view: FolderPageViewModel,
+    populateSideSheet: (@Composable (() -> Unit)?) -> Unit,
+    onFolderNav: (FolderApi) -> Unit,
+) {
     val (pageState, previews) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
@@ -55,9 +64,14 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
         view.loadFolder()
     }
 
+    /** used to trigger behavior when a context menu item is clicked */
     val onFolderContextAction: (FolderContextAction) -> Unit = {
         when (it) {
-            is DownloadFolderAction -> view.downloadFolder(it.folder)
+            is DownloadFolderAction -> {
+                view.downloadFolder(it.folder)
+                folderActionState = NoFolderAction()
+            }
+
             is InfoFolderAction -> folderActionState = it
             is RenameFolderAction -> folderActionState = it
             is NoFolderAction -> folderActionState = it
@@ -78,7 +92,7 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
             title = "An Error Occurred",
             text = pageState.message,
             icon = Icons.Default.Error,
-            iconColor = MaterialTheme.colorScheme.error
+            iconColor = MaterialTheme.colorScheme.error,
         )
     }
 
@@ -99,7 +113,12 @@ fun FolderPage(view: FolderPageViewModel, onFolderNav: (FolderApi) -> Unit) {
                 })
         }
 
-        is InfoFolderAction -> TODO()
+        is InfoFolderAction -> {
+            populateSideSheet {
+                Text("hi")
+            }
+        }
+
         is DeleteFolderAction -> TODO()
         is NoFolderAction -> Unit
     }
@@ -162,7 +181,7 @@ private fun LoadedFolderList(
         ),
         columns = GridCells.Adaptive(150.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(children) { child -> // make all items have the same height
             when (child) {
