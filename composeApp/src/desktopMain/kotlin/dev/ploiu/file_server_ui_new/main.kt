@@ -30,9 +30,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.FileServerSearchBar
+import dev.ploiu.file_server_ui_new.components.FolderDetailSheet
 import dev.ploiu.file_server_ui_new.components.NavBar
 import dev.ploiu.file_server_ui_new.components.NavState
 import dev.ploiu.file_server_ui_new.components.StandardSideSheet
+import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -47,6 +49,11 @@ import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import java.util.*
+
+private sealed interface SideSheetStatus
+private class NoContents : SideSheetStatus
+private data class FolderSideSheet(val folder: FolderApi) : SideSheetStatus
+private data class FileSideSheet(val file: FileApi) : SideSheetStatus
 
 @Composable
 actual fun AppTheme(
@@ -127,16 +134,12 @@ fun NavigationHost(
             )
         )
     }
-    /* this is a generic container for subcomponents to push whatever view they want to it. This
-    breaks the unidirectional data flow model for compose, but it allows us to keep this
-    generic and allows all the necessary logic to live in the child component tightly
-    coupled with the data. (e.g. showing folder / file info - having to hard code interactions
-    for that here would get messy fast) */
-    var sideSheetContents: @Composable (() -> Unit)? by remember { mutableStateOf(null) }
+    var sideSheetStatus: SideSheetStatus by remember { mutableStateOf(NoContents()) }
     val mainContentWidth =
-        animateFloatAsState(targetValue = if (sideSheetContents == null) 1f else .7f, animationSpec = tween())
-    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetContents == null) 0f else 1f)
-    val searchBarSize = animateFloatAsState(if (sideSheetContents == null) .8f else 1f, animationSpec = tween())
+        animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 1f else .7f, animationSpec = tween())
+    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 0f else 1f)
+    val searchBarSize = animateFloatAsState(if (sideSheetStatus is NoContents) .8f else 1f, animationSpec = tween())
+
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
@@ -157,6 +160,7 @@ fun NavigationHost(
             }
             // stuff that changes
             NavHost(navController = navController, startDestination = LoadingRoute()) {
+                // TODO about page with open source licenses (probably located in settings page) - check fonts, icons
                 composable<LoadingRoute> {
                     LoadingPage {
                         navController.navigate(FolderRoute(0))
@@ -165,7 +169,7 @@ fun NavigationHost(
                 composable<FolderRoute> { backStack ->
                     val route: FolderRoute = backStack.toRoute()
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
-                    FolderPage(view = viewModel, populateSideSheet = { sideSheetContents = it }) {
+                    FolderPage(view = viewModel, onFolderInfo = { sideSheetStatus = FolderSideSheet(it) }) {
                         navController.navigate(FolderRoute(it.id))
                         val newFolders = navBarState.folders.toMutableList()
                         newFolders.add(it)
@@ -181,11 +185,16 @@ fun NavigationHost(
             }
         }
         StandardSideSheet(
-            "test side sheet",
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
-            onCloseAction = { sideSheetContents = null }) {
-            if (sideSheetContents != null) {
-                sideSheetContents!!.invoke()
+            onCloseAction = { sideSheetStatus = NoContents() }) {
+            when (val currentSheet = sideSheetStatus) {
+                is FolderSideSheet -> {
+                    val viewModel = koinInject<FolderDetailViewModel> { parametersOf(currentSheet.folder.id) }
+                    FolderDetailSheet(viewModel = viewModel)
+                }
+
+                is FileSideSheet -> TODO()
+                is NoContents -> {}
             }
         }
     }

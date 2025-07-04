@@ -41,6 +41,7 @@ private sealed interface FolderContextState
  */
 private sealed interface FolderContextAction
 data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
+
 // actions that alter the state of this page directly
 class NoFolderAction : FolderContextAction, FolderContextState
 data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
@@ -52,7 +53,7 @@ data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
 @Composable
 fun FolderPage(
     view: FolderPageViewModel,
-    populateSideSheet: (@Composable (() -> Unit)?) -> Unit,
+    onFolderInfo: (FolderApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
     val (pageState, previews) = view.state.collectAsState().value
@@ -75,10 +76,7 @@ fun FolderPage(
             }
 
             is InfoFolderAction -> {
-                // since we just signal to the parent that we want to show folder info, this isn't a true state of the folder page
-                populateSideSheet {
-                    Text(it.folder.name)
-                }
+                onFolderInfo(it.folder)
                 folderActionState = NoFolderAction()
             }
 

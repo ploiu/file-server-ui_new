@@ -14,12 +14,12 @@ import androidx.compose.ui.unit.dp
 // TODO escape key close?, somehow sending title to this thing from a child component (probably a data class tbh)
 @Composable
 fun StandardSideSheet(
-    title: String,
+    title: String = "",
     modifier: Modifier = Modifier,
     onCloseAction: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    Surface(tonalElevation = 1.dp, modifier = modifier.then(Modifier.fillMaxHeight())) {
+    Surface(tonalElevation = 2.dp, modifier = modifier.then(Modifier.fillMaxHeight())) {
         Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp)) {
             FlowRow(modifier = Modifier.fillMaxWidth()) {
                 Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
