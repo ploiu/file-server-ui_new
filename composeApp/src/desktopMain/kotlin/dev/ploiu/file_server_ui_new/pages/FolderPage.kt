@@ -1,6 +1,9 @@
 package dev.ploiu.file_server_ui_new.pages
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,8 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
@@ -39,10 +40,11 @@ private sealed interface FolderContextState
  * used to control behavior for context menu actions on a folder
  */
 private sealed interface FolderContextAction
+data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
+// actions that alter the state of this page directly
 class NoFolderAction : FolderContextAction, FolderContextState
 data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
-data class InfoFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
 // This doesn't affect page state in the same way the others do
 data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
@@ -72,7 +74,14 @@ fun FolderPage(
                 folderActionState = NoFolderAction()
             }
 
-            is InfoFolderAction -> folderActionState = it
+            is InfoFolderAction -> {
+                // since we just signal to the parent that we want to show folder info, this isn't a true state of the folder page
+                populateSideSheet {
+                    Text(it.folder.name)
+                }
+                folderActionState = NoFolderAction()
+            }
+
             is RenameFolderAction -> folderActionState = it
             is NoFolderAction -> folderActionState = it
             is DeleteFolderAction -> folderActionState = it
@@ -111,12 +120,6 @@ fun FolderPage(
                         view.updateFolder(newFolder)
                     }
                 })
-        }
-
-        is InfoFolderAction -> {
-            populateSideSheet {
-                Text("hi")
-            }
         }
 
         is DeleteFolderAction -> TODO()
@@ -175,7 +178,8 @@ private fun LoadedFolderList(
 ) {
     val children: List<Any> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
-    LazyVerticalGrid( // if this is changed, be sure to update SearchResultsPage.kt
+    LazyVerticalGrid(
+        // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(
             start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp
         ),

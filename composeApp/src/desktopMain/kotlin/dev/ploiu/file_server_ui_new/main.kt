@@ -2,24 +2,28 @@ package dev.ploiu.file_server_ui_new
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
+import androidx.compose.foundation.LightDefaultContextMenuRepresentation
+import androidx.compose.foundation.LocalContextMenuRepresentation
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -73,7 +77,7 @@ fun main() = application {
         modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule)
     }
     val searchBarFocuser = remember { FocusRequester() }
-
+    // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(
         onCloseRequest = ::exitApplication,
         title = "file-server-ui_new",
@@ -129,12 +133,18 @@ fun NavigationHost(
     coupled with the data. (e.g. showing folder / file info - having to hard code interactions
     for that here would get messy fast) */
     var sideSheetContents: @Composable (() -> Unit)? by remember { mutableStateOf(null) }
-    val mainContentWidth = animateFloatAsState(targetValue = if(sideSheetContents == null) 1f else .65f)
+    val mainContentWidth =
+        animateFloatAsState(targetValue = if (sideSheetContents == null) 1f else .7f, animationSpec = tween())
+    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetContents == null) 0f else 1f)
+    val searchBarSize = animateFloatAsState(if (sideSheetContents == null) .8f else 1f, animationSpec = tween())
 
     Row {
-        Column(modifier = Modifier.animateContentSize().fillMaxWidth(mainContentWidth.value)) {
+        Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
             // top level components that should show on every view
-            FileServerSearchBar(focusRequester = searchBarFocuser) {
+            FileServerSearchBar(
+                focusRequester = searchBarFocuser,
+                modifier = Modifier.fillMaxWidth(searchBarSize.value)
+            ) {
                 navController.navigate(SearchResultsRoute(it))
             }
             NavBar(navBarState) { folder ->
@@ -170,8 +180,11 @@ fun NavigationHost(
                 }
             }
         }
-        if (sideSheetContents != null) {
-            StandardSideSheet("test side sheet", onCloseAction = {sideSheetContents = null}) {
+        StandardSideSheet(
+            "test side sheet",
+            modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
+            onCloseAction = { sideSheetContents = null }) {
+            if (sideSheetContents != null) {
                 sideSheetContents!!.invoke()
             }
         }

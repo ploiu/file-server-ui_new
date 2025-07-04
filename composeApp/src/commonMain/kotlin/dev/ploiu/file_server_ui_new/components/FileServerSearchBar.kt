@@ -28,11 +28,11 @@ private fun FileServerSearchPlaceholder(focused: Boolean, text: String) {
 }
 
 @Composable
-fun FileServerSearchBar(focusRequester: FocusRequester, onSearch: (String) -> Unit) {
+fun FileServerSearchBar(focusRequester: FocusRequester, modifier: Modifier = Modifier, onSearch: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     var focused by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp),
+        modifier = modifier.then(Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
@@ -42,7 +42,7 @@ fun FileServerSearchBar(focusRequester: FocusRequester, onSearch: (String) -> Un
             },
             label = { FileServerSearchPlaceholder(focused, text) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(.8f)
+            modifier = Modifier.fillMaxWidth()
                 .onFocusChanged { focused = it.isFocused }
                 .focusRequester(focusRequester)
                 .onPreviewKeyEvent {
