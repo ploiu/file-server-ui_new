@@ -159,7 +159,8 @@ private fun DesktopFolderEntry(
         TooltipArea(
             tooltip = {
                 Surface(
-                    tonalElevation = 10.dp, color = MaterialTheme.colorScheme.tertiary
+                    tonalElevation = 10.dp,
+                    color = MaterialTheme.colorScheme.tertiary,
                 ) { Text(folder.name) }
             }) {
             FolderEntry(folder, onClick = onClick)

@@ -2,6 +2,7 @@ package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +22,8 @@ import org.jetbrains.compose.resources.painterResource
 fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: FolderApi) -> Unit) {
     Surface(
         tonalElevation = 2.dp,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(modifier),
+        shape = MaterialTheme.shapes.small,
         onClick = { onClick(folder) }) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
