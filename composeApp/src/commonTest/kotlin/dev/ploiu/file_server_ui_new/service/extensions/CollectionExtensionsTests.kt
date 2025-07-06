@@ -5,7 +5,6 @@ import java.util.stream.IntStream
 import kotlin.streams.toList
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 class CollectionExtensionsTests {
     @Test

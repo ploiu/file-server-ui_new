@@ -29,11 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dev.ploiu.file_server_ui_new.components.FileServerSearchBar
-import dev.ploiu.file_server_ui_new.components.FolderDetailSheet
-import dev.ploiu.file_server_ui_new.components.NavBar
-import dev.ploiu.file_server_ui_new.components.NavState
-import dev.ploiu.file_server_ui_new.components.StandardSideSheet
+import dev.ploiu.file_server_ui_new.components.*
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ expect fun PickFileImage(file: FileApi, preview: ByteArray?)
 fun FileEntry(file: FileApi, preview: ByteArray? = null) {
     Surface(
         tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.small,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

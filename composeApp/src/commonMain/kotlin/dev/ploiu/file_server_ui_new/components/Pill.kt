@@ -1,9 +1,7 @@
 package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
@@ -13,73 +11,54 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.extensions.uiCount
-import file_server_ui_new.composeapp.generated.resources.Res
-import file_server_ui_new.composeapp.generated.resources.draft
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import java.util.stream.IntStream
-import kotlin.streams.toList
 
 
-@Composable
-private fun PillRow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.background(
-            color = MaterialTheme.colorScheme.primary,
-            shape = MaterialTheme.shapes.extraSmall
-        ).then(modifier).padding(3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        content()
-    }
-}
+/** implemented this way after seeing how colors were implemented for Buttons And Chips*/
+class PillColors(
+    val backgroundColor: Color,
+    val contentColor: Color,
+    val iconColor: Color,
+)
 
 @Composable
-fun Pill(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    icon: ImageVector,
-    textStyle: TextStyle = MaterialTheme.typography.labelSmall
-) {
-    PillRow(modifier) {
-        Icon(imageVector = icon, contentDescription = "pill icon", tint = color)
-        Text(text, style = MaterialTheme.typography.labelSmall + textStyle, color = color)
-    }
-}
+fun pillColors(
+    backgroundColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f)
+        .compositeOver(MaterialTheme.colorScheme.surface),
+    contentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .87f),
+    iconColor: Color = contentColor.copy(alpha = .54f)
+) = PillColors(backgroundColor, contentColor, iconColor)
 
 @Composable
 fun Pill(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    icon: DrawableResource,
+    colors: PillColors = pillColors(),
+    icon: @Composable (() -> Unit)? = null,
     textStyle: TextStyle = MaterialTheme.typography.labelSmall
 ) {
-    PillRow(modifier) {
-        Icon(painter = painterResource(icon), contentDescription = "pill icon", tint = color)
-        Text(text, style = MaterialTheme.typography.labelSmall + textStyle, color = color)
-    }
-}
+    CompositionLocalProvider(LocalContentColor provides colors.contentColor) {
+        Row(
+            modifier = Modifier.background(color = colors.backgroundColor, shape = MaterialTheme.shapes.extraSmall)
+                .then(modifier).padding(3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                CompositionLocalProvider(LocalContentColor provides colors.iconColor, content = icon)
+            }
+            Spacer(Modifier.width(3.dp))
+            Text(text = text, style = textStyle)
+        }
 
-@Composable
-fun Pill(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    textStyle: TextStyle = MaterialTheme.typography.labelSmall
-) {
-    PillRow(modifier) {
-        Text(text, style = MaterialTheme.typography.labelSmall + textStyle, color = color)
     }
 }
 
@@ -92,20 +71,33 @@ private fun DefaultPill() {
 @Preview
 @Composable
 private fun PillWithIcon() {
-    Pill(text = "with icon", icon = Icons.Default.Preview)
+    Pill(text = "with icon", icon = { Icon(Icons.Default.Preview, "Preview") })
 }
 
 
 @Preview
 @Composable
 private fun PillWithColoredText() {
-    Pill(text = "colored text", color = MaterialTheme.colorScheme.tertiary)
+    Pill(
+        text = "colored text",
+        colors = pillColors(
+            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    )
 }
 
 @Preview
 @Composable
 private fun PillWithIconAndColoredText() {
-    Pill(text = "with colored icon and text", icon = Icons.Default.Close, color = MaterialTheme.colorScheme.surface)
+    Pill(
+        text = "with colored icon and text",
+        icon = { Icon(Icons.Default.Close, "close") },
+        colors = pillColors(
+            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    )
 }
 
 
@@ -116,7 +108,7 @@ private fun PillsWithLargeNumber() {
     val med = (0 until 1_500).toList()
     val lg = (0 until 11_000).toList()
     Row {
-        Pill(text = small.uiCount(), icon = Icons.Default.Folder)
+        Pill(text = small.uiCount(), icon = { Icon(Icons.Default.Folder, "Folder") })
         Pill(text = med.uiCount())
         Pill(text = lg.uiCount())
     }

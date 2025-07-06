@@ -8,9 +8,9 @@ data class FolderApi(
     val parentId: Long?,
     val path: String,
     val name: String,
-    val folders: List<FolderApi>,
-    val files: List<FileApi>,
-    val tags: List<Tag>,
+    val folders: Collection<FolderApi>,
+    val files: Collection<FileApi>,
+    val tags: Collection<Tag>,
 ) {
     fun toUpdateFolder() = UpdateFolder(
         id = id, name = name, parentId = parentId ?: 0, tags = tags
