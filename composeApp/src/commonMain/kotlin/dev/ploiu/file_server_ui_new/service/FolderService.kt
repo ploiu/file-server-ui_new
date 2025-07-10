@@ -10,6 +10,7 @@ import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import dev.ploiu.file_server_ui_new.processResponse
+import dev.ploiu.file_server_ui_new.processResponseUnit
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.InputStream
 
@@ -77,6 +78,6 @@ class FolderService(val client: FolderClient) {
         if (id <= 0) {
             return Err("id ($id) must be > 0")
         }
-        return processResponse(client.deleteFolder(id)).mapError { it.message }
+        return processResponseUnit(client.deleteFolder(id)).mapError { it.message }
     }
 }

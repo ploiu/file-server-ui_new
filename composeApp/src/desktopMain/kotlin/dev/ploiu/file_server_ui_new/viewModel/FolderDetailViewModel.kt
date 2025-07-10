@@ -15,13 +15,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** controls the display of the entire folder detail view sheet itself */
 sealed interface FolderDetailUiState
+
+/** used for when a folder is renderable on the ui */
 sealed interface HasFolder {
     val folder: FolderApi
 }
 
 class FolderDetailLoading : FolderDetailUiState
 data class FolderDetailLoaded(override val folder: FolderApi) : FolderDetailUiState, HasFolder
+class FolderDeleted : FolderDetailUiState
 
 data class FolderDetailErrored(val message: String) : FolderDetailUiState
 data class FolderDetailNonCriticalError(override val folder: FolderApi, val message: String) : FolderDetailUiState,
@@ -31,7 +35,7 @@ data class FolderDetailUiModel(
     val sheetState: FolderDetailUiState,
 )
 
-// TODO this has potential to be pulled into common code
+// TODO this has potential to be pulled into common code (? - downloading a folder would behave differently on android and desktop)
 class FolderDetailViewModel(
     val folderService: FolderService,
     val folderId: Long,
@@ -55,8 +59,36 @@ class FolderDetailViewModel(
         }
     }
 
-    fun deleteFolder() = viewModelScope.launch(Dispatchers.IO) {
-        TODO()
+    fun deleteFolder(confirmText: String) = viewModelScope.launch(Dispatchers.IO) {
+        val currentState = _state.value.sheetState
+        if (currentState is HasFolder) {
+            val folderName = currentState.folder.name.lowercase().trim()
+            if (confirmText.lowercase().trim() == folderName) {
+                folderService.deleteFolder(currentState.folder.id)
+                    .onSuccess {
+                        _state.update { it.copy(sheetState = FolderDeleted()) }
+                    }
+                    .onFailure { msg ->
+                        _state.update {
+                            it.copy(
+                                sheetState = FolderDetailNonCriticalError(
+                                    folder = currentState.folder,
+                                    message = msg
+                                )
+                            )
+                        }
+                    }
+            } else {
+                _state.update {
+                    it.copy(
+                        sheetState = FolderDetailNonCriticalError(
+                            folder = currentState.folder,
+                            message = "The folder name you passed does not match. Not deleting folder."
+                        )
+                    )
+                }
+            }
+        }
     }
 
     fun updateTags(tags: Collection<Tag>) = viewModelScope.launch(Dispatchers.IO) {
@@ -78,25 +110,21 @@ class FolderDetailViewModel(
         // this is nice just in case
         clearNonCriticalError()
         val currentState = _state.value.sheetState
-        when (currentState) {
-            is FolderDetailErrored -> _state.update { it.copy(FolderDetailErrored("Critical UI State Error: Failed to Update Folder During Error State")) }
-            is FolderDetailLoading -> _state.update { it.copy(FolderDetailErrored("Critical UI State Error: Failed to Update Folder During Loading State")) }
-            // basically the same exact behavior as without the non critical error
-            is HasFolder -> {
-                folderService.updateFolder(toUpdate).onSuccess { loadFolder() }.onFailure { msg ->
-                    _state.update {
-                        it.copy(
-                            sheetState = FolderDetailNonCriticalError(
-                                currentState.folder,
-                                msg
-                            )
+        // basically the same exact behavior as without the non critical error
+        if (currentState is HasFolder) {
+            _state.update { it.copy(sheetState = FolderDetailLoading()) }
+            folderService.updateFolder(toUpdate).onSuccess { loadFolder() }.onFailure { msg ->
+                _state.update {
+                    it.copy(
+                        sheetState = FolderDetailNonCriticalError(
+                            currentState.folder,
+                            msg
                         )
-                    }
-                    delay(5_000L)
-                    _state.update { it.copy(sheetState = FolderDetailLoaded(currentState.folder)) }
+                    )
                 }
+                delay(5_000L)
+                _state.update { it.copy(sheetState = FolderDetailLoaded(currentState.folder)) }
             }
         }
     }
-
 }

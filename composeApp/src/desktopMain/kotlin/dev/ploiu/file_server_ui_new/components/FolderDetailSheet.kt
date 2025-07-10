@@ -13,9 +13,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.filledIconButtonColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
@@ -28,14 +26,37 @@ import dev.ploiu.file_server_ui_new.viewModel.*
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.draft
 import file_server_ui_new.composeapp.generated.resources.folder
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.painterResource
+import java.util.*
+
+/**
+ * used to control state for extra elements such as rename/delete dialogs and folder info dialogs
+ */
+private sealed interface DialogState
+
+// actions that alter the state of this page directly
+private class NoDialogState : DialogState
+private data class RenameDialogState(val folder: FolderApi) : DialogState
+private data class DeleteDialogState(val folder: FolderApi) : DialogState
+
+// This doesn't affect page state in the same way the others do
+private data class DownloadFolderAction(val folder: FolderApi)
 
 @Composable
 @OptIn(ExperimentalMaterialApi::class)
-fun FolderDetailSheet(viewModel: FolderDetailViewModel) {
+fun FolderDetailSheet(
+    viewModel: FolderDetailViewModel,
+    /** used when outside changes (e.g. from the main folder page) makes changes, so we know to refresh ourselves */
+    refreshKey: Int,
+    /** used if an action within this sheet should cause the sheet to close (e.g. when the folder is deleted) */
+    closeSelf: () -> Unit,
+    onChange: () -> Unit
+) {
     val (pageState) = viewModel.state.collectAsState().value
+    var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
 
-    LaunchedEffect(viewModel.folderId) {
+    LaunchedEffect(Objects.hash(viewModel.folderId, refreshKey)) {
         viewModel.loadFolder()
     }
 
@@ -50,27 +71,55 @@ fun FolderDetailSheet(viewModel: FolderDetailViewModel) {
             }
         }
 
-        is FolderDetailLoaded -> {
+        is HasFolder -> {
             MainFolderDetails(
                 folder = pageState.folder,
-                onRenameClick = { TODO("Rename functionality") },
+                onRenameClick = { dialogState = RenameDialogState(pageState.folder) },
                 onSaveClick = { TODO("Save functionality") },
-                onDeleteClick = { TODO("Delete functionality") },
+                onDeleteClick = { dialogState = DeleteDialogState(pageState.folder) },
                 onUpdateTags = { viewModel.updateTags(it) })
+            if (pageState is FolderDetailNonCriticalError) {
+                Snackbar {
+                    Text(pageState.message)
+                }
+            }
         }
 
-        is FolderDetailErrored -> TODO()
+        is FolderDeleted -> closeSelf()
 
-        is FolderDetailNonCriticalError -> {
-            MainFolderDetails(
-                folder = pageState.folder,
-                onRenameClick = { TODO("Rename functionality") },
-                onSaveClick = { TODO("Save functionality") },
-                onDeleteClick = { TODO("Delete functionality") },
-                onUpdateTags = { viewModel.updateTags(it) })
-            Snackbar {
-                Text(pageState.message)
-            }
+        is FolderDetailErrored -> TODO()
+    }
+
+    when (val state = dialogState) {
+        is NoDialogState -> {/* No op */
+        }
+
+        is RenameDialogState -> {
+            TextDialog(
+                title = "Rename folder",
+                defaultValue = state.folder.name,
+                onCancel = { dialogState = NoDialogState() },
+                onConfirm = {
+                    dialogState = NoDialogState()
+                    runBlocking {
+                        viewModel.renameFolder(it)
+                        onChange()
+                    }
+                }
+            )
+        }
+
+        is DeleteDialogState -> {
+            TextDialog(
+                title = "Delete folder",
+                onCancel = { dialogState = NoDialogState() },
+                bodyText = "Are you sure you want to delete? Type the folder name to confirm",
+                onConfirm = {
+                    onChange()
+                    dialogState = NoDialogState()
+                    viewModel.deleteFolder(it)
+                }
+            )
         }
     }
 }
@@ -131,7 +180,7 @@ private fun MainFolderDetails(
         Spacer(Modifier.height(8.dp))
         TagList(folder.tags, onUpdate = onUpdateTags)
         Spacer(Modifier.height(8.dp))
-        // action buttons
+        // action buttons TODO can probably pull out into common code
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),

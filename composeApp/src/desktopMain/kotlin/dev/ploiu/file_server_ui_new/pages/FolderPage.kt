@@ -30,6 +30,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import kotlinx.coroutines.runBlocking
+import java.util.Objects
 
 /**
  * used to control state for extra elements such as rename/delete dialogs and folder info dialogs
@@ -40,19 +41,22 @@ private sealed interface FolderContextState
  * used to control behavior for context menu actions on a folder
  */
 private sealed interface FolderContextAction
-data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
+private data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
 
 // actions that alter the state of this page directly
-class NoFolderAction : FolderContextAction, FolderContextState
-data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
-data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+private class NoFolderAction : FolderContextAction, FolderContextState
+private data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+private data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
 // This doesn't affect page state in the same way the others do
-data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
+private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
 
 @Composable
 fun FolderPage(
     view: FolderPageViewModel,
+    /** used to force re-renders if data is updated externally (e.g. via a side sheet) */
+    refreshKey: Int,
+    onUpdate: () -> Unit,
     onFolderInfo: (FolderApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
@@ -63,7 +67,7 @@ fun FolderPage(
         )
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(Objects.hash(view.folderId, refreshKey)) {
         view.loadFolder()
     }
 
@@ -108,7 +112,7 @@ fun FolderPage(
     when (val action = folderActionState) {
         is RenameFolderAction -> {
             TextDialog(
-                title = "Rename Folder",
+                title = "Rename folder",
                 defaultValue = action.folder.name,
                 onCancel = { folderActionState = NoFolderAction() },
                 onConfirm = {
@@ -116,11 +120,12 @@ fun FolderPage(
                     runBlocking {
                         folderActionState = NoFolderAction()
                         view.updateFolder(newFolder)
+                        onUpdate()
                     }
                 })
         }
 
-        is DeleteFolderAction -> TODO()
+        is DeleteFolderAction -> TODO("Delete Folder Functionality")
         is NoFolderAction -> Unit
     }
 }

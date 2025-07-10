@@ -59,6 +59,15 @@ fun <T> processResponse(response: Response<out T>): Result<T, ApiError> {
     }
 }
 
+fun processResponseUnit(response: Response<Unit>): Result<Unit, ApiError> {
+    return if (response.isSuccessful) {
+        Ok(Unit)
+    } else {
+        val errorMessage = parseErrorFromResponse(response)
+        Err(ApiError(response.code(), errorMessage.message))
+    }
+}
+
 fun parseErrorFromResponse(response: Response<out Any>): ErrorMessage {
     if (response.isSuccessful) {
         throw UnsupportedOperationException("Can only call parseErrorFromResponse if response isn't successful")

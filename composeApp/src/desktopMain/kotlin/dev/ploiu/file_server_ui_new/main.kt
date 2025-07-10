@@ -99,13 +99,13 @@ fun main() = application {
         }
     ) {
         AppTheme {
-            NavigationHost(searchBarFocuser = searchBarFocuser)
+            MainDesktopBody(searchBarFocuser = searchBarFocuser)
         }
     }
 }
 
 @Composable
-fun NavigationHost(
+fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     searchBarFocuser: FocusRequester,
 ) {
@@ -135,7 +135,10 @@ fun NavigationHost(
         animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 1f else .7f, animationSpec = tween())
     val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 0f else 1f)
     val searchBarSize = animateFloatAsState(if (sideSheetStatus is NoContents) .8f else 1f, animationSpec = tween())
-
+    // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh. This is lifted up and used to make FolderPage refresh its data when needed
+    var sideSheetUpdateKey: Int by remember { mutableStateOf(0) }
+    // same as sideSheetUpdateKey, but for changes originating from FolderPage
+    var folderPageUpdateKey: Int by remember { mutableStateOf(0) }
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
@@ -165,7 +168,11 @@ fun NavigationHost(
                 composable<FolderRoute> { backStack ->
                     val route: FolderRoute = backStack.toRoute()
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
-                    FolderPage(view = viewModel, onFolderInfo = { sideSheetStatus = FolderSideSheet(it) }) {
+                    FolderPage(
+                        view = viewModel,
+                        refreshKey = sideSheetUpdateKey,
+                        onFolderInfo = { sideSheetStatus = FolderSideSheet(it) },
+                        onUpdate = { folderPageUpdateKey += 1 }) {
                         navController.navigate(FolderRoute(it.id))
                         val newFolders = navBarState.folders.toMutableList()
                         newFolders.add(it)
@@ -180,13 +187,20 @@ fun NavigationHost(
                 }
             }
         }
+        // FIXME updates from FolderPage won't reflect in side sheet
         StandardSideSheet(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
             onCloseAction = { sideSheetStatus = NoContents() }) {
             when (val currentSheet = sideSheetStatus) {
                 is FolderSideSheet -> {
                     val viewModel = koinInject<FolderDetailViewModel> { parametersOf(currentSheet.folder.id) }
-                    FolderDetailSheet(viewModel = viewModel)
+                    FolderDetailSheet(
+                        viewModel = viewModel,
+                        closeSelf = { sideSheetStatus = NoContents() },
+                        refreshKey = folderPageUpdateKey
+                    ) {
+                        sideSheetUpdateKey += 1
+                    }
                 }
 
                 is FileSideSheet -> TODO()

@@ -9,6 +9,7 @@ import dev.ploiu.file_server_ui_new.model.CreateFileRequest
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FileRequest
 import dev.ploiu.file_server_ui_new.processResponse
+import dev.ploiu.file_server_ui_new.processResponseUnit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -40,7 +41,7 @@ class FileService(val client: FileClient) {
         if (id < 0) {
             return Err("id ($id) cannot be less than 0")
         }
-        return processResponse(client.deleteFile(id)).mapError { it.message }
+        return processResponseUnit(client.deleteFile(id)).mapError { it.message }
     }
 
     suspend fun updateFile(req: FileRequest): Result<FileApi, String> {
