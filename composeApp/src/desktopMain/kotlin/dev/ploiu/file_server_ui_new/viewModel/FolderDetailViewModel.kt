@@ -11,6 +11,7 @@ import dev.ploiu.file_server_ui_new.service.FolderService
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.exists
 import io.github.vinceglb.filekit.isDirectory
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,18 +47,21 @@ class FolderDetailViewModel(
     val folderService: FolderService,
     val folderId: Long,
 ) : ViewModel() {
+    private val exceptionHandler = CoroutineExceptionHandler {ctx, throwable ->
+        _state.update { it.copy(sheetState = FolderDetailErrored("Failed to process folder information: " + (throwable.message ?: throwable.javaClass))) }
+    }
     private val _state = MutableStateFlow(FolderDetailUiModel(FolderDetailLoading()))
     val state = _state.asStateFlow()
 
-    fun loadFolder() = viewModelScope.launch(Dispatchers.IO) {
+    fun loadFolder() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         _state.update { it.copy(sheetState = FolderDetailLoading()) }
         val folderRes = folderService.getFolder(folderId)
         folderRes
             .onSuccess { folder -> _state.update { it.copy(sheetState = FolderDetailLoaded(folder)) } }
-            .onFailure { msg -> _state.update { it.copy(sheetState = FolderDetailErrored(msg)) } }
+            .onFailure { msg -> _state.update { it.copy(sheetState = FolderDetailErrored("Failed to load folder: $msg")) } }
     }
 
-    fun renameFolder(newName: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun renameFolder(newName: String) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FolderDetailLoaded) {
             val toUpdate = currentState.folder.copy(name = newName).toUpdateFolder()
@@ -65,7 +69,7 @@ class FolderDetailViewModel(
         }
     }
 
-    fun deleteFolder(confirmText: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun deleteFolder(confirmText: String) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is HasFolder) {
             val folderName = currentState.folder.name.lowercase().trim()
@@ -97,7 +101,7 @@ class FolderDetailViewModel(
         }
     }
 
-    fun updateTags(tags: Collection<Tag>) = viewModelScope.launch(Dispatchers.IO) {
+    fun updateTags(tags: Collection<Tag>) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is HasFolder) {
             val toUpdate = currentState.folder.copy(tags = tags).toUpdateFolder()
@@ -112,7 +116,7 @@ class FolderDetailViewModel(
         }
     }
 
-    fun downloadFolder(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO) {
+    fun downloadFolder(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is HasFolder) {
             if (!saveLocation.exists() && !saveLocation.isDirectory()) {
@@ -128,6 +132,7 @@ class FolderDetailViewModel(
                 folderService.downloadFolder(currentState.folder.id)
                     .onSuccess { res ->
                         val archiveName = currentState.folder.name + ".tar"
+                        // TODO try/catch for error handling
                         Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
                         res.close()
                     }
@@ -145,7 +150,7 @@ class FolderDetailViewModel(
         }
     }
 
-    private fun updateFolder(toUpdate: UpdateFolder) = viewModelScope.launch(Dispatchers.IO) {
+    private fun updateFolder(toUpdate: UpdateFolder) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         // this is nice just in case
         clearNonCriticalError()
         val currentState = _state.value.sheetState
@@ -157,7 +162,7 @@ class FolderDetailViewModel(
                     it.copy(
                         sheetState = FolderDetailMessage(
                             currentState.folder,
-                            msg
+                            "Failed to update folder: $msg"
                         )
                     )
                 }

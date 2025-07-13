@@ -4,6 +4,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
+import dev.ploiu.file_server_ui_new.ApiError
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.CreateFolder

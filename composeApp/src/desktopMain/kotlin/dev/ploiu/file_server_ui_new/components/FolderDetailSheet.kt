@@ -7,10 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Snackbar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.filledIconButtonColors
 import androidx.compose.runtime.*
@@ -18,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.extensions.uiCount
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -41,9 +39,6 @@ private class NoDialogState : DialogState
 private data class RenameDialogState(val folder: FolderApi) : DialogState
 private data class DeleteDialogState(val folder: FolderApi) : DialogState
 
-// This doesn't affect page state in the same way the others do
-private data class DownloadFolderAction(val folder: FolderApi)
-
 @Composable
 @OptIn(ExperimentalMaterialApi::class)
 fun FolderDetailSheet(
@@ -57,7 +52,7 @@ fun FolderDetailSheet(
     val (pageState) = viewModel.state.collectAsState().value
     var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
-        if(directory != null) {
+        if (directory != null) {
             viewModel.downloadFolder(directory)
         }
     }
@@ -97,7 +92,17 @@ fun FolderDetailSheet(
 
         is FolderDeleted -> closeSelf()
 
-        is FolderDetailErrored -> TODO()
+        is FolderDetailErrored -> {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Default.Error, "Error Icon", tint = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(32.dp))
+                Text(pageState.message, textAlign = TextAlign.Center)
+            }
+        }
     }
 
     when (val state = dialogState) {
