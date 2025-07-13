@@ -26,7 +26,7 @@ class FolderService(val client: FolderClient) {
         return res.mapError { it.message }
     }
 
-    fun downloadFolder(id: Long): Result<InputStream, String> {
+    suspend fun downloadFolder(id: Long): Result<InputStream, String> {
         if (id <= 0) {
             Err("id ($id) must be > 0")
         }

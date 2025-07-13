@@ -26,6 +26,7 @@ import dev.ploiu.file_server_ui_new.viewModel.*
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.draft
 import file_server_ui_new.composeapp.generated.resources.folder
+import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.painterResource
 import java.util.*
@@ -55,6 +56,11 @@ fun FolderDetailSheet(
 ) {
     val (pageState) = viewModel.state.collectAsState().value
     var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
+    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
+        if(directory != null) {
+            viewModel.downloadFolder(directory)
+        }
+    }
 
     LaunchedEffect(Objects.hash(viewModel.folderId, refreshKey)) {
         viewModel.loadFolder()
@@ -75,10 +81,14 @@ fun FolderDetailSheet(
             MainFolderDetails(
                 folder = pageState.folder,
                 onRenameClick = { dialogState = RenameDialogState(pageState.folder) },
-                onSaveClick = { TODO("Save functionality") },
+                onSaveClick = {
+                    println("save clicked!")
+                    dialogState = NoDialogState()
+                    directoryPicker.launch()
+                },
                 onDeleteClick = { dialogState = DeleteDialogState(pageState.folder) },
                 onUpdateTags = { viewModel.updateTags(it) })
-            if (pageState is FolderDetailNonCriticalError) {
+            if (pageState is FolderDetailMessage) {
                 Snackbar {
                     Text(pageState.message)
                 }
@@ -91,8 +101,7 @@ fun FolderDetailSheet(
     }
 
     when (val state = dialogState) {
-        is NoDialogState -> {/* No op */
-        }
+        is NoDialogState -> Unit /* No Op */
 
         is RenameDialogState -> {
             TextDialog(
@@ -121,6 +130,7 @@ fun FolderDetailSheet(
                 }
             )
         }
+
     }
 }
 

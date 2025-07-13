@@ -41,6 +41,7 @@ import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
+import io.github.vinceglb.filekit.FileKit
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
@@ -79,6 +80,7 @@ fun main() = application {
     startKoin {
         modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule)
     }
+    FileKit.init(appId = "PloiuFileServer")
     val searchBarFocuser = remember { FocusRequester() }
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(

@@ -72,6 +72,8 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.koin.compose)
             implementation(libs.koin.composeVM)
+            implementation(libs.filekit.core)
+            implementation(libs.filekit.dialogs.compose)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
         }
     }
@@ -117,6 +119,9 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "dev.ploiu.file_server_ui_new"
             packageVersion = "1.0.0"
+            linux {
+                modules("jdk.security.auth")
+            }
         }
     }
 }

@@ -12,7 +12,23 @@ data class FileApi(
     val size: Long,
     val dateCreated: String,
     val fileType: String,
-)
+) {
+    val extension: String
+        get() {
+            // fun fact, files can end with . on linux!
+            return if (name.endsWith('.') || !name.contains('.')) {
+                ""
+            } else {
+                name.substring(name.lastIndexOf('.') + 1)
+            }
+        }
+    val nameWithoutExtension
+        get() = if (!name.contains('.')) {
+            name
+        } else {
+            name.substring(0, name.lastIndexOf('.'))
+        }
+}
 
 @Serializable
 data class FileRequest(

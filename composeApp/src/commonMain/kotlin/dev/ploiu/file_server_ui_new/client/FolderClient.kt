@@ -14,7 +14,7 @@ interface FolderClient {
 
     @Streaming
     @GET("/folders/{id}")
-    fun downloadFolder(@Path("id") id: Long): Response<ResponseBody>
+    suspend fun downloadFolder(@Path("id") id: Long): Response<ResponseBody>
 
     /**
      * retrieves a mapping of file id -> preview bytes from the server.
