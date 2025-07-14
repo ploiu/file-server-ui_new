@@ -44,11 +44,17 @@ data class FolderDetailUiModel(
 
 // TODO this has potential to be pulled into common code (? - downloading a folder would behave differently on android and desktop)
 class FolderDetailViewModel(
-    val folderService: FolderService,
+    private val folderService: FolderService,
     val folderId: Long,
 ) : ViewModel() {
-    private val exceptionHandler = CoroutineExceptionHandler {ctx, throwable ->
-        _state.update { it.copy(sheetState = FolderDetailErrored("Failed to process folder information: " + (throwable.message ?: throwable.javaClass))) }
+    private val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
+        _state.update {
+            it.copy(
+                sheetState = FolderDetailErrored(
+                    "Failed to process folder information: " + (throwable.message ?: throwable.javaClass)
+                )
+            )
+        }
     }
     private val _state = MutableStateFlow(FolderDetailUiModel(FolderDetailLoading()))
     val state = _state.asStateFlow()

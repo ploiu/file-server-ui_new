@@ -23,6 +23,7 @@ fun TextDialog(
     onCancel: () -> Unit,
     onConfirm: (String) -> Unit,
     bodyColor: Color? = null,
+    modifier: Modifier = Modifier,
     cancelText: String = "Cancel",
     confirmText: String = "Confirm",
 ) {
@@ -34,7 +35,7 @@ fun TextDialog(
             focusRequester.requestFocus()
         }
 
-        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        OutlinedCard(modifier = Modifier.fillMaxWidth() then modifier) {
             Column {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(

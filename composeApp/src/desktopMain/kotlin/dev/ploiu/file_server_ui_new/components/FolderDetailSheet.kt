@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.extensions.uiCount
@@ -68,7 +69,7 @@ fun FolderDetailSheet(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(Modifier.testTag("spinner"))
             }
         }
 
@@ -85,7 +86,7 @@ fun FolderDetailSheet(
                 onUpdateTags = { viewModel.updateTags(it) })
             if (pageState is FolderDetailMessage) {
                 Snackbar {
-                    Text(pageState.message)
+                    Text(pageState.message, modifier = Modifier.testTag("message"))
                 }
             }
         }
@@ -112,6 +113,7 @@ fun FolderDetailSheet(
             TextDialog(
                 title = "Rename folder",
                 defaultValue = state.folder.name,
+                modifier = Modifier.testTag("renameDialog"),
                 onCancel = { dialogState = NoDialogState() },
                 onConfirm = {
                     dialogState = NoDialogState()
@@ -126,8 +128,9 @@ fun FolderDetailSheet(
         is DeleteDialogState -> {
             TextDialog(
                 title = "Delete folder",
-                onCancel = { dialogState = NoDialogState() },
                 bodyText = "Are you sure you want to delete? Type the folder name to confirm",
+                modifier = Modifier.testTag("deleteDialog"),
+                onCancel = { dialogState = NoDialogState() },
                 onConfirm = {
                     onChange()
                     dialogState = NoDialogState()
@@ -150,7 +153,7 @@ private fun MainFolderDetails(
     val actionButtonColors: IconButtonColors = filledIconButtonColors()
 
     Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("loadedRoot"),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // image and title
@@ -158,10 +161,10 @@ private fun MainFolderDetails(
             Image(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
-                Modifier.width(108.dp).height(108.dp),
+                Modifier.width(108.dp).height(108.dp).testTag("folderImage"),
                 contentScale = ContentScale.Fit
             )
-            Text(folder.name, style = MaterialTheme.typography.headlineSmall)
+            Text(folder.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("folderName"))
         }
         Spacer(Modifier.height(16.dp))
         Surface(

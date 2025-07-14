@@ -1,17 +1,14 @@
 package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.window.AwtWindow
 import dev.ploiu.file_server_ui_new.model.FileApi
-import dev.ploiu.file_server_ui_new.model.FolderApi
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
-import javax.swing.JFileChooser
 
 @Composable
 fun OpenFileDialog(
@@ -41,7 +38,7 @@ fun SaveFileDialog(
     file: FileApi,
     onClosed: (PlatformFile?) -> Unit
 ) {
-  val launcher = rememberFileSaverLauncher(onResult = onClosed)
+    val launcher = rememberFileSaverLauncher(onResult = onClosed)
     launcher.launch(suggestedName = file.nameWithoutExtension, extension = file.extension)
     TODO(
         """

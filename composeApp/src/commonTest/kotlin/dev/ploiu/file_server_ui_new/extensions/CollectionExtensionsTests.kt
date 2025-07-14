@@ -1,6 +1,5 @@
-package dev.ploiu.file_server_ui_new.service.extensions
+package dev.ploiu.file_server_ui_new.extensions
 
-import dev.ploiu.file_server_ui_new.extensions.uiCount
 import java.util.stream.IntStream
 import kotlin.streams.toList
 import kotlin.test.Test

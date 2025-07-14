@@ -76,6 +76,9 @@ kotlin {
             implementation(libs.filekit.dialogs.compose)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
         }
+        desktopTest.dependencies {
+            implementation(compose.desktop.currentOs)
+        }
     }
 
 }
