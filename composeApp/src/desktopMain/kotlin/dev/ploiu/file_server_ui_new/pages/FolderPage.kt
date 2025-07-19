@@ -60,6 +60,7 @@ fun FolderPage(
     onFolderInfo: (FolderApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
+    TODO("add folder functionality")
     val (pageState, previews) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(

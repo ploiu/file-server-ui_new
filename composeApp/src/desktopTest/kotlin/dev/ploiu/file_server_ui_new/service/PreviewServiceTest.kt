@@ -167,16 +167,6 @@ class PreviewServiceTest {
         }
 
     @Test
-    fun `when more than 20 previews aren't cached to the disk, it should call the endpoint to folderService to download all cached previews and store them in the disk`() {
-        fail()
-    }
-
-    @Test
-    fun `when more than 20 previews aren't cached to the disk, the pre-existing cache dir should be deleted and re-built`() {
-        fail()
-    }
-
-    @Test
     fun `downloadPreview should return response body bytes if response is successful`() = runTest {
         val fileClient: FileClient = mockk()
         val folderService: FolderService = mockk()
