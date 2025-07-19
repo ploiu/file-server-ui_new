@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -35,7 +36,7 @@ fun TextDialog(
             focusRequester.requestFocus()
         }
 
-        OutlinedCard(modifier = Modifier.fillMaxWidth() then modifier) {
+        OutlinedCard(modifier = Modifier.fillMaxWidth().testTag("textDialog") then modifier) {
             Column {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -72,13 +73,12 @@ fun TextDialog(
                         modifier = Modifier.onPreviewKeyEvent {
                             when (it.key) {
                                 Key.Enter -> {
-                                    onConfirm(inputText.trim())
-                                    true
+                                    onConfirm(inputText.trim()); true
                                 }
 
                                 else -> false
                             }
-                        }.focusRequester(focusRequester)
+                        }.focusRequester(focusRequester).testTag("textDialogInput")
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -86,11 +86,14 @@ fun TextDialog(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.fillMaxWidth().padding(end = 16.dp, bottom = 16.dp)
                 ) {
-                    TextButton(onClick = onCancel) {
+                    TextButton(onClick = onCancel, modifier = Modifier.testTag("textDialogCancelButton")) {
                         Text(cancelText)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    TextButton(onClick = { onConfirm(inputText.trim()) }) {
+                    TextButton(
+                        onClick = { onConfirm(inputText.trim()) },
+                        modifier = Modifier.testTag("textDialogConfirmButton")
+                    ) {
                         Text(confirmText)
                     }
                 }

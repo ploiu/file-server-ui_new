@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.extensions.uiCount
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.model.Tag
+import dev.ploiu.file_server_ui_new.model.TagApi
 import dev.ploiu.file_server_ui_new.viewModel.*
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.draft
@@ -148,7 +148,7 @@ private fun MainFolderDetails(
     onRenameClick: () -> Unit,
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onUpdateTags: (Collection<Tag>) -> Unit
+    onUpdateTags: (Collection<TagApi>) -> Unit
 ) {
     val actionButtonColors: IconButtonColors = filledIconButtonColors()
 

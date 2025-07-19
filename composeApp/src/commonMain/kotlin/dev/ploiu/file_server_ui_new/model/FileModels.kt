@@ -8,7 +8,7 @@ data class FileApi(
     val id: Long,
     val folderId: Long = 0,
     val name: String,
-    val tags: Collection<Tag>,
+    val tags: Collection<TagApi>,
     val size: Long,
     val dateCreated: String,
     val fileType: String,
@@ -35,7 +35,7 @@ data class FileRequest(
     val id: Long,
     val folderId: Long,
     val name: String,
-    val tags: Collection<Tag>,
+    val tags: Collection<TagApi>,
 )
 
 data class CreateFileRequest(
