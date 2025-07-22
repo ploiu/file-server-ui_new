@@ -7,6 +7,7 @@ import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -17,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
@@ -60,7 +62,7 @@ fun FolderPage(
     onFolderInfo: (FolderApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
-    TODO("add folder functionality")
+    // TODO("add folder functionality")
     val (pageState, previews) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
@@ -167,7 +169,8 @@ private fun DesktopFolderEntry(
                 Surface(
                     tonalElevation = 10.dp,
                     color = MaterialTheme.colorScheme.tertiary,
-                ) { Text(folder.name) }
+                    shape = MaterialTheme.shapes.small
+                ) { Text(folder.name, modifier = Modifier.padding(3.dp)) }
             }) {
             FolderEntry(folder, onClick = onClick)
         }

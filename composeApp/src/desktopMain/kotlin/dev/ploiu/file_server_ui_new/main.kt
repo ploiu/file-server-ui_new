@@ -7,13 +7,10 @@ import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
@@ -24,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -116,8 +114,7 @@ fun MainDesktopBody(
             NavState(
                 LinkedList<FolderApi>(
                     listOf(
-                        // using a fake representation of the root folder here so that we don't have to break structure to pull it.
-                        // Also since it's just for nav, it doesn't matter if we don't have the children here
+                        // using a fake representation of the root folder here so that we don't have to break structure to pull it. Also since it's just for nav, it doesn't matter if we don't have the children here
                         FolderApi(
                             0,
                             null,
@@ -136,21 +133,19 @@ fun MainDesktopBody(
     val mainContentWidth =
         animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 1f else .7f, animationSpec = tween())
     val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 0f else 1f)
-    val searchBarSize = animateFloatAsState(if (sideSheetStatus is NoContents) .8f else 1f, animationSpec = tween())
-    // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh. This is lifted up and used to make FolderPage refresh its data when needed
+    // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
+    // This is lifted up and used to make FolderPage refresh its data when needed
     var sideSheetUpdateKey: Int by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey: Int by remember { mutableStateOf(0) }
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
-            // top level components that should show on every view
-            FileServerSearchBar(
-                focusRequester = searchBarFocuser,
-                modifier = Modifier.fillMaxWidth(searchBarSize.value)
-            ) {
-                navController.navigate(SearchResultsRoute(it))
-            }
+            AppHeader(
+                searchBarFocuser = searchBarFocuser,
+                navController = navController,
+                sideSheetActive = sideSheetStatus !is NoContents,
+            )
             NavBar(navBarState) { folder ->
                 val index = navBarState.folders.indexOfFirst { it.id == folder.id }
                 if (index != -1) {

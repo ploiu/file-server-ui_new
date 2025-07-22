@@ -1,6 +1,10 @@
 package dev.ploiu.file_server_ui_new.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -31,37 +35,31 @@ private fun FileServerSearchPlaceholder(focused: Boolean, text: String) {
 fun FileServerSearchBar(focusRequester: FocusRequester, modifier: Modifier = Modifier, onSearch: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     var focused by remember { mutableStateOf(false) }
-    Row(
-        modifier = modifier.then(Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp)),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = {
-                text = it
-            },
-            label = { FileServerSearchPlaceholder(focused, text) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-                .onFocusChanged { focused = it.isFocused }
-                .focusRequester(focusRequester)
-                .onPreviewKeyEvent {
-                    if (it.type != KeyEventType.KeyUp) {
-                        false
-                    } else {
-                        when (it.key) {
-                            Key.Enter -> {
-                                if (!text.isBlank()) {
-                                    onSearch(text)
-                                }
-                                true
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+        },
+        label = { FileServerSearchPlaceholder(focused, text) },
+        singleLine = true,
+        modifier = Modifier
+            .onFocusChanged { focused = it.isFocused }
+            .focusRequester(focusRequester)
+            .onPreviewKeyEvent {
+                if (it.type != KeyEventType.KeyUp) {
+                    false
+                } else {
+                    when (it.key) {
+                        Key.Enter -> {
+                            if (!text.isBlank()) {
+                                onSearch(text)
                             }
-
-                            else -> false
+                            true
                         }
+
+                        else -> false
                     }
                 }
-
-        )
-    }
+            } then modifier
+    )
 }
