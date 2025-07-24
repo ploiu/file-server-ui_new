@@ -13,24 +13,36 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.iconButtonColors
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import dev.ploiu.file_server_ui_new.model.CreateFolder
+import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsRoute
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.koin.compose.koinInject
 
 @Composable
 fun AppHeader(
     searchBarFocuser: FocusRequester,
     navController: NavController,
-    sideSheetActive: Boolean
-) = AppHeader(searchBarFocuser, navController, sideSheetActive, koinInject<FolderService>(), koinInject<FileService>())
+    sideSheetActive: Boolean,
+    currentFolder: FolderApi
+) = AppHeader(
+    searchBarFocuser,
+    navController,
+    sideSheetActive,
+    currentFolder,
+    koinInject<FolderService>(),
+    koinInject<FileService>()
+)
 
 // TODO probably should pull this out into its own general purpose tooltip
 @Composable
@@ -54,6 +66,7 @@ private fun AppHeader(
     searchBarFocuser: FocusRequester,
     navController: NavController,
     sideSheetActive: Boolean,
+    currentFolder: FolderApi,
     folderService: FolderService,
     fileService: FileService
 ) {
@@ -61,6 +74,8 @@ private fun AppHeader(
     val actionMenuMaxWidth = animateIntAsState(if (sideSheetActive) 0 else 300, animationSpec = tween())
     val buttonOpacity = animateFloatAsState(targetValue = if (sideSheetActive) 0f else 1f)
     val buttonColors = iconButtonColors()
+    var isShowingNewFolderModal by remember { mutableStateOf(false) }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp)
@@ -73,7 +88,7 @@ private fun AppHeader(
             // TODO button events
             Row(modifier = Modifier.alpha(buttonOpacity.value).widthIn(max = actionMenuMaxWidth.value.dp)) {
                 ButtonTooltip("Create empty folder") {
-                    IconButton(onClick = {}, colors = buttonColors) {
+                    IconButton(onClick = { isShowingNewFolderModal = true }, colors = buttonColors) {
                         Icon(Icons.Default.CreateNewFolder, "create new folder")
                     }
                 }
@@ -103,5 +118,22 @@ private fun AppHeader(
                 navController.navigate(SearchResultsRoute(it))
             }
         }
+    }
+
+    if (isShowingNewFolderModal) {
+        TextDialog(
+            title = "Create empty folder",
+            bodyText = "Folder name",
+            onCancel = { isShowingNewFolderModal = false },
+            confirmText = "Create",
+            onConfirm = {
+                if (it.isNotBlank()) {
+                    isShowingNewFolderModal = false
+                    runBlocking(Dispatchers.IO) {
+                        // TODO no, bad, this should send events to the parent, and the parent (main function) needs to have a view. We will run into issues in the future with showing this app header on e.g. file view, and having proper mvc for the main application shell will help
+                        folderService.createFolder(CreateFolder(name = it, parentId = currentFolder.id, listOf()))
+                    }
+                }
+            })
     }
 }

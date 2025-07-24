@@ -7,10 +7,12 @@ import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
@@ -21,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -113,16 +114,10 @@ fun MainDesktopBody(
         mutableStateOf(
             NavState(
                 LinkedList<FolderApi>(
+                    // using a fake representation of the root folder here so that we don't have to break structure to pull it. Also since it's just for nav, it doesn't matter if we don't have the children here
                     listOf(
-                        // using a fake representation of the root folder here so that we don't have to break structure to pull it. Also since it's just for nav, it doesn't matter if we don't have the children here
                         FolderApi(
-                            0,
-                            null,
-                            "root",
-                            "~",
-                            emptyList(),
-                            emptyList(),
-                            emptyList()
+                            0, null, "root", "~", emptyList(), emptyList(), emptyList()
                         )
                     )
                 )
@@ -135,9 +130,11 @@ fun MainDesktopBody(
     val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 0f else 1f)
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
     // This is lifted up and used to make FolderPage refresh its data when needed
-    var sideSheetUpdateKey: Int by remember { mutableStateOf(0) }
+    // TODO I don't like how the number of these is growing...
+    var sideSheetUpdateKey by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
-    var folderPageUpdateKey: Int by remember { mutableStateOf(0) }
+    var folderPageUpdateKey by remember { mutableStateOf(0) }
+    var actionButtonsUpdateKey by remember { mutableStateOf(0) }
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
@@ -145,14 +142,11 @@ fun MainDesktopBody(
                 searchBarFocuser = searchBarFocuser,
                 navController = navController,
                 sideSheetActive = sideSheetStatus !is NoContents,
+                currentFolder = navBarState.last
             )
-            NavBar(navBarState) { folder ->
-                val index = navBarState.folders.indexOfFirst { it.id == folder.id }
-                if (index != -1) {
-                    val newFolders = navBarState.folders.subList(0, index + 1)
-                    navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
-                }
-                navController.navigate(FolderRoute(folder.id))
+            NavBar(state = navBarState) { folders ->
+                navBarState = navBarState.copy(folders = folders)
+                navController.navigate(FolderRoute(folders.last().id))
             }
             // stuff that changes
             NavHost(navController = navController, startDestination = LoadingRoute()) {
@@ -167,13 +161,11 @@ fun MainDesktopBody(
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
                     FolderPage(
                         view = viewModel,
-                        refreshKey = sideSheetUpdateKey,
+                        refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey,
                         onFolderInfo = { sideSheetStatus = FolderSideSheet(it) },
                         onUpdate = { folderPageUpdateKey += 1 }) {
                         navController.navigate(FolderRoute(it.id))
-                        val newFolders = navBarState.folders.toMutableList()
-                        newFolders.add(it)
-                        navBarState = navBarState.copy(folders = LinkedList<FolderApi>(newFolders))
+                        navBarState += it
                     }
                 }
                 composable<SearchResultsRoute> { backStack ->
@@ -194,7 +186,7 @@ fun MainDesktopBody(
                     FolderDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { sideSheetStatus = NoContents() },
-                        refreshKey = folderPageUpdateKey
+                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey
                     ) {
                         sideSheetUpdateKey += 1
                     }
