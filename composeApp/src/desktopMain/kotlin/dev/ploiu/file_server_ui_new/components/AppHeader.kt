@@ -29,21 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.koin.compose.koinInject
 
-@Composable
-fun AppHeader(
-    searchBarFocuser: FocusRequester,
-    navController: NavController,
-    sideSheetActive: Boolean,
-    currentFolder: FolderApi
-) = AppHeader(
-    searchBarFocuser,
-    navController,
-    sideSheetActive,
-    currentFolder,
-    koinInject<FolderService>(),
-    koinInject<FileService>()
-)
-
 // TODO probably should pull this out into its own general purpose tooltip
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
@@ -62,13 +47,10 @@ private fun ButtonTooltip(tooltipText: String, content: @Composable () -> Unit) 
 }
 
 @Composable
-private fun AppHeader(
+fun AppHeader(
     searchBarFocuser: FocusRequester,
     navController: NavController,
     sideSheetActive: Boolean,
-    currentFolder: FolderApi,
-    folderService: FolderService,
-    fileService: FileService
 ) {
     // setting some crazy high value but also using it for a max size will make sure we can still animate without a weird gap
     val actionMenuMaxWidth = animateIntAsState(if (sideSheetActive) 0 else 300, animationSpec = tween())
@@ -129,10 +111,6 @@ private fun AppHeader(
             onConfirm = {
                 if (it.isNotBlank()) {
                     isShowingNewFolderModal = false
-                    runBlocking(Dispatchers.IO) {
-                        // TODO no, bad, this should send events to the parent, and the parent (main function) needs to have a view. We will run into issues in the future with showing this app header on e.g. file view, and having proper mvc for the main application shell will help
-                        folderService.createFolder(CreateFolder(name = it, parentId = currentFolder.id, listOf()))
-                    }
                 }
             })
     }

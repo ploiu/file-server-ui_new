@@ -9,7 +9,9 @@ import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -81,6 +83,7 @@ fun main() = application {
     }
     FileKit.init(appId = "PloiuFileServer")
     val searchBarFocuser = remember { FocusRequester() }
+    val viewModel = koinInject<ApplicationViewModel>()
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(
         onCloseRequest = ::exitApplication,
@@ -100,7 +103,7 @@ fun main() = application {
         }
     ) {
         AppTheme {
-            MainDesktopBody(searchBarFocuser = searchBarFocuser)
+            MainDesktopBody(searchBarFocuser = searchBarFocuser, viewModel = viewModel)
         }
     }
 }
@@ -109,6 +112,7 @@ fun main() = application {
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     searchBarFocuser: FocusRequester,
+    viewModel: ApplicationViewModel
 ) {
     var navBarState: NavState by remember {
         mutableStateOf(
@@ -131,6 +135,7 @@ fun MainDesktopBody(
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
     // This is lifted up and used to make FolderPage refresh its data when needed
     // TODO I don't like how the number of these is growing...
+    var folderUpdateKey by remember { mutableStateOf(0) }
     var sideSheetUpdateKey by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey by remember { mutableStateOf(0) }
@@ -142,12 +147,13 @@ fun MainDesktopBody(
                 searchBarFocuser = searchBarFocuser,
                 navController = navController,
                 sideSheetActive = sideSheetStatus !is NoContents,
-                currentFolder = navBarState.last
             )
+            Spacer(Modifier.height(8.dp))
             NavBar(state = navBarState) { folders ->
                 navBarState = navBarState.copy(folders = folders)
                 navController.navigate(FolderRoute(folders.last().id))
             }
+            Spacer(Modifier.height(8.dp))
             // stuff that changes
             NavHost(navController = navController, startDestination = LoadingRoute()) {
                 // TODO about page with open source licenses (probably located in settings page) - check fonts, icons
@@ -163,7 +169,8 @@ fun MainDesktopBody(
                         view = viewModel,
                         refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey,
                         onFolderInfo = { sideSheetStatus = FolderSideSheet(it) },
-                        onUpdate = { folderPageUpdateKey += 1 }) {
+                        onUpdate = { folderPageUpdateKey += 1 }
+                    ) {
                         navController.navigate(FolderRoute(it.id))
                         navBarState += it
                     }

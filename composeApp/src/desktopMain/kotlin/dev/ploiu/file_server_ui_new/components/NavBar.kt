@@ -49,7 +49,7 @@ operator fun MutableState<NavState>.plusAssign(folder: FolderApi) {
 @Composable
 fun NavBar(state: NavState, clickEntry: (LinkedList<FolderApi>) -> Unit) {
     // TODO support dragging + dropping folders + files to an entry in the navbar
-    FlowRow(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+    FlowRow(modifier = Modifier.padding(start = 16.dp)) {
         for (index in state.indices) {
             val folder = state[index]
             Text(
