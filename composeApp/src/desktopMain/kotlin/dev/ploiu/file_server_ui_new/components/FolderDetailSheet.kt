@@ -132,9 +132,9 @@ fun FolderDetailSheet(
                 modifier = Modifier.testTag("deleteDialog"),
                 onCancel = { dialogState = NoDialogState() },
                 onConfirm = {
-                    onChange()
                     dialogState = NoDialogState()
                     viewModel.deleteFolder(it)
+                    onChange()
                 }
             )
         }

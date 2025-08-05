@@ -7,11 +7,7 @@ import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -31,7 +27,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.*
-import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -42,16 +37,13 @@ import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
+import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.CreatingEmptyFolder
+import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.NoModal
 import io.github.vinceglb.filekit.FileKit
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import java.util.*
-
-private sealed interface SideSheetStatus
-private class NoContents : SideSheetStatus
-private data class FolderSideSheet(val folder: FolderApi) : SideSheetStatus
-private data class FileSideSheet(val file: FileApi) : SideSheetStatus
 
 @Composable
 actual fun AppTheme(
@@ -103,7 +95,7 @@ fun main() = application {
         }
     ) {
         AppTheme {
-            MainDesktopBody(searchBarFocuser = searchBarFocuser, viewModel = viewModel)
+            MainDesktopBody(searchBarFocuser = searchBarFocuser, appViewModel = viewModel)
         }
     }
 }
@@ -112,7 +104,7 @@ fun main() = application {
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     searchBarFocuser: FocusRequester,
-    viewModel: ApplicationViewModel
+    appViewModel: ApplicationViewModel
 ) {
     var navBarState: NavState by remember {
         mutableStateOf(
@@ -128,14 +120,15 @@ fun MainDesktopBody(
             )
         )
     }
-    var sideSheetStatus: SideSheetStatus by remember { mutableStateOf(NoContents()) }
+    val (modalState, sideSheetStatus) = appViewModel.state.collectAsState().value
     val mainContentWidth =
-        animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 1f else .7f, animationSpec = tween())
-    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoContents) 0f else 1f)
+        animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 1f else .7f, animationSpec = tween())
+    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 0f else 1f)
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
     // This is lifted up and used to make FolderPage refresh its data when needed
     // TODO I don't like how the number of these is growing...
-    var folderUpdateKey by remember { mutableStateOf(0) }
+    var headerFolderUpdateKey by remember { mutableStateOf(0) }
+    TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
     var sideSheetUpdateKey by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey by remember { mutableStateOf(0) }
@@ -146,7 +139,8 @@ fun MainDesktopBody(
             AppHeader(
                 searchBarFocuser = searchBarFocuser,
                 navController = navController,
-                sideSheetActive = sideSheetStatus !is NoContents,
+                sideSheetActive = sideSheetStatus !is NoSideSheet,
+                onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) }
             )
             Spacer(Modifier.height(8.dp))
             NavBar(state = navBarState) { folders ->
@@ -168,7 +162,7 @@ fun MainDesktopBody(
                     FolderPage(
                         view = viewModel,
                         refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey,
-                        onFolderInfo = { sideSheetStatus = FolderSideSheet(it) },
+                        onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = { folderPageUpdateKey += 1 }
                     ) {
                         navController.navigate(FolderRoute(it.id))
@@ -186,13 +180,14 @@ fun MainDesktopBody(
         // FIXME updates from FolderPage won't reflect in side sheet
         StandardSideSheet(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
-            onCloseAction = { sideSheetStatus = NoContents() }) {
+            onCloseAction = appViewModel::closeSideSheet
+        ) {
             when (val currentSheet = sideSheetStatus) {
                 is FolderSideSheet -> {
                     val viewModel = koinInject<FolderDetailViewModel> { parametersOf(currentSheet.folder.id) }
                     FolderDetailSheet(
                         viewModel = viewModel,
-                        closeSelf = { sideSheetStatus = NoContents() },
+                        closeSelf = { appViewModel.sideSheetItem(null) },
                         refreshKey = folderPageUpdateKey + actionButtonsUpdateKey
                     ) {
                         sideSheetUpdateKey += 1
@@ -200,8 +195,24 @@ fun MainDesktopBody(
                 }
 
                 is FileSideSheet -> TODO()
-                is NoContents -> {}
+                is NoSideSheet -> {}
             }
+        }
+        // app modals
+        when (modalState) {
+            CreatingEmptyFolder -> TextDialog(
+                title = "Create empty folder",
+                bodyText = "Folder name",
+                onCancel = { appViewModel.closeModal() },
+                confirmText = "Create",
+                onConfirm = {
+                    if (it.isNotBlank()) {
+                        appViewModel.closeModal()
+                        appViewModel.addEmptyFolder(it)
+                    }
+                })
+
+            NoModal -> {}
         }
     }
 }

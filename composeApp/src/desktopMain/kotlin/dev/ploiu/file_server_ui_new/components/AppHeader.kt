@@ -20,14 +20,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import dev.ploiu.file_server_ui_new.model.CreateFolder
-import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.service.FileService
-import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsRoute
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import org.koin.compose.koinInject
 
 // TODO probably should pull this out into its own general purpose tooltip
 @Composable
@@ -51,6 +44,7 @@ fun AppHeader(
     searchBarFocuser: FocusRequester,
     navController: NavController,
     sideSheetActive: Boolean,
+    onCreateFolderClick: () -> Unit,
 ) {
     // setting some crazy high value but also using it for a max size will make sure we can still animate without a weird gap
     val actionMenuMaxWidth = animateIntAsState(if (sideSheetActive) 0 else 300, animationSpec = tween())
@@ -70,22 +64,22 @@ fun AppHeader(
             // TODO button events
             Row(modifier = Modifier.alpha(buttonOpacity.value).widthIn(max = actionMenuMaxWidth.value.dp)) {
                 ButtonTooltip("Create empty folder") {
-                    IconButton(onClick = { isShowingNewFolderModal = true }, colors = buttonColors) {
+                    IconButton(onClick = onCreateFolderClick, colors = buttonColors) {
                         Icon(Icons.Default.CreateNewFolder, "create new folder")
                     }
                 }
                 ButtonTooltip("Upload folder") {
-                    IconButton(onClick = {}, colors = buttonColors) {
+                    IconButton(onClick = { TODO("upload folder not implemented") }, colors = buttonColors) {
                         Icon(Icons.Default.DriveFolderUpload, "upload folder")
                     }
                 }
                 ButtonTooltip("Upload file") {
-                    IconButton(onClick = {}, colors = buttonColors) {
+                    IconButton(onClick = { TODO("upload file not implemented") }, colors = buttonColors) {
                         Icon(Icons.Default.UploadFile, "upload file")
                     }
                 }
                 ButtonTooltip("Settings") {
-                    IconButton(onClick = {}, colors = buttonColors) {
+                    IconButton(onClick = { TODO("settings button not implemented") }, colors = buttonColors) {
                         Icon(Icons.Default.Settings, "settings")
                     }
                 }
@@ -100,18 +94,5 @@ fun AppHeader(
                 navController.navigate(SearchResultsRoute(it))
             }
         }
-    }
-
-    if (isShowingNewFolderModal) {
-        TextDialog(
-            title = "Create empty folder",
-            bodyText = "Folder name",
-            onCancel = { isShowingNewFolderModal = false },
-            confirmText = "Create",
-            onConfirm = {
-                if (it.isNotBlank()) {
-                    isShowingNewFolderModal = false
-                }
-            })
     }
 }
