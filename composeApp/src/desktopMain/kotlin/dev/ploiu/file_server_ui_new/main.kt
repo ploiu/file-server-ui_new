@@ -128,7 +128,7 @@ fun MainDesktopBody(
     // This is lifted up and used to make FolderPage refresh its data when needed
     // TODO I don't like how the number of these is growing...
     var headerFolderUpdateKey by remember { mutableStateOf(0) }
-    TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
+    // TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
     var sideSheetUpdateKey by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey by remember { mutableStateOf(0) }
