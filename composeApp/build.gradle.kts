@@ -1,3 +1,4 @@
+import org.apache.tools.ant.taskdefs.condition.Os
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
@@ -127,4 +128,10 @@ compose.desktop {
             }
         }
     }
+}
+
+val credsFfiDir = file("../creds-ffi")
+
+tasks.register<Exec>("buildCredsFfi") {
+
 }

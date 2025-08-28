@@ -1,0 +1,3 @@
+[submodule "creds-ffi"]
+	path = creds-ffi
+	url = https://github.com/ploiu/creds-ffi.git

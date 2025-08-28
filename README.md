@@ -6,3 +6,14 @@
 - wiki
 - screenshots
 - etc
+
+## Building
+
+### Dependencies
+
+- latest java LTS version
+
+#### For building desktop
+
+- Deno
+- Rust
