@@ -19,3 +19,6 @@ captures
 app.properties
 cert*.x509
 testDirs
+
+*.so
+*.dll

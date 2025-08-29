@@ -133,5 +133,5 @@ compose.desktop {
 val credsFfiDir = file("../creds-ffi")
 
 tasks.register<Exec>("buildCredsFfi") {
-
+    TODO("determine OS and then call correct script")
 }
