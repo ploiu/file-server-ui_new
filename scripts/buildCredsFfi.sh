@@ -13,6 +13,7 @@ fi
 
 source "$projectPath"/scripts/colors.sh
 
+magentaFg "building creds-ffi..."
 # we only support linux, so make sure we're on linux
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 # arch will be x86_64 if it's x86, but we will replace the _ with a - to help later on
@@ -40,7 +41,7 @@ grayFg "building creds-ffi..."
 
 if ! cargo build --release
 then
-    redFg "build failed! Check above logs for more details"
+    redFg "creds-ffi build failed! Check above logs for more details"
     exit 1
 fi
 
@@ -48,6 +49,6 @@ fi
 libOutputPath=$projectPath/composeApp/src/desktopMain/resources/$os-$arch
 rm -rf "$libOutputPath"
 mkdir -p "$libOutputPath"
-magentaFg "copying built library to $libOutputPath"
+grayFg "copying built library to $libOutputPath"
 cp ./target/release/librust_credential_manager.so "$libOutputPath"
-greenFg "build complete!"
+greenFg "creds-ffi built successfully!"

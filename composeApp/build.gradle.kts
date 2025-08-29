@@ -132,6 +132,16 @@ compose.desktop {
 
 val credsFfiDir = file("../creds-ffi")
 
+tasks.named("compileKotlinDesktop") {
+    dependsOn("buildCredsFfi")
+}
+
 tasks.register<Exec>("buildCredsFfi") {
-    TODO("determine OS and then call correct script")
+    workingDir = projectDir.parentFile
+    if (Os.isFamily(Os.FAMILY_UNIX)) {
+        commandLine("sh", "-c", "./scripts/buildCredsFfi.sh")
+    } else {
+        TODO("windows support")
+    }
+
 }
