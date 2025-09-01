@@ -1,32 +1,34 @@
 [versions]
 agp = "8.11.0"
 android-compileSdk = "35"
-android-minSdk = "24"
+android-minSdk = "30"
 android-targetSdk = "35"
 androidx-activity = "1.10.1"
 androidx-appcompat = "1.7.1"
 androidx-constraintlayout = "2.2.1"
-androidx-core = "1.16.0"
-androidx-espresso = "3.6.1"
-androidx-lifecycle = "2.9.0"
-androidx-testExt = "1.2.1"
-compose-navigation = "2.9.0-beta02"
-composeHotReload = "1.0.0-alpha10"
-composeMultiplatform = "1.8.1"
+androidx-core = "1.17.0"
+androidx-espresso = "3.7.0"
+androidx-lifecycle = "2.9.3"
+androidx-testExt = "1.3.0"
+compose-navigation = "2.9.0-rc01"
+composeHotReload = "1.0.0-beta06"
+composeMultiplatform = "1.8.2"
 jetbrains-compose = "1.7.3"
-junit-jupiter = "5.12.2"
-koin = "4.0.4"
-kotlin = "2.1.21"
-kotlinLoggingJvm = "7.0.3"
-kotlinx = "1.8.1"
+junit-jupiter = "5.13.4"
+koin = "4.1.0"
+kotlin = "2.2.10"
+kotlinLoggingJvm = "7.0.13"
+kotlinx = "1.9.0"
 kotlinx-coroutines = "1.10.2"
-okhttp = "4.12.0"
+okhttp = "5.1.0"
 retrofit = "3.0.0"
 retrofit-kotlinx-serialization = "3.0.0"
-slf4jSimple = "2.0.12"
-kotlin-result = "2.0.0"
+slf4jSimple = "2.0.17"
+kotlin-result = "2.1.0"
 # native file dialogs without having to deal with native bindings
-filekit = "0.10.0-beta04"
+filekit = "0.10.0"
+# for bindings with rust_credential_manager
+jna = "5.17.0"
 
 
 [libraries]
@@ -61,6 +63,7 @@ kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", versi
 kotlin-result-coroutines = { module = "com.michael-bull.kotlin-result:kotlin-result-coroutines", version.ref = "kotlin-result" }
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

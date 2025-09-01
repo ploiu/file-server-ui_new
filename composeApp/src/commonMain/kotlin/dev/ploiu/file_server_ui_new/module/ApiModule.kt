@@ -19,11 +19,21 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.text.Charsets.UTF_8
 
+// global objects are bad, but since creds aren't known at compile time, we need to have a global static object that contains them
+object GLOBAL {
+    var username: String? = null
+    var password: String? = null
+
+    val creds: String
+        get() = "Basic " + Base64.encode(String.format("%s:%s", username, password).toByteArray())
+}
+
 val clientModule = module {
-    single<Retrofit> { retrofitClient(get(), get()) }
+    single<Retrofit> { retrofitClient(get()) }
     single<ApiClient> { apiClient(get()) }
     single<TagClient> { tagClient(get()) }
     single<FileClient> { fileClient(get()) }
@@ -49,13 +59,13 @@ fun readServerCerts(): HandshakeCertificates = runBlocking {
 }
 
 @OptIn(ExperimentalEncodingApi::class)
-fun retrofitClient(serverConfig: ServerConfig, auth: Auth): Retrofit {
+fun retrofitClient(serverConfig: ServerConfig): Retrofit {
     val certificates = readServerCerts()
     val client = OkHttpClient.Builder()
         .sslSocketFactory(certificates.sslSocketFactory(), certificates.trustManager)
         .addInterceptor { chain ->
             val req =
-                chain.request().newBuilder().addHeader("Authorization", auth.basicAuth()).build()
+                chain.request().newBuilder().addHeader("Authorization", GLOBAL.creds).build()
             chain.proceed(req)
         }
         .connectTimeout(1, TimeUnit.DAYS)

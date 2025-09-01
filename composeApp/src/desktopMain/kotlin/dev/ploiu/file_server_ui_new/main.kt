@@ -27,12 +27,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.*
+import dev.ploiu.file_server_ui_new.ffi.creds.CredsLib
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
 import dev.ploiu.file_server_ui_new.module.serviceModule
 import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoadingPage
+import dev.ploiu.file_server_ui_new.pages.LoginPage
+import dev.ploiu.file_server_ui_new.pages.LoginRoute
 import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
@@ -100,6 +103,14 @@ fun main() = application {
     }
 }
 
+// some routes shouldn't have the app header show up
+val headerlessRoutes = listOf(
+    LoginRoute::class.qualifiedName,
+    LoadingRoute::class.qualifiedName
+)
+
+private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
+
 @Composable
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
@@ -133,24 +144,34 @@ fun MainDesktopBody(
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey by remember { mutableStateOf(0) }
     var actionButtonsUpdateKey by remember { mutableStateOf(0) }
+    var shouldShowHeader by remember {mutableStateOf(false)}
+
+    LaunchedEffect(navController.currentBackStackEntry?.id) {
+        shouldShowHeader = !isHeaderless(navController.currentBackStackEntry?.destination?.route)
+    }
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
-            AppHeader(
-                searchBarFocuser = searchBarFocuser,
-                navController = navController,
-                sideSheetActive = sideSheetStatus !is NoSideSheet,
-                onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) }
-            )
-            Spacer(Modifier.height(8.dp))
-            NavBar(state = navBarState) { folders ->
-                navBarState = navBarState.copy(folders = folders)
-                navController.navigate(FolderRoute(folders.last().id))
+            if(shouldShowHeader) {
+                AppHeader(
+                    searchBarFocuser = searchBarFocuser,
+                    navController = navController,
+                    sideSheetActive = sideSheetStatus !is NoSideSheet,
+                    onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) }
+                )
+                Spacer(Modifier.height(8.dp))
+                NavBar(state = navBarState) { folders ->
+                    navBarState = navBarState.copy(folders = folders)
+                    navController.navigate(FolderRoute(folders.last().id))
+                }
+                Spacer(Modifier.height(8.dp))
             }
-            Spacer(Modifier.height(8.dp))
             // stuff that changes
-            NavHost(navController = navController, startDestination = LoadingRoute()) {
+            NavHost(navController = navController, startDestination = LoginRoute()) {
                 // TODO about page with open source licenses (probably located in settings page) - check fonts, icons
+                composable<LoginRoute> {
+                    LoginPage(navController = navController)
+                }
                 composable<LoadingRoute> {
                     LoadingPage {
                         navController.navigate(FolderRoute(0))

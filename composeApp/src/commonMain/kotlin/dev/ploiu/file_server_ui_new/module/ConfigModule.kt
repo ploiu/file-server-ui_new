@@ -9,6 +9,7 @@ import java.util.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
+@Deprecated(message =  "Auth shouldn't exist at compile time", level = DeprecationLevel.ERROR)
 data class Auth(val username: String, val password: String) {
     @ExperimentalEncodingApi
     fun basicAuth(): String {
@@ -22,16 +23,7 @@ val configModule = module {
             Res.readBytes("files/app.properties")
         }
     }
-    single<Auth> { getAuth(get(named("properties"))) }
     single<ServerConfig> { getServerConfig(get(named("properties"))) }
-}
-
-fun getAuth(propBytes: ByteArray): Auth {
-    return propBytes.inputStream().use { stream ->
-        val props = Properties()
-        props.load(stream)
-        Auth(props.getProperty("auth.username"), props.getProperty("auth.password"))
-    }
 }
 
 fun getServerConfig(propBytes: ByteArray): ServerConfig {

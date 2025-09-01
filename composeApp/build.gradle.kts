@@ -76,6 +76,7 @@ kotlin {
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs.compose)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
+            implementation(libs.jna.platform)
         }
         desktopTest.dependencies {
             implementation(compose.desktop.currentOs)
@@ -132,7 +133,7 @@ compose.desktop {
 
 val credsFfiDir = file("../creds-ffi")
 
-tasks.named("compileKotlinDesktop") {
+tasks.named("desktopProcessResources") {
     dependsOn("buildCredsFfi")
 }
 
