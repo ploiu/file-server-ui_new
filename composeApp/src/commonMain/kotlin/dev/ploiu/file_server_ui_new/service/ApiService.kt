@@ -1,7 +1,12 @@
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.mapError
+import dev.ploiu.file_server_ui_new.ApiError
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
+import dev.ploiu.file_server_ui_new.model.DiskInfo
+import dev.ploiu.file_server_ui_new.processResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 
@@ -17,7 +22,7 @@ class IncompatibleResult(val serverVersion: String, val compatibleVersion: Strin
 data class ErrorResult(val error: Exception) : ServerCompatibilityResult()
 
 
-class ApiService(val serverConfig: ServerConfig, val client: ApiClient) {
+class ApiService(private val serverConfig: ServerConfig, private val client: ApiClient) {
     private val log = KotlinLogging.logger { }
 
     suspend fun getApiInfo() = client.getApiInfo()
@@ -41,5 +46,9 @@ class ApiService(val serverConfig: ServerConfig, val client: ApiClient) {
             log.error("Incompatible with current server version.")
             IncompatibleResult(serverVersion, serverConfig.compatibleVersion)
         }
+    }
+
+    suspend fun getStorageInfo(): Result<DiskInfo, ApiError> {
+        return processResponse(client.getStorageInfo())
     }
 }

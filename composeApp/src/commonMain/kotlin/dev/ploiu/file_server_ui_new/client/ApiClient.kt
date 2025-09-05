@@ -2,6 +2,7 @@ package dev.ploiu.file_server_ui_new.client
 
 import dev.ploiu.file_server_ui_new.model.DiskInfo
 import dev.ploiu.file_server_ui_new.model.Metadata
+import retrofit2.Response
 import retrofit2.http.GET
 
 interface ApiClient {
@@ -9,5 +10,5 @@ interface ApiClient {
     suspend fun getApiInfo(): Metadata
 
     @GET("/api/disk")
-    suspend fun getStorageInfo(): DiskInfo
+    suspend fun getStorageInfo(): Response<DiskInfo>
 }
