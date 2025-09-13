@@ -8,6 +8,7 @@ import dev.ploiu.file_server_ui_new.ffi.creds.OSError
 import dev.ploiu.file_server_ui_new.ffi.creds.SavePasswordResult
 import dev.ploiu.file_server_ui_new.ffi.creds.Success
 
+// TODO pull name from config file so that I can have separate development creds and production creds
 private const val APP_NAME = "ploiu-file-server"
 
 /** TODO app config file - unique app uuid to make finding creds harder programmatically */

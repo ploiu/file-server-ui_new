@@ -24,6 +24,7 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.*
@@ -35,7 +36,6 @@ import dev.ploiu.file_server_ui_new.module.serviceModule
 import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoadingPage
 import dev.ploiu.file_server_ui_new.pages.LoginPage
-import dev.ploiu.file_server_ui_new.pages.LoginRoute
 import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
@@ -144,15 +144,16 @@ fun MainDesktopBody(
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var folderPageUpdateKey by remember { mutableStateOf(0) }
     var actionButtonsUpdateKey by remember { mutableStateOf(0) }
-    var shouldShowHeader by remember {mutableStateOf(false)}
+    var shouldShowHeader by remember { mutableStateOf(false) }
+    val currentRoute = navController.currentBackStackEntryAsState().value
 
-    LaunchedEffect(navController.currentBackStackEntry?.id) {
-        shouldShowHeader = !isHeaderless(navController.currentBackStackEntry?.destination?.route)
+    LaunchedEffect(currentRoute) {
+        shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)
     }
 
     Row {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
-            if(shouldShowHeader) {
+            if (shouldShowHeader) {
                 AppHeader(
                     searchBarFocuser = searchBarFocuser,
                     navController = navController,
@@ -172,6 +173,7 @@ fun MainDesktopBody(
                 composable<LoginRoute> {
                     LoginPage(navController = navController)
                 }
+                // TODO remove?
                 composable<LoadingRoute> {
                     LoadingPage {
                         navController.navigate(FolderRoute(0))

@@ -1,37 +1,47 @@
 package dev.ploiu.file_server_ui_new.pages
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.TextButton
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.onClick
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material.TextField
-import androidx.compose.material3.Button
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import dev.ploiu.file_server_ui_new.client.ApiClient
-import kotlinx.serialization.Serializable
+import dev.ploiu.file_server_ui_new.viewModel.FolderRoute
+import dev.ploiu.file_server_ui_new.viewModel.LoginError
+import dev.ploiu.file_server_ui_new.viewModel.LoginPageViewModel
+import dev.ploiu.file_server_ui_new.viewModel.LoginSuccess
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LoginPage(client: ApiClient = koinInject<ApiClient>(), navController: NavController) {
+fun LoginPage(viewModel: LoginPageViewModel = koinInject(), navController: NavController) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val (pageState, shouldSavePassword) = viewModel.state.collectAsState().value
 
-    // TODO("fields, button, ask to save password, config, nav on successful password")
+    LaunchedEffect(Unit) {
+        viewModel.attemptAutoLogin()
+    }
+
+    LaunchedEffect(pageState) {
+        println(pageState)
+        if (pageState is LoginSuccess) {
+            if (shouldSavePassword) {
+                viewModel.savePassword(username, password)
+            }
+            navController.navigate(FolderRoute(0))
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -52,7 +62,22 @@ fun LoginPage(client: ApiClient = koinInject<ApiClient>(), navController: NavCon
             visualTransformation = PasswordVisualTransformation()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = {}) {
+        if (pageState is LoginError) {
+            Text(text = pageState.message, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = shouldSavePassword, onCheckedChange = { viewModel.setSavePassword(it) })
+            Text(
+                text = "Remember Me",
+                modifier = Modifier.onClick(onClick = { viewModel.setSavePassword(!shouldSavePassword) })
+            )
+        }
+        Button(onClick = {
+            if (username.isNotBlank() && password.isNotBlank()) {
+                viewModel.attemptManualLogin(username, password)
+            }
+        }) {
             Text("Sign in")
         }
     }

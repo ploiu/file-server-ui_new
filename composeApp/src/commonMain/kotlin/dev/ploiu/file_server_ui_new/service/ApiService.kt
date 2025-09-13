@@ -1,5 +1,7 @@
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.mapError
 import dev.ploiu.file_server_ui_new.ApiError
@@ -50,5 +52,17 @@ class ApiService(private val serverConfig: ServerConfig, private val client: Api
 
     suspend fun getStorageInfo(): Result<DiskInfo, ApiError> {
         return processResponse(client.getStorageInfo())
+    }
+
+    /**
+     * checks if creds have been loaded properly. Success means the credentials input by the user work. Failure will return an http status code
+     */
+    suspend fun authenticatedPing(): Result<Unit, Int> {
+        val res = client.getStorageInfo()
+        return if (res.isSuccessful) {
+            Ok(Unit)
+        } else {
+            Err(res.code())
+        }
     }
 }
