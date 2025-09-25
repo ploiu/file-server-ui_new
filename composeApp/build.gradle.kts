@@ -67,14 +67,14 @@ kotlin {
             implementation(libs.kotlin.result)
             implementation(libs.kotlin.result.coroutines)
             implementation(libs.jetbrains.compose.material.icons)
+            implementation(libs.filekit.core)
+            implementation(libs.filekit.dialogs.compose)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.koin.compose)
             implementation(libs.koin.composeVM)
-            implementation(libs.filekit.core)
-            implementation(libs.filekit.dialogs.compose)
             implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
             implementation(libs.jna.platform)
         }

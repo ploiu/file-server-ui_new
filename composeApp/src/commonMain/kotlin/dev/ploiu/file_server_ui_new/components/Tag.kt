@@ -29,12 +29,12 @@ private fun TagChipColors.into() = inputChipColors(
 @Composable
 fun Tag(
     tag: TagApi,
+    modifier: Modifier = Modifier,
     colors: TagChipColors = TagChipColors(
         containerColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .12f),
         labelColor = LocalContentColor.current,
         iconColor = LocalContentColor.current
     ),
-    modifier: Modifier = Modifier,
     requestDelete: (TagApi) -> Unit,
 ) {
     InputChip(

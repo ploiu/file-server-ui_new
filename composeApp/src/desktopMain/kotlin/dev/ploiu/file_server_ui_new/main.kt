@@ -111,6 +111,7 @@ val headerlessRoutes = listOf(
 
 private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
 
+
 @Composable
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
@@ -173,7 +174,7 @@ fun MainDesktopBody(
                 composable<LoginRoute> {
                     LoginPage(navController = navController)
                 }
-                // TODO remove?
+                // TODOTODO remove?
                 composable<LoadingRoute> {
                     LoadingPage {
                         navController.navigate(FolderRoute(0))

@@ -31,6 +31,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderError
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
+import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
@@ -51,7 +52,7 @@ private data class RenameFolderAction(val folder: FolderApi) : FolderContextActi
 private data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
 // This doesn't affect page state in the same way the others do
-private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction
+private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
 @Composable
 fun FolderPage(
@@ -63,11 +64,19 @@ fun FolderPage(
     onFolderNav: (FolderApi) -> Unit,
 ) {
     // TODO("add folder functionality")
-    val (pageState, previews) = view.state.collectAsState().value
+    val (pageState, previews, errorMessage) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
             NoFolderAction()
         )
+    }
+    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
+        val actionState = folderActionState
+        if (directory != null && actionState is DownloadFolderAction) {
+            TODO("old app checks if you want to overwrite the file. Put a function to check if the folder already exists in that location and then throw up a confirm modal to ask the user if they want to proceed")
+            view.downloadFolder(actionState.folder, directory)
+        }
+        folderActionState = NoFolderAction()
     }
 
     LaunchedEffect(Objects.hash(view.folderId, refreshKey)) {
@@ -78,8 +87,7 @@ fun FolderPage(
     val onFolderContextAction: (FolderContextAction) -> Unit = {
         when (it) {
             is DownloadFolderAction -> {
-                view.downloadFolder(it.folder)
-                folderActionState = NoFolderAction()
+                folderActionState = DownloadFolderAction(it.folder)
             }
 
             is InfoFolderAction -> {
@@ -127,7 +135,9 @@ fun FolderPage(
                     }
                 })
         }
-
+        is DownloadFolderAction -> {
+            directoryPicker.launch()
+        }
         is DeleteFolderAction -> TODO("Delete Folder Functionality")
         is NoFolderAction -> Unit
     }

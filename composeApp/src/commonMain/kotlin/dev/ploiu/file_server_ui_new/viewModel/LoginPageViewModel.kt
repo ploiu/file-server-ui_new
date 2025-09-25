@@ -54,11 +54,12 @@ class LoginPageViewModel(
      *
      * - nothing is set if no creds are found
      * - pageState changes to a [LoginError] with an error message explaining what happened if retrieving the creds fails
-     * - loginResult is set to [LoginResult.SUCCESS] if the creds were retrieved
-     * - loginResult is set to [LoginResult.FAIL] if the creds were retrieved but are rejected by the server
+     * - pageState changes to a [LoginSuccess] if the creds can be used to authenticate to the server
+     * - pageState changes to a [LoginError] if the creds were retrieved but are rejected by the server
      */
     fun attemptAutoLogin() = viewModelScope.launch(Dispatchers.IO) {
         // first step is attempt to load any stored creds
+        _state.update { it.copy(pageState = LoginLoading()) }
         when (val creds = retrieveCreds()) {
             is NoCredsFound -> {
                 // do nothing - the user never saved creds so we can't auto login
@@ -94,6 +95,7 @@ class LoginPageViewModel(
     fun attemptManualLogin(username: String, password: String) = viewModelScope.launch(Dispatchers.IO) {
         GLOBAL.username = username
         GLOBAL.password = password
+        _state.update { it.copy(pageState = LoginLoading()) }
         apiService.authenticatedPing()
             .onSuccess {
                 this@LoginPageViewModel._state.update {

@@ -125,31 +125,20 @@ class FolderDetailViewModel(
     fun downloadFolder(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is HasFolder) {
-            if (!saveLocation.exists() && !saveLocation.isDirectory()) {
+            if (!saveLocation.exists() || !saveLocation.isDirectory()) {
                 _state.update {
-                    it.copy(
-                        FolderDetailMessage(
-                            currentState.folder,
-                            "Selected directory does not exist"
-                        )
-                    )
+                    it.copy(sheetState = FolderDetailMessage(currentState.folder, "Selected directory does not exist"))
                 }
             } else {
                 folderService.downloadFolder(currentState.folder.id)
                     .onSuccess { res ->
                         val archiveName = currentState.folder.name + ".tar"
-                        // TODO try/catch for error handling
                         Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
                         res.close()
                     }
                     .onFailure { msg ->
                         _state.update {
-                            it.copy(
-                                FolderDetailMessage(
-                                    folder = currentState.folder,
-                                    msg
-                                )
-                            )
+                            it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
                         }
                     }
             }
@@ -160,7 +149,7 @@ class FolderDetailViewModel(
         // this is nice just in case
         clearNonCriticalError()
         val currentState = _state.value.sheetState
-        // basically the same exact behavior as without the non critical error
+        // basically the same exact behavior as without the non-critical error
         if (currentState is HasFolder) {
             _state.update { it.copy(sheetState = FolderDetailLoading()) }
             folderService.updateFolder(toUpdate).onSuccess { loadFolder() }.onFailure { msg ->
