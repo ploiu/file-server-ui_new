@@ -28,7 +28,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.*
-import dev.ploiu.file_server_ui_new.ffi.creds.CredsLib
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -159,7 +158,7 @@ fun MainDesktopBody(
                     searchBarFocuser = searchBarFocuser,
                     navController = navController,
                     sideSheetActive = sideSheetStatus !is NoSideSheet,
-                    onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) }
+                    onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) },
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
@@ -174,7 +173,7 @@ fun MainDesktopBody(
                 composable<LoginRoute> {
                     LoginPage(navController = navController)
                 }
-                // TODOTODO remove?
+                // TODO remove?
                 composable<LoadingRoute> {
                     LoadingPage {
                         navController.navigate(FolderRoute(0))
@@ -201,14 +200,13 @@ fun MainDesktopBody(
                 }
             }
         }
-        // FIXME updates from FolderPage won't reflect in side sheet
         StandardSideSheet(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
             onCloseAction = appViewModel::closeSideSheet
         ) {
-            when (val currentSheet = sideSheetStatus) {
+            when (sideSheetStatus) {
                 is FolderSideSheet -> {
-                    val viewModel = koinInject<FolderDetailViewModel> { parametersOf(currentSheet.folder.id) }
+                    val viewModel = koinInject<FolderDetailViewModel> { parametersOf(sideSheetStatus.folder.id) }
                     FolderDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
@@ -233,6 +231,7 @@ fun MainDesktopBody(
                     if (it.isNotBlank()) {
                         appViewModel.closeModal()
                         appViewModel.addEmptyFolder(it)
+                        actionButtonsUpdateKey += 1
                     }
                 })
 

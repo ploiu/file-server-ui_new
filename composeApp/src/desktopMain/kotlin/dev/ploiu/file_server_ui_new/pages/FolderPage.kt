@@ -15,11 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
@@ -31,6 +34,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderError
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
+import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import kotlinx.coroutines.runBlocking
 import java.util.*
@@ -50,6 +54,7 @@ private data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
 private class NoFolderAction : FolderContextAction, FolderContextState
 private data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 private data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+private data class ConfirmReplaceDownloadFolder(val folder: FolderApi, val directory: PlatformFile) : FolderContextState
 
 // This doesn't affect page state in the same way the others do
 private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
@@ -63,7 +68,6 @@ fun FolderPage(
     onFolderInfo: (FolderApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
-    // TODO("add folder functionality")
     val (pageState, previews, errorMessage) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
@@ -73,10 +77,12 @@ fun FolderPage(
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
         val actionState = folderActionState
         if (directory != null && actionState is DownloadFolderAction) {
-            TODO("old app checks if you want to overwrite the file. Put a function to check if the folder already exists in that location and then throw up a confirm modal to ask the user if they want to proceed")
-            view.downloadFolder(actionState.folder, directory)
+            if (view.checkDownloadFolder(actionState.folder, directory)) {
+                view.downloadFolder(actionState.folder, directory)
+            } else {
+                folderActionState = ConfirmReplaceDownloadFolder(actionState.folder, directory)
+            }
         }
-        folderActionState = NoFolderAction()
     }
 
     LaunchedEffect(Objects.hash(view.folderId, refreshKey)) {
@@ -106,9 +112,18 @@ fun FolderPage(
             CircularProgressIndicator()
         }
 
-        is FolderLoaded -> LoadedFolderList(
-            pageState.folder, previews, onFolderNav, onFolderContextAction
-        )
+        is FolderLoaded -> Column {
+            LoadedFolderList(
+                pageState.folder, previews, onFolderNav, onFolderContextAction
+            )
+            // TODO need a new state for non critical errors (use HasFolder + errorMessage)
+            if (errorMessage != null) {
+                TODO("not showing up. Something something absolutely position at bottom of page")
+                Snackbar {
+                    Text(text = errorMessage, modifier = Modifier.testTag("folderErrorMessage"))
+                }
+            }
+        }
 
         is FolderError -> Dialog(
             title = "An Error Occurred",
@@ -135,10 +150,36 @@ fun FolderPage(
                     }
                 })
         }
+
         is DownloadFolderAction -> {
             directoryPicker.launch()
         }
-        is DeleteFolderAction -> TODO("Delete Folder Functionality")
+
+        is DeleteFolderAction -> TextDialog(
+            title = "Delete folder",
+            bodyText = "Are you sure you want to delete this folder? Type the name to confirm",
+            confirmText = "Delete",
+            onConfirm = {
+                folderActionState = NoFolderAction()
+                view.deleteFolder(action.folder)
+            },
+            onCancel = { folderActionState = NoFolderAction() },
+        )
+
+        is ConfirmReplaceDownloadFolder -> Dialog(
+            title = "File already exists",
+            text = "A file named ${action.folder.name}.tar already exists in the selected directory. Do you want to replace it?",
+            icon = Icons.Default.Error,
+            iconColor = MaterialTheme.colorScheme.error,
+            confirmText = "Replace",
+            dismissText = "Cancel",
+            onDismissRequest = { folderActionState = NoFolderAction() },
+            onConfirmation = {
+                view.downloadFolder(action.folder, action.directory)
+                folderActionState = NoFolderAction()
+            }
+        )
+
         is NoFolderAction -> Unit
     }
 }

@@ -13,6 +13,8 @@ fun Dialog(
     iconColor: Color = LocalContentColor.current,
     onDismissRequest: (() -> Unit)? = null,
     onConfirmation: (() -> Unit)? = null,
+    confirmText: String = "Confirm",
+    dismissText: String = "Dismiss",
 ) {
     AlertDialog(
         icon = {
@@ -38,7 +40,7 @@ fun Dialog(
                         onConfirmation()
                     }
                 ) {
-                    Text("Confirm")
+                    Text(confirmText)
                 }
             }
         },
@@ -49,7 +51,7 @@ fun Dialog(
                         onDismissRequest()
                     }
                 ) {
-                    Text("Dismiss")
+                    Text(dismissText)
                 }
             }
         }

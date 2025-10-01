@@ -12,6 +12,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.exists
 import io.github.vinceglb.filekit.isDirectory
+import io.github.vinceglb.filekit.resolve
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,8 +35,8 @@ data class FolderError(val message: String) : FolderUiState
 data class FolderPageUiModel(
     val pageState: FolderUiState,
     val previews: BatchFilePreview,
-    /** if not null, an error dialog needs to show */
-    val errorMessage: String? = null,
+    /** if not null, an error dialog needs to show. Used for non-critical errors */
+    val errorMessage: String? = "some message",
 )
 
 class FolderPageViewModel(
@@ -55,6 +56,7 @@ class FolderPageViewModel(
     }
 
     fun loadFolder() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+        _state.update { it.copy(pageState = FolderLoading()) }
         val folderRes = folderService.getFolder(folderId)
         folderRes.onSuccess { folder ->
             _state.update { it.copy(pageState = FolderLoaded(folder)) }
@@ -67,18 +69,32 @@ class FolderPageViewModel(
         }
     }
 
+
     /**
-     * handles getting where the user wants to save the folder, downloading the folder from the server,
-     * and writing the folder to the disk at the selected location
-     * */
-    fun downloadFolder(folder: FolderApi, saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-        if (!saveLocation.exists() || !saveLocation.isDirectory()) {
+     * checks if the folder can be downloaded in the passed [saveLocation]. If so, the folder is downloaded. Otherwise,
+     * the state is updated for the ui to signal a confirmation or error to the user
+     */
+    fun checkDownloadFolder(folder: FolderApi, saveLocation: PlatformFile): Boolean {
+        return if (!saveLocation.exists() || !saveLocation.isDirectory()) {
             _state.update {
                 it.copy(errorMessage = "Selected directory does not exist")
             }
+            false
         } else {
+            !saveLocation.resolve("${folder.name}.tar").exists()
+        }
+    }
+
+    /**
+     * Handles downloading the folder to the passed [saveLocation].
+     *
+     * This should only be called if [checkDownloadFolder] succeeds or if the user confirms they want to overwrite
+     * */
+    fun downloadFolder(folder: FolderApi, saveLocation: PlatformFile) =
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             folderService.downloadFolder(folder.id)
                 .onSuccess { res ->
+                    // TODO error / success snackbar
                     val archiveName = folder.name + ".tar"
                     Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
                     res.close()
@@ -89,7 +105,6 @@ class FolderPageViewModel(
                     }
                 }
         }
-    }
 
     /** clears out errorMessage */
     fun clearError() {
@@ -110,5 +125,17 @@ class FolderPageViewModel(
                 _state.update { it.copy(pageState = FolderError(msg)) }
             }
         }
+    }
+
+    /**
+     * deletes the passed [folder] and calls [loadFolder] if successful.
+     * If there's an error, the state is updated to have the error message
+     */
+    fun deleteFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
+        folderService.deleteFolder(folder.id)
+            .onSuccess { loadFolder() }
+            .onFailure { msg ->
+                _state.update { it.copy(errorMessage = msg) }
+            }
     }
 }
