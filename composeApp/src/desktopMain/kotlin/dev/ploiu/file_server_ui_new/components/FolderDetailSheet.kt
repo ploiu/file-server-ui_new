@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Snackbar
+import androidx.compose.material3.Snackbar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -73,7 +73,7 @@ fun FolderDetailSheet(
             }
         }
 
-        is HasFolder -> {
+        is FolderDetailHasFolder -> {
             MainFolderDetails(
                 folder = pageState.folder,
                 onRenameClick = { dialogState = RenameDialogState(pageState.folder) },

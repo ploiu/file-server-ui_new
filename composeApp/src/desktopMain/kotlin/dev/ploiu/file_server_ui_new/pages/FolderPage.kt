@@ -5,24 +5,29 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.ploiu.file_server_ui_new.components.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
@@ -30,9 +35,9 @@ import dev.ploiu.file_server_ui_new.components.TextDialog
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.viewModel.FolderError
-import dev.ploiu.file_server_ui_new.viewModel.FolderLoaded
-import dev.ploiu.file_server_ui_new.viewModel.FolderLoading
+import dev.ploiu.file_server_ui_new.viewModel.FolderPageError
+import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoaded
+import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
@@ -108,24 +113,33 @@ fun FolderPage(
     }
 
     when (pageState) {
-        is FolderLoading -> Column {
+        is FolderPageLoading -> Column {
             CircularProgressIndicator()
         }
 
-        is FolderLoaded -> Column {
+        is FolderPageLoaded -> Box {
             LoadedFolderList(
                 pageState.folder, previews, onFolderNav, onFolderContextAction
             )
-            // TODO need a new state for non critical errors (use HasFolder + errorMessage)
             if (errorMessage != null) {
-                TODO("not showing up. Something something absolutely position at bottom of page")
-                Snackbar {
+                // we have to use weird stuff like this because we're not using the Scaffold for the desktop app
+                // TODO not important now, but make this animate in/out. Make root element be Box for this component.
+                Snackbar(
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-16).dp),
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                    dismissAction = {
+                        IconButton(onClick = { view.clearMessage() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss error message")
+                        }
+                    }
+                ) {
                     Text(text = errorMessage, modifier = Modifier.testTag("folderErrorMessage"))
                 }
             }
         }
 
-        is FolderError -> Dialog(
+        is FolderPageError -> Dialog(
             title = "An Error Occurred",
             text = pageState.message,
             icon = Icons.Default.Error,

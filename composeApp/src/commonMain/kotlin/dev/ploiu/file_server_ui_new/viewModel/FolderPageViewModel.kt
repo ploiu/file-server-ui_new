@@ -27,16 +27,16 @@ import kotlin.io.path.div
 @Serializable
 data class FolderRoute(val id: Long)
 
-sealed interface FolderUiState
-class FolderLoading : FolderUiState
-data class FolderLoaded(val folder: FolderApi) : FolderUiState
-data class FolderError(val message: String) : FolderUiState
+sealed interface FolderPageUiState
+class FolderPageLoading : FolderPageUiState
+data class FolderPageLoaded(val folder: FolderApi) : FolderPageUiState
+data class FolderPageError(val message: String) : FolderPageUiState
 
 data class FolderPageUiModel(
-    val pageState: FolderUiState,
+    val pageState: FolderPageUiState,
     val previews: BatchFilePreview,
-    /** if not null, an error dialog needs to show. Used for non-critical errors */
-    val errorMessage: String? = "some message",
+    /** for non-critical messages that show as a snackbar. Not part of a "HasFolder" state because it's just simpler to do it this way since it doesn't impact main page state */
+    val message: String? = null,
 )
 
 class FolderPageViewModel(
@@ -45,26 +45,26 @@ class FolderPageViewModel(
     val folderId: Long,
 ) : ViewModel() {
     private val log = KotlinLogging.logger { }
-    private val _state = MutableStateFlow(FolderPageUiModel(FolderLoading(), emptyMap()))
+    private val _state = MutableStateFlow(FolderPageUiModel(FolderPageLoading(), emptyMap()))
     val state = _state.asStateFlow()
 
     private val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
         _state.update {
             val errorMessage = throwable.message ?: "Unknown error: ${throwable.javaClass.name}"
-            it.copy(errorMessage = errorMessage)
+            it.copy(message = errorMessage)
         }
     }
 
     fun loadFolder() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-        _state.update { it.copy(pageState = FolderLoading()) }
+        _state.update { it.copy(pageState = FolderPageLoading()) }
         val folderRes = folderService.getFolder(folderId)
         folderRes.onSuccess { folder ->
-            _state.update { it.copy(pageState = FolderLoaded(folder)) }
+            _state.update { it.copy(pageState = FolderPageLoaded(folder)) }
             previewService.getFolderPreview(folder).onSuccess { previews ->
                 _state.update { it.copy(previews = previews) }
             }
         }.onFailure { error ->
-            _state.update { it.copy(pageState = FolderError(error)) }
+            _state.update { it.copy(pageState = FolderPageError(error)) }
             log.error { "Failed to get folder information: $error" }
         }
     }
@@ -77,7 +77,7 @@ class FolderPageViewModel(
     fun checkDownloadFolder(folder: FolderApi, saveLocation: PlatformFile): Boolean {
         return if (!saveLocation.exists() || !saveLocation.isDirectory()) {
             _state.update {
-                it.copy(errorMessage = "Selected directory does not exist")
+                it.copy(message = "Selected directory does not exist")
             }
             false
         } else {
@@ -94,27 +94,27 @@ class FolderPageViewModel(
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             folderService.downloadFolder(folder.id)
                 .onSuccess { res ->
-                    // TODO error / success snackbar
                     val archiveName = folder.name + ".tar"
                     Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
                     res.close()
+                    _state.update { it.copy(message = "Folder downloaded successfully") }
                 }
                 .onFailure { msg ->
                     _state.update {
-                        it.copy(errorMessage = msg)
+                        it.copy(message = msg)
                     }
                 }
         }
 
     /** clears out errorMessage */
-    fun clearError() {
-        _state.update { it.copy(errorMessage = null) }
+    fun clearMessage() {
+        _state.update { it.copy(message = null) }
     }
 
     fun updateFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
         val currentState = _state.value.pageState
-        if (currentState is FolderLoaded) {
-            _state.update { it.copy(pageState = FolderLoading()) }
+        if (currentState is FolderPageLoaded) {
+            _state.update { it.copy(pageState = FolderPageLoading()) }
             val updateRes = folderService.updateFolder(folder.toUpdateFolder())
             updateRes.onSuccess {
                 // TODO going round trip to the server just to update 1 folder might be wasteful.
@@ -122,7 +122,7 @@ class FolderPageViewModel(
                 //  having to pull again...will need refresh logic though (ctrl + r)
                 loadFolder()
             }.onFailure { msg ->
-                _state.update { it.copy(pageState = FolderError(msg)) }
+                _state.update { it.copy(pageState = FolderPageError(msg)) }
             }
         }
     }
@@ -133,9 +133,12 @@ class FolderPageViewModel(
      */
     fun deleteFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
         folderService.deleteFolder(folder.id)
-            .onSuccess { loadFolder() }
+            .onSuccess {
+                _state.update { it.copy(message = "Folder deleted successfully") }
+                loadFolder()
+            }
             .onFailure { msg ->
-                _state.update { it.copy(errorMessage = msg) }
+                _state.update { it.copy(message = msg) }
             }
     }
 }

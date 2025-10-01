@@ -26,17 +26,17 @@ import kotlin.io.path.div
 sealed interface FolderDetailUiState
 
 /** used for when a folder is renderable on the ui */
-sealed interface HasFolder {
+sealed interface FolderDetailHasFolder {
     val folder: FolderApi
 }
 
 class FolderDetailLoading : FolderDetailUiState
-data class FolderDetailLoaded(override val folder: FolderApi) : FolderDetailUiState, HasFolder
+data class FolderDetailLoaded(override val folder: FolderApi) : FolderDetailUiState, FolderDetailHasFolder
 class FolderDeleted : FolderDetailUiState
 
 data class FolderDetailErrored(val message: String) : FolderDetailUiState
 data class FolderDetailMessage(override val folder: FolderApi, val message: String) : FolderDetailUiState,
-    HasFolder
+    FolderDetailHasFolder
 
 data class FolderDetailUiModel(
     val sheetState: FolderDetailUiState,
@@ -77,7 +77,7 @@ class FolderDetailViewModel(
 
     fun deleteFolder(confirmText: String) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
-        if (currentState is HasFolder) {
+        if (currentState is FolderDetailHasFolder) {
             val folderName = currentState.folder.name.lowercase().trim()
             if (confirmText.lowercase().trim() == folderName) {
                 folderService.deleteFolder(currentState.folder.id)
@@ -109,7 +109,7 @@ class FolderDetailViewModel(
 
     fun updateTags(tags: Collection<TagApi>) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
-        if (currentState is HasFolder) {
+        if (currentState is FolderDetailHasFolder) {
             val toUpdate = currentState.folder.copy(tags = tags).toUpdateFolder()
             updateFolder(toUpdate)
         }
@@ -124,7 +124,7 @@ class FolderDetailViewModel(
 
     fun downloadFolder(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
-        if (currentState is HasFolder) {
+        if (currentState is FolderDetailHasFolder) {
             if (!saveLocation.exists() || !saveLocation.isDirectory()) {
                 _state.update {
                     it.copy(sheetState = FolderDetailMessage(currentState.folder, "Selected directory does not exist"))
@@ -150,7 +150,7 @@ class FolderDetailViewModel(
         clearNonCriticalError()
         val currentState = _state.value.sheetState
         // basically the same exact behavior as without the non-critical error
-        if (currentState is HasFolder) {
+        if (currentState is FolderDetailHasFolder) {
             _state.update { it.copy(sheetState = FolderDetailLoading()) }
             folderService.updateFolder(toUpdate).onSuccess { loadFolder() }.onFailure { msg ->
                 _state.update {
