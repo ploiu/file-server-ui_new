@@ -8,6 +8,8 @@ import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -39,9 +41,6 @@ import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
-import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.CreatingEmptyFolder
-import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.NoModal
-import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.UploadingFolder
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.isDirectory
@@ -138,14 +137,12 @@ fun MainDesktopBody(
             )
         )
     }
-    val (modalState, sideSheetStatus) = appViewModel.state.collectAsState().value
+    val (modalState, sideSheetStatus, headerUpdateKey) = appViewModel.state.collectAsState().value
     val mainContentWidth =
         animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 1f else .7f, animationSpec = tween())
     val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 0f else 1f)
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
     // This is lifted up and used to make FolderPage refresh its data when needed
-    // TODO I don't like how the number of these is growing...
-    var headerFolderUpdateKey by remember { mutableStateOf(0) }
     // TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
     var sideSheetUpdateKey by remember { mutableStateOf(0) }
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
@@ -157,8 +154,12 @@ fun MainDesktopBody(
     // for uploading folders
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
         appViewModel.closeModal()
-        if (modalState == UploadingFolder && directory?.isDirectory() ?: false) {
-            appViewModel.uploadFolder(directory)
+        if (modalState == SelectingFolderUpload && directory?.isDirectory() ?: false && currentRoute?.destination?.route?.contains(
+                FolderRoute::class.simpleName!!
+            ) ?: false
+        ) {
+            val folderId = currentRoute.toRoute<FolderRoute>().id
+            appViewModel.uploadFolder(directory, folderId)
         }
     }
 
@@ -174,7 +175,7 @@ fun MainDesktopBody(
                     navController = navController,
                     sideSheetActive = sideSheetStatus !is NoSideSheet,
                     onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) },
-                    onUploadFolderClick = { appViewModel.openModal(UploadingFolder) }
+                    onUploadFolderClick = { appViewModel.openModal(SelectingFolderUpload) }
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
@@ -200,7 +201,7 @@ fun MainDesktopBody(
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
                     FolderPage(
                         view = viewModel,
-                        refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey,
+                        refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey + headerUpdateKey,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = { folderPageUpdateKey += 1 }
                     ) {
@@ -250,8 +251,14 @@ fun MainDesktopBody(
                         actionButtonsUpdateKey += 1
                     }
                 })
+            is ApplicationErrorModal -> Dialog(
+                title = "Failed to upload folder",
+                onDismissRequest = { appViewModel.closeModal() },
+                text = "PLACEHOLDER ERROR MESSAGE: ${modalState.message}",
+                icon = Icons.Default.Error
+            )
 
-            UploadingFolder -> directoryPicker.launch()
+            SelectingFolderUpload -> directoryPicker.launch()
             NoModal -> {}
         }
     }

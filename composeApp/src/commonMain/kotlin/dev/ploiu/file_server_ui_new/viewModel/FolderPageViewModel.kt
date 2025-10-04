@@ -40,8 +40,8 @@ data class FolderPageUiModel(
 )
 
 class FolderPageViewModel(
-    val folderService: FolderService,
-    val previewService: PreviewService,
+    private val folderService: FolderService,
+    private val previewService: PreviewService,
     val folderId: Long,
 ) : ViewModel() {
     private val log = KotlinLogging.logger { }

@@ -7,9 +7,9 @@ import java.nio.file.Files
  * represents a "middle ground" between a file system {@link File} and a {@link FolderApi}
  */
 data class FolderApproximation(
-    private val self: File,
-    private val childFiles: Collection<File>,
-    private val childFolders: Collection<FolderApproximation>
+    val self: File,
+    val childFiles: Collection<File>,
+    val childFolders: Collection<FolderApproximation>
 ) {
 
     val size: Int
