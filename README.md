@@ -15,5 +15,5 @@
 
 #### For building desktop
 
-- Deno
 - Rust
+- bash / zsh / sh / whatever

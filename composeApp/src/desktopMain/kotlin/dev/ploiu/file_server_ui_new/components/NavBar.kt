@@ -43,7 +43,7 @@ data class NavState(private val folders: LinkedList<FolderApi>) {
 }
 
 operator fun MutableState<NavState>.plusAssign(folder: FolderApi) {
-    value = value + folder
+    value += folder
 }
 
 @Composable

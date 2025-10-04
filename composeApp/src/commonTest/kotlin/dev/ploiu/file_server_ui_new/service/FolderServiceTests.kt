@@ -1,5 +1,8 @@
+@file:OptIn(UnsafeResultErrorAccess::class)
+
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApi

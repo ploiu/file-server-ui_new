@@ -1,7 +1,9 @@
 package dev.ploiu.file_server_ui_new
 
+import dev.ploiu.file_server_ui_new.service.DesktopFolderUploadService
 import dev.ploiu.file_server_ui_new.service.DesktopPreviewService
 import dev.ploiu.file_server_ui_new.service.DirectoryService
+import dev.ploiu.file_server_ui_new.service.FolderUploadService
 import dev.ploiu.file_server_ui_new.service.PreviewService
 import dev.ploiu.file_server_ui_new.viewModel.*
 import org.koin.core.module.dsl.viewModel
@@ -20,4 +22,5 @@ val pageModule = module {
 val desktopServiceModule = module {
     single<PreviewService> { DesktopPreviewService(get(), get(), get()) }
     single<DirectoryService> { DirectoryService() }
+    single<FolderUploadService> { DesktopFolderUploadService(get(), get()) }
 }

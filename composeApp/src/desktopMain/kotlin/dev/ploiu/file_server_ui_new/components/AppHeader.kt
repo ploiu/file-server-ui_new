@@ -45,12 +45,14 @@ fun AppHeader(
     navController: NavController,
     sideSheetActive: Boolean,
     onCreateFolderClick: () -> Unit,
+    onUploadFolderClick: () -> Unit,
+    onUploadFileClick: () -> Unit = { TODO("upload file not implemented") },
+    onSettingsClick: () -> Unit = { TODO("settings button not implemented") }
 ) {
     // setting some crazy high value but also using it for a max size will make sure we can still animate without a weird gap
     val actionMenuMaxWidth = animateIntAsState(if (sideSheetActive) 0 else 300, animationSpec = tween())
     val buttonOpacity = animateFloatAsState(targetValue = if (sideSheetActive) 0f else 1f)
     val buttonColors = iconButtonColors()
-    var isShowingNewFolderModal by remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -69,17 +71,17 @@ fun AppHeader(
                     }
                 }
                 ButtonTooltip("Upload folder") {
-                    IconButton(onClick = { TODO("upload folder not implemented") }, colors = buttonColors) {
+                    IconButton(onClick = onUploadFolderClick, colors = buttonColors) {
                         Icon(Icons.Default.DriveFolderUpload, "upload folder")
                     }
                 }
                 ButtonTooltip("Upload file") {
-                    IconButton(onClick = { TODO("upload file not implemented") }, colors = buttonColors) {
+                    IconButton(onClick = onUploadFileClick, colors = buttonColors) {
                         Icon(Icons.Default.UploadFile, "upload file")
                     }
                 }
                 ButtonTooltip("Settings") {
-                    IconButton(onClick = { TODO("settings button not implemented") }, colors = buttonColors) {
+                    IconButton(onClick = onSettingsClick, colors = buttonColors) {
                         Icon(Icons.Default.Settings, "settings")
                     }
                 }

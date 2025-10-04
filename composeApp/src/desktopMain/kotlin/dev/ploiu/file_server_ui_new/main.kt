@@ -41,7 +41,10 @@ import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
 import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.CreatingEmptyFolder
 import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.NoModal
+import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.UploadingFolder
 import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.isDirectory
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
@@ -151,6 +154,14 @@ fun MainDesktopBody(
     var shouldShowHeader by remember { mutableStateOf(false) }
     val currentRoute = navController.currentBackStackEntryAsState().value
 
+    // for uploading folders
+    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
+        appViewModel.closeModal()
+        if (modalState == UploadingFolder && directory?.isDirectory() ?: false) {
+            appViewModel.uploadFolder(directory)
+        }
+    }
+
     LaunchedEffect(currentRoute) {
         shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)
     }
@@ -163,6 +174,7 @@ fun MainDesktopBody(
                     navController = navController,
                     sideSheetActive = sideSheetStatus !is NoSideSheet,
                     onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) },
+                    onUploadFolderClick = { appViewModel.openModal(UploadingFolder) }
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
@@ -220,7 +232,7 @@ fun MainDesktopBody(
                     }
                 }
 
-                is FileSideSheet -> TODO()
+                is FileSideSheet -> TODO("FileSideSheet not implemented")
                 is NoSideSheet -> {}
             }
         }
@@ -239,6 +251,7 @@ fun MainDesktopBody(
                     }
                 })
 
+            UploadingFolder -> directoryPicker.launch()
             NoModal -> {}
         }
     }

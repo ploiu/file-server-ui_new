@@ -10,6 +10,7 @@ import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.viewModel.ApplicationModalState.NoModal
+import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
  */
 enum class ApplicationModalState {
     CreatingEmptyFolder,
+    UploadingFolder,
     NoModal
 }
 
@@ -53,6 +55,11 @@ class ApplicationViewModel(private val folderService: FolderService, private val
             .onSuccess { /* TODO cause re-render */ }
             .onFailure { TODO("on Failure not handled for add empty folder") }
     }
+
+    fun uploadFolder(folder: PlatformFile) = viewModelScope.launch(Dispatchers.IO) {
+
+    }
+
 
     fun closeSideSheet() {
         _state.update { it.copy(sideSheetState = NoSideSheet()) }
