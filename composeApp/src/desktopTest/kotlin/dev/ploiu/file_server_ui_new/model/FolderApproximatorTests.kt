@@ -1,14 +1,13 @@
 package dev.ploiu.file_server_ui_new.model
 
 import dev.ploiu.file_server_ui_new.model.FolderApproximator.convertDir
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.fail
+import org.junit.jupiter.api.Assertions.assertThrows
 import java.io.File
 import java.io.IOException
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class FolderApproximatorTests {
     companion object {
@@ -34,20 +33,79 @@ class FolderApproximatorTests {
     @Test
     @Throws(Exception::class)
     fun testConvertFlatDir() {
-        val dir =
-            helper.createDir("dir")
-        val file =
-            helper.createFile("test.txt")
+        val dir = helper.createDir("dir")
+        val file = helper.createFile("test.txt")
         file.createNewFile()
         dir.mkdir()
         val res = convertDir(root)
-        Assertions.assertEquals(
+        assertEquals(
             FolderApproximation(
-                root,
-                listOf(file),
-                listOf(FolderApproximation(dir, listOf(), listOf()))
+                root, listOf(file), listOf(FolderApproximation(dir, listOf(), listOf()))
             ), res
         )
+    }
+
+    @Test
+    fun testConvertEmptyDir() {
+        val res = convertDir(root)
+        assertEquals(FolderApproximation(root, mutableListOf(), mutableListOf()), res)
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun testConvertRecursiveNoFiles() {
+        val top = helper.createDir("top")
+        val middle = helper.createDir("top/middle")
+        val bottom = helper.createDir("top/middle/bottom")
+        val expected = FolderApproximation(
+            root, mutableListOf(), listOf(
+                FolderApproximation(
+                    top, mutableListOf(), listOf(
+                        FolderApproximation(
+                            middle, mutableListOf(), listOf(
+                                FolderApproximation(
+                                    bottom, mutableListOf(), mutableListOf()
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        val res = convertDir(root)
+        assertEquals(expected, res)
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun testConvertRecursiveWithFiles() {
+        val top = helper.createDir("top")
+        val rootFile = helper.createFile("root.txt")
+        val topFile = helper.createFile("top/top.txt")
+        val expected = FolderApproximation(
+            root, listOf(rootFile), listOf(
+                FolderApproximation(
+                    top, listOf(topFile), mutableListOf()
+                )
+            )
+        )
+        val res = convertDir(root)
+        assertEquals(expected, res)
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun testConvertRecursivePastLimit() {
+        // the point of this test is to reject cases with symbolic links, but we can't create symbolic link directories in java sooooo
+        val builder = StringBuilder("0")
+        for (i in 1..50) {
+            builder.append("/").append(i)
+        }
+        helper.createDir(builder.toString())
+        val exception = assertThrows(
+            UnsupportedOperationException::class.java
+        ) { convertDir(root) }
+        assertEquals("Possible recursive symlinks: cannot go past depth of 50.", exception.message)
     }
 
 }
