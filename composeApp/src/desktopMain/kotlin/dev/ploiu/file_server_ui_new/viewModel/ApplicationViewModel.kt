@@ -26,6 +26,7 @@ object NoModal : ApplicationModalState
 object CreatingEmptyFolder : ApplicationModalState
 object SelectingFolderUpload : ApplicationModalState
 data class ApplicationErrorModal(val message: String) : ApplicationModalState
+data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState
 
 /**
  * represents the state of the side sheet
@@ -64,6 +65,7 @@ class ApplicationViewModel(
             .onFailure { TODO("on Failure not handled for add empty folder") }
     }
 
+    // TODO there needs to be some sort of progress reporting...https://kotlinlang.org/docs/flow.html#suspending-functions
     fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
         closeModal()
         log.info { "upload started!" }
