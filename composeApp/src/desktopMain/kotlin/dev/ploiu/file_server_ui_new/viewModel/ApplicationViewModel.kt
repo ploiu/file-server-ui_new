@@ -7,9 +7,8 @@ import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.service.FileService
-import dev.ploiu.file_server_ui_new.service.FolderService
-import dev.ploiu.file_server_ui_new.service.FolderUploadService
+import dev.ploiu.file_server_ui_new.model.FolderApproximator
+import dev.ploiu.file_server_ui_new.service.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +36,6 @@ data class FileSideSheet(val file: FileApi) : SideSheetUiState
 data class FolderSideSheet(val folder: FolderApi) : SideSheetUiState
 
 data class ApplicationUiModel(
-    val modalState: ApplicationModalState,
     val sideSheetState: SideSheetUiState,
     /** used to force refreshes of other components when the header causes something (e.g. a folder's contents via file/folder upload) to change */
     val headerUpdateKey: Int = 0
@@ -54,8 +52,13 @@ class ApplicationViewModel(
 ) :
     ViewModel() {
     private val log = KotlinLogging.logger("ApplicationViewModel")
-    private val _state = MutableStateFlow(ApplicationUiModel(NoModal, NoSideSheet()))
+    private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
+
+    // Generic modal state for all modals (including loading, error, etc). Separate because the loading modal can get a _ton_ of state updates in quick succession,
+    // and we don't want to force an entire application re-render every time progress updates
+    private val _modalState = MutableStateFlow<ApplicationModalState>(NoModal)
+    val modalState = _modalState.asStateFlow()
 
 
     // TODO exception handler (look at folder detail view model)
@@ -69,22 +72,49 @@ class ApplicationViewModel(
     fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
         closeModal()
         log.info { "upload started!" }
+        var total: Int
+        var progress = 0
+        val errors = mutableListOf<String>()
+        // TODO I don't like having to generate a second folder approximation since one is already being generated...maybe send a tuple, with the first element being the number of items?
+        val approximation = FolderApproximator.convertDir(folder.file, 1)
+        total = approximation.size
+        // avoid division by zero
+        if (total == 0) {
+            total = 1
+        }
+        openModal(LoadingModal(max = total, progress = 0))
         folderUploadService.uploadFolder(folder, currentFolderId)
-            .onFailure { errors ->
-                log.error {
-                    "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
-                }
-                _state.update {
-                    it.copy(
-                        modalState = ApplicationErrorModal(message = "${errors.size} errors!"),
-                        headerUpdateKey = it.headerUpdateKey + 1
-                    )
+            .collect { result ->
+                when (result) {
+                    is BatchUploadFileResult -> {
+                        progress++
+                        _modalState.update { LoadingModal(max = total, progress = progress) }
+                        if (result.errorMessage != null) {
+                            errors.add(result.errorMessage)
+                        }
+                    }
+
+                    is BatchFolderUploadResult -> {
+                        // Could handle folder-level errors here
+                        if (result.errorMessage != null) {
+                            errors.add(result.errorMessage)
+                        }
+                    }
                 }
             }
-            .onSuccess {
-                _state.update { it.copy(headerUpdateKey = it.headerUpdateKey + 1) }
-                log.info { "upload ended!" }
+        closeModal()
+        if (errors.isNotEmpty()) {
+            log.error {
+                "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
             }
+            // TODO: Show detailed error dialog/modal with error list
+            _state.update {
+                it.copy(headerUpdateKey = it.headerUpdateKey + 1)
+            }
+        } else {
+            _state.update { it.copy(headerUpdateKey = it.headerUpdateKey + 1) }
+            log.info { "upload ended!" }
+        }
     }
 
 
@@ -103,10 +133,10 @@ class ApplicationViewModel(
     }
 
     fun openModal(which: ApplicationModalState) {
-        _state.update { it.copy(modalState = which) }
+        _modalState.value = which
     }
 
     fun closeModal() {
-        _state.update { it.copy(modalState = NoModal) }
+        _modalState.value = NoModal
     }
 }

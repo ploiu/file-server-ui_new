@@ -6,10 +6,9 @@ import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApproximator
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -52,20 +51,19 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
      * uploads a batch of files to the specified folder.
      *
      */
-    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = flow {
-        // I feel like this is too clever. It's just uploading all the files and keeping track of the ones that failed
-        coroutineScope {
-            emitAll(files.map { file ->
-                async {
-                    val res =
-                        fileService.createFile(CreateFileRequest(file = file, folderId = folderId, force = false))
-                    if (res.isOk) {
-                        BatchUploadFileResult(res.unwrap(), null)
-                    } else {
-                        BatchUploadFileResult(null, res.unwrapError())
-                    }
+    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = channelFlow (){
+        // report as each file uploads, but wait for all files to upload before returning. This prevents us from ruining the server with too much spam
+        files.map { file ->
+            launch(Dispatchers.IO) {
+                val res =
+                    fileService.createFile(CreateFileRequest(file = file, folderId = folderId, force = false))
+                val result = if (res.isOk) {
+                    BatchUploadFileResult(res.unwrap(), null)
+                } else {
+                    BatchUploadFileResult(null, res.unwrapError())
                 }
-            }.awaitAll().asFlow())
-        }
+                send(result)
+            }
+        }.joinAll()
     }
 }
