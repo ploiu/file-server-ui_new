@@ -6,6 +6,7 @@ import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
+import dev.ploiu.file_server_ui_new.saveFile
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -95,7 +96,7 @@ class FolderPageViewModel(
             folderService.downloadFolder(folder.id)
                 .onSuccess { res ->
                     val archiveName = folder.name + ".tar"
-                    Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
+                    saveFile(res, saveLocation, archiveName)
                     res.close()
                     _state.update { it.copy(message = "Folder downloaded successfully") }
                 }

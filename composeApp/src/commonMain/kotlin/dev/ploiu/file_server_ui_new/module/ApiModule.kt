@@ -58,6 +58,8 @@ fun readServerCerts(): HandshakeCertificates = runBlocking {
         .build()
 }
 
+private val jsonParser = Json { ignoreUnknownKeys = true }
+
 @OptIn(ExperimentalEncodingApi::class)
 fun retrofitClient(serverConfig: ServerConfig): Retrofit {
     val certificates = readServerCerts()
@@ -75,7 +77,7 @@ fun retrofitClient(serverConfig: ServerConfig): Retrofit {
         .build()
     return Retrofit.Builder()
         .baseUrl(serverConfig.baseUrl)
-        .addConverterFactory(Json.asConverterFactory("application/json; charset=utf-8".toMediaType()))
+        .addConverterFactory(jsonParser.asConverterFactory("application/json; charset=utf-8".toMediaType()))
         .client(client)
         .build()
 }

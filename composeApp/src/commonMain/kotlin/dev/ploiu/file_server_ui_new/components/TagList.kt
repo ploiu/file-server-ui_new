@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.model.TagApi
+import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
@@ -17,8 +17,19 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  * invoked, [onUpdate] will be passed all the tags currently in this component
  */
 @Composable
-fun TagList(tags: Collection<TagApi>, onUpdate: (Collection<TagApi>) -> Unit) {
-    val sorted = remember { tags.sortedBy { it.title } }
+fun TagList(tags: Collection<TaggedItemApi>, onUpdate: (Collection<TaggedItemApi>) -> Unit) {
+    val sorted = remember {
+        // inherited tags should be listed last
+        tags.sortedWith { a, b ->
+            if (a.implicitFrom == null && b.implicitFrom != null) {
+                -1
+            } else if (b.implicitFrom == null && a.implicitFrom != null) {
+                1
+            } else {
+                a.title.compareTo(b.title)
+            }
+        }
+    }
     var isAddingTag by remember { mutableStateOf(false) }
 
     Surface(
@@ -51,7 +62,7 @@ fun TagList(tags: Collection<TagApi>, onUpdate: (Collection<TagApi>) -> Unit) {
     if (isAddingTag) {
         TextDialog(title = "Add tag", onCancel = { isAddingTag = false }, confirmText = "Add", onConfirm = {
             val updateTags = tags.toMutableSet()
-            updateTags.add(TagApi(id = null, title = it.lowercase()))
+            updateTags.add(TaggedItemApi(id = null, title = it.lowercase(), implicitFrom = null))
             onUpdate(updateTags)
             isAddingTag = false
         })
@@ -69,9 +80,23 @@ private fun EmptyTagList() {
 private fun TagListWithTags() {
     TagList(
         listOf(
-            TagApi(0, "Tag1"),
-            TagApi(1, "tag with a really really long name"),
-            TagApi(2, "Tag with medium name")
+            TaggedItemApi(0, "Tag1", null),
+            TaggedItemApi(1, "tag with a really really long name", null),
+            TaggedItemApi(2, "Tag with medium name", null)
+        )
+    ) {}
+}
+
+
+@Preview
+@Composable
+private fun TagListWithInheritedTags() {
+    TagList(
+        listOf(
+            TaggedItemApi(0, "Tag1", null),
+            TaggedItemApi(1, "tag with a really really long name", null),
+            TaggedItemApi(id = 3, title = "Inherited Tag", implicitFrom = 5),
+            TaggedItemApi(2, "Tag with medium name", null)
         )
     ) {}
 }

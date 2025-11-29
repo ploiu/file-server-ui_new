@@ -6,6 +6,7 @@ import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.TagApi
+import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import dev.ploiu.file_server_ui_new.service.FolderService
 import io.github.vinceglb.filekit.PlatformFile
@@ -107,7 +108,7 @@ class FolderDetailViewModel(
         }
     }
 
-    fun updateTags(tags: Collection<TagApi>) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+    fun updateTags(tags: Collection<TaggedItemApi>) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FolderDetailHasFolder) {
             val toUpdate = currentState.folder.copy(tags = tags).toUpdateFolder()

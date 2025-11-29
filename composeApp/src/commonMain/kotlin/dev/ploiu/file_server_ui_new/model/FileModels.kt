@@ -8,7 +8,7 @@ data class FileApi(
     val id: Long,
     val folderId: Long = 0,
     val name: String,
-    val tags: Collection<TagApi>,
+    val tags: Collection<TaggedItemApi>,
     val size: Long,
     val dateCreated: String,
     val fileType: String,
