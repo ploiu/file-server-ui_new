@@ -36,6 +36,7 @@ class FolderService(val client: FolderClient) {
             .mapError { it.message }
     }
 
+    @Deprecated("Use PreviewClient instead for streaming previews")
     suspend fun getPreviewsForFolder(id: Long): Result<BatchFilePreview, String> {
         if (id < 0) {
             return Err("id ($id) must be >= 0")

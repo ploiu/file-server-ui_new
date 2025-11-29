@@ -1,9 +1,6 @@
 package dev.ploiu.file_server_ui_new.module
 
-import dev.ploiu.file_server_ui_new.client.ApiClient
-import dev.ploiu.file_server_ui_new.client.FileClient
-import dev.ploiu.file_server_ui_new.client.FolderClient
-import dev.ploiu.file_server_ui_new.client.TagClient
+import dev.ploiu.file_server_ui_new.client.*
 import dev.ploiu.file_server_ui_new.config.ServerConfig
 import dev.ploiu.file_server_ui_new.service.ApiService
 import dev.ploiu.file_server_ui_new.service.FileService
@@ -33,7 +30,9 @@ object GLOBAL {
 }
 
 val clientModule = module {
-    single<Retrofit> { retrofitClient(get()) }
+    single<OkHttpClient> { okHttpClient() }
+    single<Retrofit> { retrofitClient(get(), get()) }
+    single<PreviewClient> { previewClient(get(), get()) }
     single<ApiClient> { apiClient(get()) }
     single<TagClient> { tagClient(get()) }
     single<FileClient> { fileClient(get()) }
@@ -46,7 +45,7 @@ val serviceModule = module {
     single<FileService> { FileService(get()) }
 }
 
-fun readServerCerts(): HandshakeCertificates = runBlocking {
+private fun readServerCerts(): HandshakeCertificates = runBlocking {
     // I'm too lazy to figure out how to select only production vs local without adding a new variable to the app.properties, so I'm including both certs
     // TODO probably should just make it a json or toml file instead of a .properties file...I do like toml but probably just because it's associated with rust
     val local = String(Res.readBytes("files/cert_local.x509"), UTF_8).decodeCertificatePem()
@@ -60,10 +59,9 @@ fun readServerCerts(): HandshakeCertificates = runBlocking {
 
 private val jsonParser = Json { ignoreUnknownKeys = true }
 
-@OptIn(ExperimentalEncodingApi::class)
-fun retrofitClient(serverConfig: ServerConfig): Retrofit {
+private fun okHttpClient(): OkHttpClient {
     val certificates = readServerCerts()
-    val client = OkHttpClient.Builder()
+    return OkHttpClient.Builder()
         .sslSocketFactory(certificates.sslSocketFactory(), certificates.trustManager)
         .addInterceptor { chain ->
             val req =
@@ -75,6 +73,12 @@ fun retrofitClient(serverConfig: ServerConfig): Retrofit {
         .readTimeout(1, TimeUnit.DAYS)
         .writeTimeout(1, TimeUnit.DAYS)
         .build()
+}
+
+private fun previewClient(serverConfig: ServerConfig, client: OkHttpClient) = PreviewClient(client, serverConfig)
+
+@OptIn(ExperimentalEncodingApi::class)
+private fun retrofitClient(serverConfig: ServerConfig, client: OkHttpClient): Retrofit {
     return Retrofit.Builder()
         .baseUrl(serverConfig.baseUrl)
         .addConverterFactory(jsonParser.asConverterFactory("application/json; charset=utf-8".toMediaType()))
@@ -82,10 +86,10 @@ fun retrofitClient(serverConfig: ServerConfig): Retrofit {
         .build()
 }
 
-fun apiClient(retrofit: Retrofit): ApiClient = retrofit.create(ApiClient::class.java)
+private fun apiClient(retrofit: Retrofit): ApiClient = retrofit.create(ApiClient::class.java)
 
-fun tagClient(retrofit: Retrofit): TagClient = retrofit.create(TagClient::class.java)
+private fun tagClient(retrofit: Retrofit): TagClient = retrofit.create(TagClient::class.java)
 
-fun fileClient(retrofit: Retrofit): FileClient = retrofit.create(FileClient::class.java)
+private fun fileClient(retrofit: Retrofit): FileClient = retrofit.create(FileClient::class.java)
 
-fun folderClient(retrofit: Retrofit): FolderClient = retrofit.create(FolderClient::class.java)
+private fun folderClient(retrofit: Retrofit): FolderClient = retrofit.create(FolderClient::class.java)

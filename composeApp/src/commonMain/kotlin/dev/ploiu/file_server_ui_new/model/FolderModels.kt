@@ -36,3 +36,5 @@ data class UpdateFolder(
 
 /** keys are file ids, values are the associated preview */
 typealias BatchFilePreview = Map<Long, ByteArray>
+
+typealias FilePreview = Pair<Long, ByteArray>

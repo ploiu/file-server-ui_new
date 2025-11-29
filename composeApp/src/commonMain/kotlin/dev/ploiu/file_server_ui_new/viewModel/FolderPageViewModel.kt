@@ -16,14 +16,9 @@ import io.github.vinceglb.filekit.isDirectory
 import io.github.vinceglb.filekit.resolve
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.div
 
 @Serializable
 data class FolderRoute(val id: Long)
@@ -61,15 +56,20 @@ class FolderPageViewModel(
         val folderRes = folderService.getFolder(folderId)
         folderRes.onSuccess { folder ->
             _state.update { it.copy(pageState = FolderPageLoaded(folder)) }
-            previewService.getFolderPreview(folder).onSuccess { previews ->
-                _state.update { it.copy(previews = previews) }
-            }
+            previewService.getFolderPreview(folder).onEach { preview ->
+                _state.update {
+                    val previews = it.previews.toMutableMap()
+                    previews[preview.first] = preview.second
+                    it.copy(previews = previews)
+                }
+            }.catch {
+                _state.update { it.copy(pageState = FolderPageError("Failed to load previews: ${it.message}")) }
+            }.launchIn(this)
         }.onFailure { error ->
             _state.update { it.copy(pageState = FolderPageError(error)) }
             log.error { "Failed to get folder information: $error" }
         }
     }
-
 
     /**
      * checks if the folder can be downloaded in the passed [saveLocation]. If so, the folder is downloaded. Otherwise,

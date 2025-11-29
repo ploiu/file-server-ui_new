@@ -2,12 +2,18 @@ package dev.ploiu.file_server_ui_new.service
 
 import com.github.michaelbull.result.*
 import dev.ploiu.file_server_ui_new.client.FileClient
+import dev.ploiu.file_server_ui_new.client.PreviewClient
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
+import dev.ploiu.file_server_ui_new.model.FilePreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.parseErrorFromResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import java.io.File
 import java.nio.file.Files
 
@@ -19,8 +25,8 @@ private data class CachedReadResult(
 )
 
 class DesktopPreviewService(
-    private val folderService: FolderService,
     private val fileClient: FileClient,
+    private val previewClient: PreviewClient,
     directoryService: DirectoryService,
 ) : PreviewService {
     private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
@@ -37,7 +43,7 @@ class DesktopPreviewService(
         }
     }
 
-    override suspend fun getFolderPreview(folder: FolderApi): Result<BatchFilePreview, String> =
+    override suspend fun getFolderPreview(folder: FolderApi): Flow<FilePreview> =
         coroutineScope {
             val folderCacheDir = folderCacheDir(folder.id)
             if (!folderCacheDir.exists()) {
@@ -48,8 +54,9 @@ class DesktopPreviewService(
                 for (toDelete in cached.toDeleteFromDisk) {
                     toDelete.delete()
                 }
-            }/* if the number of files to pull is small, we can pull them individually batched into even smaller groups.
-         The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
+            }
+            /* if the number of files to pull is small, we can pull them individually batched into even smaller groups.
+            The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
             if (cached.missingFromDisk.size <= 100) {
                 val diskCache = cached.read.toMutableMap()
                 val chunked = cached.missingFromDisk.chunked(FILE_PREVIEW_CHUNK_SIZE)
@@ -60,9 +67,8 @@ class DesktopPreviewService(
                             if (downloaded.isOk) {
                                 val bytes = downloaded.unwrap()
                                 if (bytes != null) {
-                                    val previewLocation = File(folderCacheDir, "$it.png")
-                                    Files.write(previewLocation.toPath(), bytes)
-                                    Pair(it, bytes)
+                                    cachePreview(folderId = folder.id, fileId = it, previewBytes = bytes)
+                                    it to bytes
                                 } else {
                                     null
                                 }
@@ -71,15 +77,23 @@ class DesktopPreviewService(
                                 null
                             }
                         }
-                    }.awaitAll().filterNotNull().forEach { diskCache.put(it.first, it.second) }
+                    }.awaitAll().filterNotNull().forEach { diskCache[it.first] = it.second }
 
                 }
-                Ok(diskCache)
+                flow {
+                    for ((fileId, previewBytes) in diskCache) {
+                        emit(fileId to previewBytes)
+                    }
+                }
             } else {
                 folderCacheDir.deleteRecursively()
                 folderCacheDir.mkdirs()
-                folderService.getPreviewsForFolder(folder.id)
-                    .onSuccess { buildInitialCacheForFolder(folderCacheDir, it) }
+                // not only do we need to download the previews, but we also need to cache and re-emit them
+                previewClient.downloadFolderPreviews(folder.id)
+                    .flowOn(Dispatchers.IO)
+                    .onEach {
+                        cachePreview(folder.id, it.first, it.second)
+                    }
             }
         }
 
@@ -123,7 +137,7 @@ class DesktopPreviewService(
                             }
                         }
                     }
-                }.awaitAll().filterNotNull().forEach { cached.put(it.first, it.second) }
+                }.awaitAll().filterNotNull().forEach { cached[it.first] = it.second }
             }
             Ok(cached)
         }
@@ -152,23 +166,18 @@ class DesktopPreviewService(
             (cachedFilesIndex.keys - apiFileIndex.keys).map { cachedFilesIndex.getValue(it) }
         val fileCache = mutableMapOf<Long, ByteArray>()
         for ((id, file) in cachedFilesIndex) { // using readBytes here is fine because each preview is only around ~30-50kib
-            fileCache.put(id, file.readBytes())
+            fileCache[id] = file.readBytes()
         }
         return CachedReadResult(fileCache, missingFromDisk, toDeleteFromDisk)
     }
 
-    /**
-     * Takes all the folder's previews and stores them in a folder-specific dir inside our cacheDir.
-     *
-     * This should only be run if no folder-specific cache dir exists yet. Each folder-specific directory is named after the folder id
-     */
-    private fun buildInitialCacheForFolder(cacheDir: File, previews: Map<Long, ByteArray>) {
-        for ((fileId, previewBytes) in previews) {
-            val file = File(cacheDir, "$fileId.png")
-            previewBytes.inputStream().use {
-                Files.copy(it, file.toPath())
-            }
+    private fun cachePreview(folderId: Long, fileId: Long, previewBytes: ByteArray) {
+        val folderCacheDir = folderCacheDir(folderId)
+        if (!folderCacheDir.exists()) {
+            folderCacheDir.mkdirs()
         }
+        val previewLocation = File(folderCacheDir, "$fileId.png")
+        Files.write(previewLocation.toPath(), previewBytes)
     }
 
 }

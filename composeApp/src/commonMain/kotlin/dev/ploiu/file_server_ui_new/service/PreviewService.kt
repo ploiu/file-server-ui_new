@@ -4,7 +4,9 @@ import com.github.michaelbull.result.Result
 import dev.ploiu.file_server_ui_new.ApiException
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
+import dev.ploiu.file_server_ui_new.model.FilePreview
 import dev.ploiu.file_server_ui_new.model.FolderApi
+import kotlinx.coroutines.flow.Flow
 
 interface PreviewService {
     /**
@@ -13,7 +15,7 @@ interface PreviewService {
      * If there are enough uncached files, it will instead prefer to download the entire folder cache instead.
      * TODO this can cause performance issues in folders that have a lot of files without previews, but files that do have previews and do get cached. Maybe.
      */
-    suspend fun getFolderPreview(folder: FolderApi): Result<BatchFilePreview, String>
+    suspend fun getFolderPreview(folder: FolderApi): Flow<FilePreview>
 
     /**
      * Downloads the preview image for a given file ID. This does not save the preview image to disk.
