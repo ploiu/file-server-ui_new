@@ -33,7 +33,7 @@ interface FileClient {
 
     @Streaming
     @GET("/files/{id}")
-    fun getFileContents(@Path("id") id: Long): Response<ResponseBody>
+    suspend fun getFileContents(@Path("id") id: Long): Response<ResponseBody>
 
     @PUT("/files")
     suspend fun updateFile(@Body file: FileRequest): Response<FileApi>

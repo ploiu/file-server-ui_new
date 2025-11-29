@@ -28,6 +28,7 @@ data class FileApi(
         } else {
             name.substring(0, name.lastIndexOf('.'))
         }
+    fun toFileRequest() = FileRequest(id = id, folderId = folderId, name = name, tags = tags)
 }
 
 @Serializable
@@ -35,7 +36,7 @@ data class FileRequest(
     val id: Long,
     val folderId: Long,
     val name: String,
-    val tags: Collection<TagApi>,
+    val tags: Collection<TaggedItemApi>,
 )
 
 data class CreateFileRequest(

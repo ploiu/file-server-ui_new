@@ -2,6 +2,7 @@ package dev.ploiu.file_server_ui_new.service
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
 import dev.ploiu.file_server_ui_new.SearchParser
 import dev.ploiu.file_server_ui_new.client.FileClient
@@ -13,6 +14,7 @@ import dev.ploiu.file_server_ui_new.processResponseUnit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import java.io.InputStream
 import java.net.URLConnection
 
 class FileService(val client: FileClient) {
@@ -100,6 +102,16 @@ class FileService(val client: FileClient) {
         } else {
             SplitName(name, null)
         }
+    }
+
+    suspend fun downloadFile(id: Long): Result<InputStream, String> {
+        if (id <= 0) {
+            Err("id ($id) must be > 0")
+        }
+        val processed = processResponse(client.getFileContents(id))
+        return processed
+            .map { it.byteStream() }
+            .mapError { it.message }
     }
 
 }

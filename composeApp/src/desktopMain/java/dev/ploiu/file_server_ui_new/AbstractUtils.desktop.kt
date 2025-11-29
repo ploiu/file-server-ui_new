@@ -8,7 +8,7 @@ import kotlin.io.path.div
 actual fun saveFile(
     res: InputStream,
     saveLocation: io.github.vinceglb.filekit.PlatformFile,
-    archiveName: String
+    fileName: String,
 ) {
-    Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
+    Files.copy(res, saveLocation.file.toPath() / fileName, StandardCopyOption.REPLACE_EXISTING)
 }

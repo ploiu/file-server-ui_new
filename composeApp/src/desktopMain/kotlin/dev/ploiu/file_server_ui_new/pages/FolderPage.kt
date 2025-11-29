@@ -48,10 +48,31 @@ private data class InfoFolderAction(val folder: FolderApi) : FolderContextAction
 private class NoFolderAction : FolderContextAction, FolderContextState
 private data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 private data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+
+// used when a modal should show to confirm replacing an existing download
 private data class ConfirmReplaceDownloadFolder(val folder: FolderApi, val directory: PlatformFile) : FolderContextState
 
 // This doesn't affect page state in the same way the others do
 private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
+
+/** used to control state for extra elements such as rename/delete dialogs and file info dialogs */
+private sealed interface FileContextState
+
+// TODO move these to a place that's not specifically for the folder page, as it's used on search results too
+/** used to control behavior for context menu actions on a file */
+sealed interface FileContextAction
+data class InfoFileAction(val file: FileApi) : FileContextAction
+
+// "blank" action that acts as a placeholder - no action to be done
+class NoFileAction : FileContextAction, FileContextState
+data class RenameFileAction(val file: FileApi) : FileContextAction, FileContextState
+data class DeleteFileAction(val file: FileApi) : FileContextAction, FileContextState
+
+// used when a modal should show to confirm replacing an existing download
+data class ConfirmReplaceDownloadFile(val file: FileApi, val directory: PlatformFile) : FileContextState
+
+// This doesn't affect page state in the same way the others do
+data class DownloadFileAction(val file: FileApi) : FileContextAction, FileContextState
 
 @Composable
 fun FolderPage(
@@ -60,12 +81,18 @@ fun FolderPage(
     refreshKey: Int,
     onUpdate: () -> Unit,
     onFolderInfo: (FolderApi) -> Unit,
+    onFileInfo: (FileApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
     val (pageState, previews, errorMessage) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
             NoFolderAction()
+        )
+    }
+    var fileActionState: FileContextState by remember {
+        mutableStateOf(
+            NoFileAction(),
         )
     }
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
@@ -75,6 +102,14 @@ fun FolderPage(
                 view.downloadFolder(actionState.folder, directory)
             } else {
                 folderActionState = ConfirmReplaceDownloadFolder(actionState.folder, directory)
+            }
+        }
+        val fileAction = fileActionState
+        if (directory != null && fileAction is DownloadFileAction) {
+            if (view.checkDownloadFile(fileAction.file, directory)) {
+                view.downloadFile(fileAction.file, directory)
+            } else {
+                fileActionState = ConfirmReplaceDownloadFile(fileAction.file, directory)
             }
         }
     }
@@ -101,6 +136,24 @@ fun FolderPage(
         }
     }
 
+    /** used to trigger behavior when a context menu item is clicked */
+    val onFileContextAction: (FileContextAction) -> Unit = {
+        when (it) {
+            is DownloadFileAction -> {
+                fileActionState = DownloadFileAction(it.file)
+            }
+
+            is InfoFileAction -> {
+                onFileInfo(it.file)
+                fileActionState = NoFileAction()
+            }
+
+            is RenameFileAction -> fileActionState = it
+            is NoFileAction -> fileActionState = it
+            is DeleteFileAction -> fileActionState = it
+        }
+    }
+
     when (pageState) {
         is FolderPageLoading -> Column {
             CircularProgressIndicator()
@@ -108,7 +161,7 @@ fun FolderPage(
 
         is FolderPageLoaded -> Box {
             LoadedFolderList(
-                pageState.folder, previews, onFolderNav, onFolderContextAction
+                pageState.folder, previews, onFolderNav, onFolderContextAction, onFileContextAction,
             )
             if (errorMessage != null) {
                 // we have to use weird stuff like this because we're not using the Scaffold for the desktop app
@@ -187,18 +240,95 @@ fun FolderPage(
 
         is NoFolderAction -> Unit
     }
+
+    /* handle file actions */
+    when (val action = fileActionState) {
+        is RenameFileAction -> {
+            TextDialog(
+                title = "Rename file",
+                defaultValue = action.file.name,
+                onCancel = { fileActionState = NoFileAction() },
+                onConfirm = {
+                    val newFile = action.file.copy(name = it)
+                    runBlocking {
+                        fileActionState = NoFileAction()
+                        view.updateFile(newFile)
+                        onUpdate()
+                    }
+                },
+            )
+        }
+
+        is DownloadFileAction -> {
+            directoryPicker.launch()
+        }
+
+        is DeleteFileAction -> TextDialog(
+            title = "Delete file",
+            bodyText = "Are you sure you want to delete this file? Type the name to confirm",
+            confirmText = "Delete",
+            onConfirm = {
+                if (it == action.file.name) {
+                    fileActionState = NoFileAction()
+                    view.deleteFile(action.file)
+                }
+            },
+            onCancel = { fileActionState = NoFileAction() },
+        )
+
+        is ConfirmReplaceDownloadFile -> Dialog(
+            title = "File already exists",
+            text = "A file named ${action.file.name} already exists in the selected directory. Do you want to replace it?",
+            icon = Icons.Default.Error,
+            iconColor = MaterialTheme.colorScheme.error,
+            confirmText = "Replace",
+            dismissText = "Cancel",
+            onDismissRequest = { fileActionState = NoFileAction() },
+            onConfirmation = {
+                view.downloadFile(action.file, action.directory)
+                fileActionState = NoFileAction()
+            },
+        )
+
+        is NoFileAction -> Unit
+    }
 }
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun DesktopFileEntry(file: FileApi, preview: ByteArray? = null) {
-    TooltipArea(
-        tooltip = {
-            Surface(
-                tonalElevation = 10.dp, color = MaterialTheme.colorScheme.tertiary
-            ) { Text(file.name) }
-        }) {
-        FileEntry(file, preview)
+fun DesktopFileEntry(
+    file: FileApi,
+    preview: ByteArray? = null,
+    onClick: (f: FileApi) -> Unit,
+    onContextAction: (FileContextAction) -> Unit,
+) {
+    ContextMenuArea(
+        items = {
+            listOf(
+                ContextMenuItem("Save as...") {
+                    onContextAction(DownloadFileAction(file))
+                },
+                ContextMenuItem("Rename File") {
+                    onContextAction(RenameFileAction(file))
+                },
+                ContextMenuItem("Delete File") {
+                    onContextAction(DeleteFileAction(file))
+                },
+                ContextMenuItem("Info") {
+                    onContextAction(InfoFileAction(file))
+                },
+            )
+        },
+    ) {
+        TooltipArea(
+            tooltip = {
+                Surface(
+                    tonalElevation = 10.dp, color = MaterialTheme.colorScheme.tertiary,
+                ) { Text(file.name) }
+            },
+        ) {
+            FileEntry(file, preview)
+        }
     }
 }
 
@@ -239,6 +369,7 @@ private fun LoadedFolderList(
     previews: BatchFilePreview,
     onFolderNav: (FolderApi) -> Unit,
     onFolderContextAction: (FolderContextAction) -> Unit,
+    onFileContextAction: (FileContextAction) -> Unit,
 ) {
     val children: List<Any> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
@@ -256,10 +387,15 @@ private fun LoadedFolderList(
                 is FolderApi -> DesktopFolderEntry(
                     folder = child,
                     onClick = { onFolderNav(it) },
-                    onContextAction = onFolderContextAction
+                    onContextAction = onFolderContextAction,
                 )
 
-                is FileApi -> DesktopFileEntry(child, previews[child.id])
+                is FileApi -> DesktopFileEntry(
+                    file = child,
+                    preview = previews[child.id],
+                    onClick = {},
+                    onContextAction = onFileContextAction,
+                )
             }
         }
     }

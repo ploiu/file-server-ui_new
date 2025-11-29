@@ -6,7 +6,7 @@ import java.io.InputStream
 actual fun saveFile(
     res: InputStream,
     saveLocation: PlatformFile,
-    archiveName: String
+    fileName: String,
 ) {
     TODO("Not yet implemented")
 }

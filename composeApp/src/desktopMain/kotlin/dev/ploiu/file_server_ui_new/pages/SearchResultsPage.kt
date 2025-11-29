@@ -52,7 +52,12 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(files) {
-                        DesktopFileEntry(it, pageState.previews[it.id])
+                        DesktopFileEntry(
+                            file = it,
+                            preview = pageState.previews[it.id],
+                            onClick = { TODO() },
+                            onContextAction = { TODO() },
+                        )
                     }
                 }
             } else {

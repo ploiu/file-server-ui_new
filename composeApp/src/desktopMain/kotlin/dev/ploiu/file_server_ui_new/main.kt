@@ -227,7 +227,8 @@ fun MainDesktopBody(
                         view = viewModel,
                         refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey + headerUpdateKey,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
-                        onUpdate = { folderPageUpdateKey += 1 }
+                        onFileInfo = { appViewModel.sideSheetItem(it) },
+                        onUpdate = { folderPageUpdateKey += 1 },
                     ) {
                         navController.navigate(FolderRoute(it.id))
                         navBarState += it

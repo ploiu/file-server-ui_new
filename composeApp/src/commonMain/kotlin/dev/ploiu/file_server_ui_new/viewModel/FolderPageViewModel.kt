@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
+import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.saveFile
+import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -37,6 +39,7 @@ data class FolderPageUiModel(
 
 class FolderPageViewModel(
     private val folderService: FolderService,
+    private val fileService: FileService,
     private val previewService: PreviewService,
     val folderId: Long,
 ) : ViewModel() {
@@ -136,6 +139,69 @@ class FolderPageViewModel(
         folderService.deleteFolder(folder.id)
             .onSuccess {
                 _state.update { it.copy(message = "Folder deleted successfully") }
+                loadFolder()
+            }
+            .onFailure { msg ->
+                _state.update { it.copy(message = msg) }
+            }
+    }
+
+    /**
+     * checks if the file can be downloaded in the passed [saveLocation]. If so, the file is downloaded. Otherwise,
+     * the state is updated for the ui to signal a confirmation or error to the user
+     */
+    fun checkDownloadFile(file: FileApi, saveLocation: PlatformFile): Boolean {
+        return if (!saveLocation.exists() || !saveLocation.isDirectory()) {
+            _state.update {
+                it.copy(message = "Selected directory does not exist")
+            }
+            false
+        } else {
+            !saveLocation.resolve(file.name).exists()
+        }
+    }
+
+    /**
+     * Handles downloading the file to the passed [saveLocation].
+     *
+     * This should only be called if [checkDownloadFile] succeeds or if the user confirms they want to overwrite
+     * */
+    fun downloadFile(file: FileApi, saveLocation: PlatformFile) =
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+            fileService.downloadFile(file.id)
+                .onSuccess { res ->
+                    saveFile(res, saveLocation, file.name)
+                    res.close()
+                    _state.update { it.copy(message = "File downloaded successfully") }
+                }
+                .onFailure { msg ->
+                    _state.update {
+                        it.copy(message = msg)
+                    }
+                }
+        }
+
+    fun updateFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
+        val currentState = _state.value.pageState
+        if (currentState is FolderPageLoaded) {
+            _state.update { it.copy(pageState = FolderPageLoading()) }
+            val updateRes = fileService.updateFile(file.toFileRequest())
+            updateRes.onSuccess {
+                loadFolder()
+            }.onFailure { msg ->
+                _state.update { it.copy(pageState = FolderPageError(msg)) }
+            }
+        }
+    }
+
+    /**
+     * deletes the passed [file] and calls [loadFolder] if successful.
+     * If there's an error, the state is updated to have the error message
+     */
+    fun deleteFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
+        fileService.deleteFile(file.id)
+            .onSuccess {
+                _state.update { it.copy(message = "File deleted successfully") }
                 loadFolder()
             }
             .onFailure { msg ->
