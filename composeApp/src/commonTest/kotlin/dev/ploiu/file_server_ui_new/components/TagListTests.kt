@@ -5,13 +5,13 @@ package dev.ploiu.file_server_ui_new.components
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
-import dev.ploiu.file_server_ui_new.model.TagApi
+import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import io.mockk.called
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.Test
 
-private typealias TagCallback = (Collection<TagApi>) -> Unit
+private typealias TagCallback = (Collection<TaggedItemApi>) -> Unit
 
 class TagListTests {
 
@@ -30,7 +30,7 @@ class TagListTests {
     @Test
     fun `should show a chip for each tag`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TagApi(id = null, title = "tag1"), TagApi(id = null, title = "tag2"))
+        val tags = listOf(TaggedItemApi(id = null, title = "tag1", implicitFrom = null), TaggedItemApi(id = null, title = "tag2", implicitFrom = null))
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
@@ -46,7 +46,7 @@ class TagListTests {
     @Test
     fun `should show the Add Tag Button`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TagApi(id = null, title = "tag1"), TagApi(id = null, title = "tag2"))
+        val tags = listOf(TaggedItemApi(id = null, title = "tag1", implicitFrom = null), TaggedItemApi(id = null, title = "tag2", implicitFrom = null))
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
@@ -82,7 +82,7 @@ class TagListTests {
     @Test
     fun `should call update callback including the new tag when tag name is submitted`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TagApi(id = 1, title = "original"))
+        val tags = listOf(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
@@ -91,8 +91,8 @@ class TagListTests {
         onNodeWithTag("textDialogConfirmButton").performClick()
         verify {
             callback(match {
-                it.contains(TagApi(id = 1, title = "original"))
-                        && it.contains(TagApi(id = null, title = "new tag name"))
+                it.contains(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
+                        && it.contains(TaggedItemApi(id = null, title = "new tag name", implicitFrom = null))
             })
         }
     }
@@ -101,12 +101,12 @@ class TagListTests {
     @Test
     fun `clicking on a tag pill should call update callback without that tag`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TagApi(id = 1, title = "whatever"), TagApi(id = 2, title = "whatever2"))
+        val tags = listOf(TaggedItemApi(id = 1, title = "whatever", implicitFrom = null), TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null))
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
         onNodeWithTag("tag_whatever").performClick()
-        verify(exactly = 1) { callback(match { it.size == 1 && it.contains(TagApi(id = 2, title = "whatever2")) }) }
+        verify(exactly = 1) { callback(match { it.size == 1 && it.contains(TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null)) }) }
     }
 
 }

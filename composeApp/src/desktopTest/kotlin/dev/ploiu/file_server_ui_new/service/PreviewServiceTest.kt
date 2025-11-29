@@ -3,12 +3,20 @@ package dev.ploiu.file_server_ui_new.service
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import dev.ploiu.file_server_ui_new.client.FileClient
+import dev.ploiu.file_server_ui_new.client.PreviewClient
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody
 import org.junit.Rule
@@ -49,9 +57,9 @@ class PreviewServiceTest {
 
     @Test
     fun `getFolderPreview creates the folder cache directory if it doesn't exist`() = runTest {
-        val folderService: FolderService = mockk()
+        val previewClient: PreviewClient = mockk()
         val fileClient: FileClient = mockk()
-        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
+        val previewService = DesktopPreviewService(fileClient, previewClient, directoryService)
         previewService.getFolderPreview(
             FolderApi(
                 1,
@@ -60,16 +68,16 @@ class PreviewServiceTest {
                 "test",
                 emptyList(),
                 emptyList(),
-                emptyList()
-            )
-        )
+                emptyList(),
+            ),
+        ).collect()
         assertTrue { File("./testDirs/${getTestName()}/cache/1").exists() }
     }
 
     @Test
     fun `when the folder is retrieved from folderService, any previews stored to the disk that aren't in the resulting FolderAPI get removed from the disk`() =
         runTest {
-            val folderService: FolderService = mockk()
+            val previewClient: PreviewClient = mockk()
             val fileClient: FileClient = mockk()
             val folder = FolderApi(1, 0, "./test", "test", emptyList(), emptyList(), emptyList())
             val dir = File("./testDirs/${getTestName()}/cache/${folder.id}")
@@ -78,14 +86,18 @@ class PreviewServiceTest {
             val oldFile = File(dir, "1.png")
             oldFile.createNewFile()
             assertTrue { oldFile.exists() }
-            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-            previewService.getFolderPreview(folder)
+            val previewService = DesktopPreviewService(
+                fileClient = fileClient,
+                previewClient = previewClient,
+                directoryService = directoryService,
+            )
+            previewService.getFolderPreview(folder).collect()
             assertFalse { oldFile.exists() }
         }
 
     @Test
     fun `previews that are still in FolderApi are not removed from the disk`() = runTest {
-        val folderService: FolderService = mockk()
+        val previewClient: PreviewClient = mockk()
         val fileClient: FileClient = mockk()
         // FolderApi contains file with id 2
         val folder = FolderApi(
@@ -99,17 +111,21 @@ class PreviewServiceTest {
         val validFile = File(dir, "2.png")
         validFile.createNewFile()
         assertTrue { validFile.exists() }
-        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-        previewService.getFolderPreview(folder)
+        val previewService = DesktopPreviewService(
+            fileClient = fileClient,
+            previewClient = previewClient,
+            directoryService = directoryService,
+        )
+        previewService.getFolderPreview(folder).collect()
         assertTrue { validFile.exists() }
         // since all the files on the disk are in the folder api, we shouldn't attempt to download them
-        coVerify(exactly = 0) { folderService.getPreviewsForFolder(any()) }
+        verify(exactly = 0) { previewClient.downloadFolderPreviews(any()) }
     }
 
     @Test
     fun `when the folder is retrieved from folderService, if fewer than 21 previews aren't cached on disk, download each preview individually in chunks of 5 and store them in the cache`() =
         runTest {
-            val folderService: FolderService = mockk()
+            val previewClient: PreviewClient = mockk()
             val fileClient: FileClient = mockk()
             // Create 10 files missing from disk
             val fileIds = (1L..10L).toList()
@@ -122,13 +138,17 @@ class PreviewServiceTest {
                 Response.success(200, ResponseBody.create(null, previewBytes))
             }
             // Should not call getPreviewsForFolder
-            coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
+            every { previewClient.downloadFolderPreviews(any()) } returns flowOf()
 
-            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-            val result = previewService.getFolderPreview(folder)
+            val previewService = DesktopPreviewService(
+                fileClient = fileClient,
+                previewClient = previewClient,
+                directoryService = directoryService,
+            )
+            val result = previewService.getFolderPreview(folder).map {it.first}.toSet()
 
             // All previews should be downloaded and stored
-            assertEquals(fileIds.toSet(), result.unwrap().keys)
+            assertEquals(fileIds.toSet(), result)
             fileIds.forEach {
                 val file = File("./testDirs/${getTestName()}/cache/1/$it.png")
                 assertTrue(file.exists())
@@ -137,13 +157,13 @@ class PreviewServiceTest {
             // Should call downloadPreview for each file
             coVerify(exactly = fileIds.size) { fileClient.getFilePreview(any()) }
             // Should not call getPreviewsForFolder
-            coVerify(exactly = 0) { folderService.getPreviewsForFolder(any()) }
+            coVerify(exactly = 0) { previewClient.downloadFolderPreviews(any()) }
         }
 
     @Test
     fun `when attempting to download an individual preview, if the client returns null, that file should not be cached`() =
         runTest {
-            val folderService: FolderService = mockk()
+            val previewClient: PreviewClient = mockk()
             val fileClient: FileClient = mockk()
             // FolderApi contains one file with id 1
             val fileId = 1L
@@ -157,20 +177,28 @@ class PreviewServiceTest {
                 404,
                 ResponseBody.create(null, "")
             )
-            coEvery { folderService.getPreviewsForFolder(any()) } returns Ok(emptyMap())
-            val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
-            val result = previewService.getFolderPreview(folder)
+            coEvery { previewClient.downloadFolderPreviews(any())} returns flowOf()
+            val previewService = DesktopPreviewService(
+                fileClient = fileClient,
+                previewClient = previewClient,
+                directoryService = directoryService,
+            )
+            val result = previewService.getFolderPreview(folder).toList()
             // Should not cache the file
             val cachedFile = File("./testDirs/${getTestName()}/cache/1/$fileId.png")
             assertFalse(cachedFile.exists())
-            assertTrue(result.unwrap().isEmpty())
+            assertTrue(result.isEmpty())
         }
 
     @Test
     fun `downloadPreview should return response body bytes if response is successful`() = runTest {
         val fileClient: FileClient = mockk()
-        val folderService: FolderService = mockk()
-        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
+        val previewClient: PreviewClient = mockk()
+        val previewService = DesktopPreviewService(
+            fileClient = fileClient,
+            previewClient = previewClient,
+            directoryService = directoryService,
+        )
         val bytes = byteArrayOf(1, 2, 3)
         coEvery { fileClient.getFilePreview(any()) } returns Response.success(
             ResponseBody.create(
@@ -186,8 +214,12 @@ class PreviewServiceTest {
     @Test
     fun `downloadPreview should return null if response code is 404`() = runTest {
         val fileClient: FileClient = mockk()
-        val folderService: FolderService = mockk()
-        val previewService = DesktopPreviewService(folderService, fileClient, directoryService)
+        val previewClient: PreviewClient = mockk()
+        val previewService = DesktopPreviewService(
+            fileClient = fileClient,
+            previewClient = previewClient,
+            directoryService = directoryService,
+        )
         coEvery { fileClient.getFilePreview(any()) } returns Response.error(
             404,
             ResponseBody.create(null, "")
