@@ -100,6 +100,7 @@ fun FolderPage(
         if (directory != null && actionState is DownloadFolderAction) {
             if (view.checkDownloadFolder(actionState.folder, directory)) {
                 view.downloadFolder(actionState.folder, directory)
+                folderActionState = NoFolderAction()
             } else {
                 folderActionState = ConfirmReplaceDownloadFolder(actionState.folder, directory)
             }
@@ -108,6 +109,7 @@ fun FolderPage(
         if (directory != null && fileAction is DownloadFileAction) {
             if (view.checkDownloadFile(fileAction.file, directory)) {
                 view.downloadFile(fileAction.file, directory)
+                fileActionState = NoFileAction()
             } else {
                 fileActionState = ConfirmReplaceDownloadFile(fileAction.file, directory)
             }
