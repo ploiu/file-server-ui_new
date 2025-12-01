@@ -20,7 +20,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            FolderDetailSheet(viewModel, 0, {}, {})
+            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
         }
         onNodeWithTag("spinner").assertIsDisplayed()
         onNodeWithTag("loadedRoot").assertDoesNotExist()
@@ -50,7 +50,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            FolderDetailSheet(viewModel, 0, {}, {})
+            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
         }
 
         onNodeWithTag("spinner").assertDoesNotExist()
@@ -80,7 +80,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            FolderDetailSheet(viewModel, 0, {}, {})
+            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
         }
         val messageNode = onNodeWithTag("message")
         onNodeWithTag("loadedRoot").assertIsDisplayed()
@@ -109,7 +109,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            FolderDetailSheet(viewModel, 0, {}, {})
+            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
         }
         val image = onNodeWithTag("folderImage")
         val folderName = onNodeWithTag("folderName")

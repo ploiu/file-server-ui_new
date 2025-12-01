@@ -31,6 +31,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.components.*
+import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
+import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
+import dev.ploiu.file_server_ui_new.components.sidesheet.StandardSideSheet
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
@@ -258,7 +261,14 @@ fun MainDesktopBody(
                     }
                 }
 
-                is FileSideSheet -> TODO("FileSideSheet not implemented")
+                is FileSideSheet -> {
+                    val viewModel = koinInject<FileDetailViewModel> { parametersOf(sideSheetStatus.file.id) }
+                    FileDetailSheet(
+                        viewModel = viewModel,
+                        closeSelf = { appViewModel.sideSheetItem(null) },
+                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey,
+                    ) { sideSheetUpdateKey += 1 }
+                }
                 is NoSideSheet -> {}
             }
         }

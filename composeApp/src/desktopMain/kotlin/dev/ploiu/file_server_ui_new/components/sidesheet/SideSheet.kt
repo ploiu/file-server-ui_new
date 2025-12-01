@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.components
+package dev.ploiu.file_server_ui_new.components.sidesheet
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow

@@ -12,7 +12,7 @@ data class FileApi(
     val size: Long,
     val dateCreated: String,
     val fileType: String,
-) {
+): FolderChild {
     val extension: String
         get() {
             // fun fact, files can end with . on linux!

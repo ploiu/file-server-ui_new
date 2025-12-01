@@ -11,7 +11,7 @@ data class FolderApi(
     val folders: Collection<FolderApi>,
     val files: Collection<FileApi>,
     val tags: Collection<TaggedItemApi>,
-) {
+): FolderChild {
     fun toUpdateFolder() = UpdateFolder(
         id = id, name = name, parentId = parentId ?: 0, tags = tags
     )
