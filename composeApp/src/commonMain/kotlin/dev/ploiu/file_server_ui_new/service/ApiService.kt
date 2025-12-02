@@ -3,12 +3,11 @@ package dev.ploiu.file_server_ui_new.service
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.mapError
-import dev.ploiu.file_server_ui_new.ApiError
 import dev.ploiu.file_server_ui_new.client.ApiClient
 import dev.ploiu.file_server_ui_new.config.ServerConfig
 import dev.ploiu.file_server_ui_new.model.DiskInfo
-import dev.ploiu.file_server_ui_new.processResponse
+import dev.ploiu.file_server_ui_new.util.ApiError
+import dev.ploiu.file_server_ui_new.util.processResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 

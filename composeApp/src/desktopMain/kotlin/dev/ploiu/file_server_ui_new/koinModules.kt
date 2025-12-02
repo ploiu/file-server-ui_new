@@ -11,7 +11,7 @@ val pageModule = module {
     viewModel { (folderId: Long) -> FolderPageViewModel(get(), get(), get(), folderId) }
     viewModel { (searchTerm: String) -> SearchResultsPageViewModel(get(), get(), searchTerm) }
     viewModel { (folderId: Long) -> FolderDetailViewModel(get(), folderId) }
-    viewModel { (fileId: Long) -> FileDetailViewModel(get(), fileId) }
+    viewModel { (fileId: Long) -> FileDetailViewModel(get(), get(), get(), fileId) }
     viewModelOf(::ApplicationViewModel)
     viewModelOf(::LoginPageViewModel)
 }

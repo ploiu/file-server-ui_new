@@ -7,10 +7,10 @@ import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.saveFile
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
+import dev.ploiu.file_server_ui_new.util.saveFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.exists
@@ -168,7 +168,7 @@ class FolderPageViewModel(
      * */
     fun downloadFile(file: FileApi, saveLocation: PlatformFile) =
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            fileService.downloadFile(file.id)
+            fileService.getFileContents(file.id)
                 .onSuccess { res ->
                     saveFile(res, saveLocation, file.name)
                     res.close()

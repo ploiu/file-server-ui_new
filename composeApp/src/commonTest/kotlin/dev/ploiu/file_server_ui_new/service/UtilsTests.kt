@@ -3,7 +3,7 @@ package dev.ploiu.file_server_ui_new.service
 import com.github.michaelbull.result.unwrap
 import com.github.michaelbull.result.unwrapError
 import dev.ploiu.file_server_ui_new.model.ErrorMessage
-import dev.ploiu.file_server_ui_new.processResponse
+import dev.ploiu.file_server_ui_new.util.processResponse
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals

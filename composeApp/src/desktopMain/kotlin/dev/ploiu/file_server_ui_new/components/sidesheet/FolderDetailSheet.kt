@@ -165,7 +165,12 @@ private fun MainFolderDetails(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
             shape = MaterialTheme.shapes.small
         ) {
-            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 val pillColors = pillColors(
                     backgroundColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = .12f)
                         .compositeOver(MaterialTheme.colorScheme.secondary),
@@ -176,17 +181,15 @@ private fun MainFolderDetails(
                     colors = pillColors,
                     icon = { Icon(Icons.Default.Folder, "Folder") }
                 )
-                Spacer(modifier = Modifier.width(8.dp))
                 Pill(
                     text = folder.files.uiCount(),
                     colors = pillColors,
                     icon = { Icon(painterResource(Res.drawable.draft), "Files") }
                 )
-                Spacer(modifier = Modifier.width(8.dp))
                 Pill(
                     "~/" + folder.path,
                     colors = pillColors,
-                    textStyle = MaterialTheme.typography.labelLarge
+                    textStyle = MaterialTheme.typography.labelLarge,
                 )
             }
         }

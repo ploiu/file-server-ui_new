@@ -1,9 +1,6 @@
 package dev.ploiu.file_server_ui_new.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -12,8 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.formatFileOrFolderName
 import dev.ploiu.file_server_ui_new.model.FileApi
+import dev.ploiu.file_server_ui_new.util.formatFileOrFolderName
 
 /**
  * picks which image is used to represent the file - the file type image or the preview.
@@ -21,7 +18,7 @@ import dev.ploiu.file_server_ui_new.model.FileApi
  * if [preview] is null, a default is used
  */
 @Composable
-expect fun PickFileImage(file: FileApi, preview: ByteArray?)
+expect fun PickFileImage(file: FileApi, preview: ByteArray?, modifier: Modifier = Modifier)
 
 @Composable
 fun FileEntry(file: FileApi, preview: ByteArray? = null) {
@@ -32,7 +29,7 @@ fun FileEntry(file: FileApi, preview: ByteArray? = null) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
-            PickFileImage(file, preview)
+            PickFileImage(file, preview, Modifier.width(96.dp).height(96.dp))
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 formatFileOrFolderName(file.name),

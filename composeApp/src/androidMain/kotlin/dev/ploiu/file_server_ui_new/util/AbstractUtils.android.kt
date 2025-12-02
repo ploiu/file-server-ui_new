@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new
+package dev.ploiu.file_server_ui_new.util
 
 import io.github.vinceglb.filekit.PlatformFile
 import java.io.InputStream

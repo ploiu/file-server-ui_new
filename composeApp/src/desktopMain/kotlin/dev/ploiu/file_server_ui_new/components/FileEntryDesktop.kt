@@ -1,14 +1,11 @@
 package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FileApi
 import file_server_ui_new.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
@@ -45,21 +42,21 @@ fun determineIcon(file: FileApi): DrawableResource {
 }
 
 @Composable
-actual fun PickFileImage(file: FileApi, preview: ByteArray?) {
+actual fun PickFileImage(file: FileApi, preview: ByteArray?, modifier: Modifier) {
     // TODO I might have to migrate all of these assets to svg for desktop. No clue how they'll look on android though
     if (preview == null) {
         Image(
             painter = painterResource(determineIcon(file)),
             contentDescription = "file icon",
-            Modifier.width(96.dp).height(96.dp),
+            modifier = modifier,
             contentScale = ContentScale.Fit,
         )
     } else {
         Image(
             bitmap = preview.toImageBitmap(),
             contentDescription = "file preview",
-            modifier = Modifier.width(96.dp).height(96.dp),
-            contentScale = ContentScale.Fit
+            modifier = modifier,
+            contentScale = ContentScale.Fit,
         )
     }
 }

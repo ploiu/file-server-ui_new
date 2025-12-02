@@ -31,6 +31,15 @@ data class FileApi(
     fun toFileRequest() = FileRequest(id = id, folderId = folderId, name = name, tags = tags)
 }
 
+fun FileApi.path(folder: FolderApi): String {
+    val rootPart = "~/"
+    return if (folder.name == "root") {
+        rootPart + name
+    } else {
+        rootPart + folder.path + "/" + name
+    }
+}
+
 @Serializable
 data class FileRequest(
     val id: Long,

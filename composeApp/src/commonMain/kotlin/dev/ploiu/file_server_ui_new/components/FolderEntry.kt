@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.formatFileOrFolderName
 import dev.ploiu.file_server_ui_new.model.FolderApi
+import dev.ploiu.file_server_ui_new.util.formatFileOrFolderName
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.folder
 import org.jetbrains.compose.resources.painterResource

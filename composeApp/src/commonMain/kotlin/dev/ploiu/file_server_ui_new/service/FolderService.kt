@@ -9,12 +9,12 @@ import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
-import dev.ploiu.file_server_ui_new.processResponse
-import dev.ploiu.file_server_ui_new.processResponseUnit
+import dev.ploiu.file_server_ui_new.util.processResponse
+import dev.ploiu.file_server_ui_new.util.processResponseUnit
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.InputStream
 
-class FolderService(val client: FolderClient) {
+class FolderService(private val client: FolderClient) {
 
     private val log = KotlinLogging.logger {}
 

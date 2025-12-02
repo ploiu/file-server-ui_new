@@ -1,42 +1,35 @@
 package dev.ploiu.file_server_ui_new.components.sidesheet
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.filledIconButtonColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.*
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
+import dev.ploiu.file_server_ui_new.util.getFileSizeAlias
+import dev.ploiu.file_server_ui_new.util.toShortHandBytes
 import dev.ploiu.file_server_ui_new.viewModel.*
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.compose.resources.painterResource
 import java.util.*
 
 
 /*
     TODO
-      1) get file path
-      2) get file preview
-      3) get file stats for display with file path
       4) regular confirm dialog for delete
-      5)
+      5) open file button
  */
 @Composable
 @OptIn(ExperimentalMaterialApi::class)
@@ -74,6 +67,7 @@ fun FileDetailSheet(
         is FileDetailHasFile -> {
             MainFileDetails(
                 file = pageState.file,
+                filePath = pageState.filePath,
                 onRenameClick = { dialogState = RenameDialogState(pageState.file) },
                 onSaveClick = {
                     println("save clicked!")
@@ -82,6 +76,11 @@ fun FileDetailSheet(
                 },
                 onDeleteClick = { dialogState = DeleteDialogState(pageState.file) },
                 onUpdateTags = { viewModel.updateTags(it) },
+                preview = if (pageState is FilePreviewLoaded) {
+                    pageState.preview
+                } else {
+                    null
+                },
             )
             if (pageState is FileDetailMessage) {
                 Snackbar {
@@ -149,6 +148,8 @@ private fun MainFileDetails(
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onUpdateTags: (Collection<TaggedItemApi>) -> Unit,
+    filePath: String,
+    preview: ByteArray? = null,
 ) {
     val actionButtonColors: IconButtonColors = filledIconButtonColors()
 
@@ -158,34 +159,48 @@ private fun MainFileDetails(
     ) {
         // image and title
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(determineIcon(file)),
-                contentDescription = "file icon",
-                Modifier.width(108.dp).height(108.dp).testTag("fileImage"),
-                contentScale = ContentScale.Fit,
-            )
+            PickFileImage(file, preview, Modifier.width(108.dp).height(108.dp).testTag("fileImage"))
             Text(file.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("fileName"))
         }
         Spacer(Modifier.height(16.dp))
+        // file attributes
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
             shape = MaterialTheme.shapes.small,
         ) {
-            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 val pillColors = pillColors(
                     backgroundColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = .12f)
                         .compositeOver(MaterialTheme.colorScheme.secondary),
                     contentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = .87f),
                 )
-                // TODO more file stats like date created and size
-                Spacer(modifier = Modifier.width(8.dp))
-                Spacer(modifier = Modifier.width(8.dp))
                 Pill(
-                    // TODO get full file path
-                    "~/" + file.name,
+                    filePath,
                     colors = pillColors,
                     textStyle = MaterialTheme.typography.labelLarge,
+                )
+                Pill(
+                    text = "@type: ${file.fileType}",
+                    colors = pillColors,
+                    textStyle = MaterialTheme.typography.labelLarge,
+                )
+                Pill(
+                    text = file.size.toShortHandBytes() + " (" + file.size.getFileSizeAlias() + ")",
+                    colors = pillColors,
+                    textStyle = MaterialTheme.typography.labelLarge,
+                    icon = { Icon(Icons.Default.Straighten, contentDescription = "size icon") },
+                )
+                Pill(
+                    text = file.dateCreated.split("T")[0],
+                    textStyle = MaterialTheme.typography.labelLarge,
+                    colors = pillColors,
+                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Date Created") },
                 )
             }
         }

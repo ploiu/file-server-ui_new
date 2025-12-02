@@ -9,21 +9,19 @@ import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.CreateFileRequest
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FileRequest
-import dev.ploiu.file_server_ui_new.processResponse
-import dev.ploiu.file_server_ui_new.processResponseUnit
+import dev.ploiu.file_server_ui_new.util.processResponse
+import dev.ploiu.file_server_ui_new.util.processResponseUnit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.io.InputStream
 import java.net.URLConnection
 
-class FileService(val client: FileClient) {
+class FileService(private val client: FileClient) {
 
     companion object {
         private val EXTENSION_PATTERN = "\\..+$".toRegex()
     }
-
-    // TODO download file (possibly have to do different implementations)
 
     suspend fun getMetadata(id: Long): Result<FileApi, String> {
         if (id < 0) {
@@ -104,7 +102,7 @@ class FileService(val client: FileClient) {
         }
     }
 
-    suspend fun downloadFile(id: Long): Result<InputStream, String> {
+    suspend fun getFileContents(id: Long): Result<InputStream, String> {
         if (id <= 0) {
             Err("id ($id) must be > 0")
         }
@@ -113,7 +111,6 @@ class FileService(val client: FileClient) {
             .map { it.byteStream() }
             .mapError { it.message }
     }
-
 }
 
 data class SplitName(val name: String, val extension: String?)
