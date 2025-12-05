@@ -43,7 +43,7 @@ fun TextDialog(
                     text = title,
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 if (bodyText != null) {
@@ -58,13 +58,13 @@ fun TextDialog(
                             text = bodyText,
                             modifier = Modifier.fillMaxWidth(),
                             style = style,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 Row(
-                    horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()
+                    horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedTextField(
                         value = inputText,
@@ -78,13 +78,13 @@ fun TextDialog(
 
                                 else -> false
                             }
-                        }.focusRequester(focusRequester).testTag("textDialogInput")
+                        }.focusRequester(focusRequester).testTag("textDialogInput"),
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth().padding(end = 16.dp, bottom = 16.dp)
+                    modifier = Modifier.fillMaxWidth().padding(end = 16.dp, bottom = 16.dp),
                 ) {
                     TextButton(onClick = onCancel, modifier = Modifier.testTag("textDialogCancelButton")) {
                         Text(cancelText)
@@ -92,7 +92,7 @@ fun TextDialog(
                     Spacer(modifier = Modifier.width(16.dp))
                     TextButton(
                         onClick = { onConfirm(inputText.trim()) },
-                        modifier = Modifier.testTag("textDialogConfirmButton")
+                        modifier = Modifier.testTag("textDialogConfirmButton"),
                     ) {
                         Text(confirmText)
                     }

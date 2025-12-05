@@ -9,7 +9,7 @@ import java.nio.file.Files
 data class FolderApproximation(
     val self: File,
     val childFiles: Collection<File>,
-    val childFolders: Collection<FolderApproximation>
+    val childFolders: Collection<FolderApproximation>,
 ) {
 
     val size: Int

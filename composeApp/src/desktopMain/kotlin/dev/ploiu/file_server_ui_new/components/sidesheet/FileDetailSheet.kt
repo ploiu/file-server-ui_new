@@ -21,17 +21,18 @@ import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.util.getFileSizeAlias
 import dev.ploiu.file_server_ui_new.util.toShortHandBytes
 import dev.ploiu.file_server_ui_new.viewModel.*
-import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
 
 /*
     TODO
-      4) regular confirm dialog for delete
-      5) open file button
+      6) press escape to close
  */
 @Composable
+// intellij believes that changing dialogState in lambda functions is useless, but they're very important
+@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterialApi::class)
 fun FileDetailSheet(
     viewModel: FileDetailViewModel,
@@ -43,9 +44,9 @@ fun FileDetailSheet(
 ) {
     val (pageState) = viewModel.state.collectAsState().value
     var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
-    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
-        if (directory != null) {
-            viewModel.downloadFile(directory)
+    val filePicker = rememberFileSaverLauncher { file ->
+        if (file != null) {
+            viewModel.downloadFile(file)
         }
     }
 
@@ -72,10 +73,11 @@ fun FileDetailSheet(
                 onSaveClick = {
                     println("save clicked!")
                     dialogState = NoDialogState()
-                    directoryPicker.launch()
+                    filePicker.launch(pageState.file.nameWithoutExtension, pageState.file.extension)
                 },
                 onDeleteClick = { dialogState = DeleteDialogState(pageState.file) },
                 onUpdateTags = { viewModel.updateTags(it) },
+                onOpenClick = { viewModel.openFile() },
                 preview = if (pageState is FilePreviewLoaded) {
                     pageState.preview
                 } else {
@@ -124,17 +126,17 @@ fun FileDetailSheet(
         }
 
         is DeleteDialogState -> {
-            TODO("regular confirm dialog")
-            TextDialog(
+            Dialog(
                 title = "Delete file",
-                bodyText = "Are you sure you want to delete? Type the file name to confirm",
-                modifier = Modifier.testTag("deleteDialog"),
-                onCancel = { dialogState = NoDialogState() },
+                text = "Are you sure you want to delete?",
+                confirmText = "Delete",
+                dismissText = "Cancel",
+                onDismissRequest = { dialogState = NoDialogState() },
                 onConfirm = {
-                    dialogState = NoDialogState()
-                    viewModel.deleteFile(it)
+                    viewModel.deleteFile()
                     onChange()
                 },
+                icon = Icons.Default.Warning,
             )
         }
 
@@ -147,6 +149,7 @@ private fun MainFileDetails(
     onRenameClick: () -> Unit,
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onOpenClick: () -> Unit,
     onUpdateTags: (Collection<TaggedItemApi>) -> Unit,
     filePath: String,
     preview: ByteArray? = null,
@@ -156,21 +159,19 @@ private fun MainFileDetails(
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("loadedRoot"),
         horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // image and title
+    ) { // image and title
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             PickFileImage(file, preview, Modifier.width(108.dp).height(108.dp).testTag("fileImage"))
             Text(file.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("fileName"))
         }
-        Spacer(Modifier.height(16.dp))
-        // file attributes
+        Spacer(Modifier.height(16.dp)) // file attributes
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
             shape = MaterialTheme.shapes.small,
         ) {
             FlowRow(
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(8.dp).testTag("fileMetadata"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -206,23 +207,34 @@ private fun MainFileDetails(
         }
         Spacer(Modifier.height(8.dp))
         TagList(file.tags, onUpdate = onUpdateTags)
-        Spacer(Modifier.height(8.dp))
-        // action buttons TODO can probably pull out into common code
+        Spacer(Modifier.height(8.dp)) // action buttons TODO can probably pull out into common code
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.Center) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onDeleteClick, colors = actionButtonColors) {
+                    Icon(Icons.Default.Delete, "Delete")
+                }
+                VerticalDivider(
+                    thickness = 2.dp,
+                    modifier = Modifier.height(30.dp).padding(start = 4.dp, end = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
                 IconButton(onClick = onRenameClick, colors = actionButtonColors) {
                     Icon(Icons.Default.Edit, "Edit")
                 }
                 IconButton(onClick = onSaveClick, colors = actionButtonColors) {
                     Icon(Icons.Default.Save, "Save")
                 }
-                IconButton(onClick = onDeleteClick, colors = actionButtonColors) {
-                    Icon(Icons.Default.Delete, "Delete")
+                IconButton(onClick = onOpenClick, colors = actionButtonColors) {
+                    Icon(Icons.Default.FileOpen, "Open")
                 }
             }
         }

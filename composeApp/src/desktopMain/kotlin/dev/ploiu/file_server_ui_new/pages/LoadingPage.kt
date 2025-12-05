@@ -31,14 +31,14 @@ fun LoadingPage(model: LoadingPageViewModel = koinViewModel(), onSuccess: () -> 
                     title = "An Error Occurred",
                     text = checkResult.error.message,
                     icon = Icons.Default.Error,
-                    iconColor = MaterialTheme.colorScheme.error
+                    iconColor = MaterialTheme.colorScheme.error,
                 )
 
                 is IncompatibleResult -> Dialog(
                     title = "Incompatible Server Version",
                     text = "The server is on version ${checkResult.serverVersion}, but this client only supports ${checkResult.compatibleVersion}",
                     icon = Icons.Default.Info,
-                    iconColor = MaterialTheme.colorScheme.secondary
+                    iconColor = MaterialTheme.colorScheme.secondary,
                 )
 
                 else -> println("bad check result on SHOWING_MODAL state!")

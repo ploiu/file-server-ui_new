@@ -42,10 +42,10 @@ class FolderDetailSheetTests {
                         "whatever",
                         listOf(),
                         listOf(),
-                        listOf()
-                    )
-                )
-            )
+                        listOf(),
+                    ),
+                ),
+            ),
         ).asStateFlow()
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
@@ -71,11 +71,11 @@ class FolderDetailSheetTests {
                         "whatever",
                         listOf(),
                         listOf(),
-                        listOf()
+                        listOf(),
                     ),
-                    "test message"
-                )
-            )
+                    "test message",
+                ),
+            ),
         ).asStateFlow()
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
@@ -101,10 +101,10 @@ class FolderDetailSheetTests {
                         "whatever",
                         listOf(),
                         listOf(),
-                        listOf()
-                    )
-                )
-            )
+                        listOf(),
+                    ),
+                ),
+            ),
         ).asStateFlow()
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()

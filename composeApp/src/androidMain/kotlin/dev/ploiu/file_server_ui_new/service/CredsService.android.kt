@@ -6,7 +6,7 @@ actual fun retrieveCreds(): RetrieveCredsResult {
 
 actual fun saveCreds(
     username: String,
-    password: String
+    password: String,
 ): SaveCredsResult {
     TODO("Not yet implemented")
 }

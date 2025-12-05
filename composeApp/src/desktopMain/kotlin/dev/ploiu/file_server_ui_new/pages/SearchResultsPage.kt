@@ -32,7 +32,7 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 CircularProgressIndicator()
             }
@@ -45,11 +45,11 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                         start = 16.dp,
                         end = 16.dp,
                         top = 8.dp,
-                        bottom = 16.dp
+                        bottom = 16.dp,
                     ),
                     columns = GridCells.Adaptive(150.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     items(files) {
                         DesktopFileEntry(
@@ -64,12 +64,12 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         "No Files Found :(",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
                 }
             }
@@ -79,18 +79,18 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = "an error occurred",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 )
                 Text(
                     "An error occurred during searching: ${pageState.message}",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
             }
         }

@@ -191,8 +191,8 @@ object SearchParser {
             Attribute(
                 field = nameBuilder.toString(),
                 op = EqualityOperator.parse(opBuilder.toString()),
-                value = valueBuilder.toString()
-            )
+                value = valueBuilder.toString(),
+            ),
         )
         return index
     }

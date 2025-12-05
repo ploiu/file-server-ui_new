@@ -66,7 +66,7 @@ actual fun AppTheme(
         CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
             Surface(
                 color = MaterialTheme.colorScheme.background,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 content()
             }
@@ -104,7 +104,7 @@ fun main() = application {
                 else -> {}
             }
             true
-        }
+        },
     ) {
         AppTheme {
             MainDesktopBody(searchBarFocuser = searchBarFocuser, appViewModel = viewModel)
@@ -115,11 +115,10 @@ fun main() = application {
 // some routes shouldn't have the app header show up
 val headerlessRoutes = listOf(
     LoginRoute::class.qualifiedName,
-    LoadingRoute::class.qualifiedName
+    LoadingRoute::class.qualifiedName,
 )
 
 private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
-
 
 // TODO pull this out into its own file (probably same with other modals)
 @Composable
@@ -128,16 +127,16 @@ fun LoadingModalDialog(loadingModal: LoadingModal) {
         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CircularProgressIndicator(
                     progress = { loadingModal.progress / loadingModal.max.toFloat() },
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = "Uploading... ${loadingModal.progress} / ${loadingModal.max}",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }
@@ -148,7 +147,7 @@ fun LoadingModalDialog(loadingModal: LoadingModal) {
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     searchBarFocuser: FocusRequester,
-    appViewModel: ApplicationViewModel
+    appViewModel: ApplicationViewModel,
 ) {
     var navBarState: NavState by remember {
         mutableStateOf(
@@ -157,11 +156,11 @@ fun MainDesktopBody(
                     // using a fake representation of the root folder here so that we don't have to break structure to pull it. Also since it's just for nav, it doesn't matter if we don't have the children here
                     listOf(
                         FolderApi(
-                            0, null, "root", "~", emptyList(), emptyList(), emptyList()
-                        )
-                    )
-                )
-            )
+                            0, null, "root", "~", emptyList(), emptyList(), emptyList(),
+                        ),
+                    ),
+                ),
+            ),
         )
     }
     val (sideSheetStatus, headerUpdateKey) = appViewModel.state.collectAsState().value
@@ -182,7 +181,7 @@ fun MainDesktopBody(
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
         appViewModel.closeModal()
         if (modalState == SelectingFolderUpload && directory?.isDirectory() ?: false && currentRoute?.destination?.route?.contains(
-                FolderRoute::class.simpleName!!
+                FolderRoute::class.simpleName!!,
             ) ?: false
         ) {
             val folderId = currentRoute.toRoute<FolderRoute>().id
@@ -202,7 +201,7 @@ fun MainDesktopBody(
                     navController = navController,
                     sideSheetActive = sideSheetStatus !is NoSideSheet,
                     onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) },
-                    onUploadFolderClick = { appViewModel.openModal(SelectingFolderUpload) }
+                    onUploadFolderClick = { appViewModel.openModal(SelectingFolderUpload) },
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
@@ -247,7 +246,7 @@ fun MainDesktopBody(
         }
         StandardSideSheet(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
-            onCloseAction = appViewModel::closeSideSheet
+            onCloseAction = appViewModel::closeSideSheet,
         ) {
             when (sideSheetStatus) {
                 is FolderSideSheet -> {
@@ -255,7 +254,7 @@ fun MainDesktopBody(
                     FolderDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
-                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey
+                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey,
                     ) {
                         sideSheetUpdateKey += 1
                     }
@@ -269,6 +268,7 @@ fun MainDesktopBody(
                         refreshKey = folderPageUpdateKey + actionButtonsUpdateKey,
                     ) { sideSheetUpdateKey += 1 }
                 }
+
                 is NoSideSheet -> {}
             }
         }
@@ -285,12 +285,14 @@ fun MainDesktopBody(
                         appViewModel.addEmptyFolder(it)
                         actionButtonsUpdateKey += 1
                     }
-                })
+                },
+            )
+
             is ApplicationErrorModal -> Dialog(
                 title = "Failed to upload folder",
                 onDismissRequest = { appViewModel.closeModal() },
                 text = "PLACEHOLDER ERROR MESSAGE: ${modalState.message}",
-                icon = Icons.Default.Error
+                icon = Icons.Default.Error,
             )
 
             is LoadingModal -> LoadingModalDialog(modalState)

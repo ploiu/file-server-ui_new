@@ -9,7 +9,7 @@ import java.util.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-@Deprecated(message =  "Auth shouldn't exist at compile time", level = DeprecationLevel.ERROR)
+@Deprecated(message = "Auth shouldn't exist at compile time", level = DeprecationLevel.ERROR)
 data class Auth(val username: String, val password: String) {
     @ExperimentalEncodingApi
     fun basicAuth(): String {

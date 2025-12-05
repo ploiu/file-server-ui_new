@@ -92,7 +92,7 @@ class Attribute(field: String, private val op: EqualityOperator, value: String) 
         val BYTE_MULT_PATTERN: Pattern =
             Pattern.compile(
                 "^(?<number>[0-9]*)(?<mult>ki?b|mi?b|gi?b|ti?b|pi?b)$",
-                Pattern.CASE_INSENSITIVE
+                Pattern.CASE_INSENSITIVE,
             )
     }
 

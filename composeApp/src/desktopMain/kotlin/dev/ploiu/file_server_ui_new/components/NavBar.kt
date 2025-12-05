@@ -57,7 +57,7 @@ fun NavBar(state: NavState, clickEntry: (LinkedList<FolderApi>) -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 textDecoration = TextDecoration.Underline,
                 modifier = Modifier.pointerHoverIcon(
-                    PointerIcon.Hand
+                    PointerIcon.Hand,
                 ).clickable {
                     val index = state[folder]
                     if (index != -1) {

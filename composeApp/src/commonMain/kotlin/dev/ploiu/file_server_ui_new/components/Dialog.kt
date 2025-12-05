@@ -12,7 +12,7 @@ fun Dialog(
     icon: ImageVector,
     iconColor: Color = LocalContentColor.current,
     onDismissRequest: (() -> Unit)? = null,
-    onConfirmation: (() -> Unit)? = null,
+    onConfirm: (() -> Unit)? = null,
     confirmText: String = "Confirm",
     dismissText: String = "Dismiss",
 ) {
@@ -34,11 +34,11 @@ fun Dialog(
             }
         },
         confirmButton = {
-            if (onConfirmation != null) {
+            if (onConfirm != null) {
                 TextButton(
                     onClick = {
-                        onConfirmation()
-                    }
+                        onConfirm()
+                    },
                 ) {
                     Text(confirmText)
                 }
@@ -49,11 +49,11 @@ fun Dialog(
                 TextButton(
                     onClick = {
                         onDismissRequest()
-                    }
+                    },
                 ) {
                     Text(dismissText)
                 }
             }
-        }
+        },
     )
 }

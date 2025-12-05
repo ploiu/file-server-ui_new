@@ -15,7 +15,7 @@ import java.io.File
 class DesktopFolderUploadService(private val folderService: FolderService, private val fileService: FileService) :
     FolderUploadService {
     override suspend fun uploadFolder(
-        folder: PlatformFile, parentFolderId: Long
+        folder: PlatformFile, parentFolderId: Long,
     ): Flow<BatchUploadResult> = internalUploadFolder(folder.file, parentFolderId)
 
     fun internalUploadFolder(folder: File, parentFolderId: Long): Flow<BatchUploadResult> = flow {
@@ -51,7 +51,7 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
      * uploads a batch of files to the specified folder.
      *
      */
-    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = channelFlow (){
+    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = channelFlow() {
         // report as each file uploads, but wait for all files to upload before returning. This prevents us from ruining the server with too much spam
         files.map { file ->
             launch(Dispatchers.IO) {

@@ -8,7 +8,10 @@ import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.FolderApproximator
-import dev.ploiu.file_server_ui_new.service.*
+import dev.ploiu.file_server_ui_new.service.BatchFolderUploadResult
+import dev.ploiu.file_server_ui_new.service.BatchUploadFileResult
+import dev.ploiu.file_server_ui_new.service.FolderService
+import dev.ploiu.file_server_ui_new.service.FolderUploadService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +41,7 @@ data class FolderSideSheet(val folder: FolderApi) : SideSheetUiState
 data class ApplicationUiModel(
     val sideSheetState: SideSheetUiState,
     /** used to force refreshes of other components when the header causes something (e.g. a folder's contents via file/folder upload) to change */
-    val headerUpdateKey: Int = 0
+    val headerUpdateKey: Int = 0,
 )
 
 // I actually still don't like this but it's cleaner to handle it this way than a bunch of random handlers all over the place.
@@ -47,8 +50,7 @@ data class ApplicationUiModel(
 // (that just so happens to be top level)
 class ApplicationViewModel(
     private val folderService: FolderService,
-    private val fileService: FileService,
-    private val folderUploadService: FolderUploadService
+    private val folderUploadService: FolderUploadService,
 ) :
     ViewModel() {
     private val log = KotlinLogging.logger("ApplicationViewModel")
@@ -59,7 +61,6 @@ class ApplicationViewModel(
     // and we don't want to force an entire application re-render every time progress updates
     private val _modalState = MutableStateFlow<ApplicationModalState>(NoModal)
     val modalState = _modalState.asStateFlow()
-
 
     // TODO exception handler (look at folder detail view model)
     fun addEmptyFolder(name: String) = viewModelScope.launch(Dispatchers.IO) {

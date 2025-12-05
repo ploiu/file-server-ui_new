@@ -2,8 +2,6 @@ package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -60,6 +58,6 @@ fun FileServerSearchBar(focusRequester: FocusRequester, modifier: Modifier = Mod
                         else -> false
                     }
                 }
-            } then modifier
+            } then modifier,
     )
 }

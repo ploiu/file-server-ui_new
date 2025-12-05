@@ -24,21 +24,22 @@ fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: F
         tonalElevation = 2.dp,
         modifier = Modifier.fillMaxWidth().then(modifier),
         shape = MaterialTheme.shapes.small,
-        onClick = { onClick(folder) }) {
+        onClick = { onClick(folder) },
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
             Image(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
                 Modifier.width(96.dp).height(96.dp),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 formatFileOrFolderName(folder.name),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                minLines = 2
+                minLines = 2,
             )
         }
     }

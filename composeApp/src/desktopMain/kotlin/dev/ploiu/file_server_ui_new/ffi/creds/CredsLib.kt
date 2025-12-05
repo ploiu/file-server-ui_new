@@ -10,7 +10,7 @@ object CredsLib {
     fun storeCredential(
         applicationName: String,
         username: String,
-        password: String
+        password: String,
     ): SavePasswordResult {
         val applicationBytes = applicationName.nullTerminate()
         val usernameBytes = username.nullTerminate()

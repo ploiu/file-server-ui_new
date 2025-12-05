@@ -11,9 +11,9 @@ data class FolderApi(
     val folders: Collection<FolderApi>,
     val files: Collection<FileApi>,
     val tags: Collection<TaggedItemApi>,
-): FolderChild {
+) : FolderChild {
     fun toUpdateFolder() = UpdateFolder(
-        id = id, name = name, parentId = parentId ?: 0, tags = tags
+        id = id, name = name, parentId = parentId ?: 0, tags = tags,
     )
 
     fun containsFolder(name: String) = folders.map { it.name }.contains(name)

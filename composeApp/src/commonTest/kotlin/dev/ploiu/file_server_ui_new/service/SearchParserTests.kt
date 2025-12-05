@@ -24,7 +24,6 @@ class SearchParserTests {
         assertEquals(expected, actual)
     }
 
-
     @Test
     fun `parse strips extra spaces from search`() {
         val input = "\ttest      test "
@@ -65,7 +64,7 @@ class SearchParserTests {
         val complex = "@date <> 2025-02-01 @size < Large"
         val complexExpected = listOf(
             Attribute("dateCreated", EqualityOperator.NEQ, "2025-02-01"),
-            Attribute("fileSize", EqualityOperator.LT, "Large")
+            Attribute("fileSize", EqualityOperator.LT, "Large"),
         )
         assertEquals(simpleExpected, SearchParser.parse(simple).attributes)
         assertEquals(complexExpected, SearchParser.parse(complex).attributes)
@@ -77,13 +76,13 @@ class SearchParserTests {
         val simpleExpected = Search(
             "blah blah blah",
             listOf("tag1", "tag2"),
-            listOf(Attribute("fileSize", EqualityOperator.GT, "small"))
+            listOf(Attribute("fileSize", EqualityOperator.GT, "small")),
         )
         val complex = "\nblah blah blah +tag1 @size>small  +tag2 blah"
         val complexExpected = Search(
             "blah blah blah blah",
             listOf("tag1", "tag2"),
-            listOf(Attribute("fileSize", EqualityOperator.GT, "small"))
+            listOf(Attribute("fileSize", EqualityOperator.GT, "small")),
         )
         assertEquals(simpleExpected, SearchParser.parse(simple))
         assertEquals(complexExpected, SearchParser.parse(complex))

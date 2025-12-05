@@ -46,7 +46,7 @@ class FolderServiceTests {
             path = "",
             folders = emptyList(),
             files = emptyList(),
-            tags = emptyList()
+            tags = emptyList(),
         )
         coEvery { folderClient.getFolder(id) } returns Response.success(expectedFolder)
 
@@ -117,7 +117,7 @@ class FolderServiceTests {
             path = "",
             folders = emptyList(),
             files = emptyList(),
-            tags = emptyList()
+            tags = emptyList(),
         )
         coEvery { folderClient.createFolder(createFolder) } returns Response.success(expectedFolder)
 
@@ -163,7 +163,7 @@ class FolderServiceTests {
             path = "",
             folders = emptyList(),
             files = emptyList(),
-            tags = emptyList()
+            tags = emptyList(),
         )
         coEvery { folderClient.updateFolder(updateFolder) } returns Response.success(expectedFolder)
 

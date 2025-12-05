@@ -2,16 +2,10 @@ package dev.ploiu.file_server_ui_new.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.module.GLOBAL
-import dev.ploiu.file_server_ui_new.service.ApiService
-import dev.ploiu.file_server_ui_new.service.NoCredsFound
-import dev.ploiu.file_server_ui_new.service.RetrieveCredsError
-import dev.ploiu.file_server_ui_new.service.RetrieveCredsSuccess
-import dev.ploiu.file_server_ui_new.service.retrieveCreds
-import dev.ploiu.file_server_ui_new.service.saveCreds
+import dev.ploiu.file_server_ui_new.service.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

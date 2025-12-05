@@ -40,8 +40,9 @@ class FolderApproximatorTests {
         val res = convertDir(root)
         assertEquals(
             FolderApproximation(
-                root, listOf(file), listOf(FolderApproximation(dir, listOf(), listOf()))
-            ), res
+                root, listOf(file), listOf(FolderApproximation(dir, listOf(), listOf())),
+            ),
+            res,
         )
     }
 
@@ -58,19 +59,22 @@ class FolderApproximatorTests {
         val middle = helper.createDir("top/middle")
         val bottom = helper.createDir("top/middle/bottom")
         val expected = FolderApproximation(
-            root, mutableListOf(), listOf(
+            root, mutableListOf(),
+            listOf(
                 FolderApproximation(
-                    top, mutableListOf(), listOf(
+                    top, mutableListOf(),
+                    listOf(
                         FolderApproximation(
-                            middle, mutableListOf(), listOf(
+                            middle, mutableListOf(),
+                            listOf(
                                 FolderApproximation(
-                                    bottom, mutableListOf(), mutableListOf()
-                                )
-                            )
-                        )
-                    )
-                )
-            )
+                                    bottom, mutableListOf(), mutableListOf(),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
         )
         val res = convertDir(root)
         assertEquals(expected, res)
@@ -83,11 +87,12 @@ class FolderApproximatorTests {
         val rootFile = helper.createFile("root.txt")
         val topFile = helper.createFile("top/top.txt")
         val expected = FolderApproximation(
-            root, listOf(rootFile), listOf(
+            root, listOf(rootFile),
+            listOf(
                 FolderApproximation(
-                    top, listOf(topFile), mutableListOf()
-                )
-            )
+                    top, listOf(topFile), mutableListOf(),
+                ),
+            ),
         )
         val res = convertDir(root)
         assertEquals(expected, res)
@@ -103,7 +108,7 @@ class FolderApproximatorTests {
         }
         helper.createDir(builder.toString())
         val exception = assertThrows(
-            UnsupportedOperationException::class.java
+            UnsupportedOperationException::class.java,
         ) { convertDir(root) }
         assertEquals("Possible recursive symlinks: cannot go past depth of 50.", exception.message)
     }

@@ -10,11 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import dev.ploiu.file_server_ui_new.viewModel.FolderRoute
-import dev.ploiu.file_server_ui_new.viewModel.LoginError
-import dev.ploiu.file_server_ui_new.viewModel.LoginLoading
-import dev.ploiu.file_server_ui_new.viewModel.LoginPageViewModel
-import dev.ploiu.file_server_ui_new.viewModel.LoginSuccess
+import dev.ploiu.file_server_ui_new.viewModel.*
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -38,16 +34,18 @@ fun LoginPage(viewModel: LoginPageViewModel = koinInject(), navController: NavCo
     }
 
     if (pageState is LoginLoading || pageState is LoginSuccess) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()) {
+            modifier = Modifier.fillMaxSize(),
+        ) {
             CircularProgressIndicator()
         }
     } else {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             Text(text = "Sign in", style = MaterialTheme.typography.headlineLarge)
             OutlinedTextField(
@@ -61,7 +59,7 @@ fun LoginPage(viewModel: LoginPageViewModel = koinInject(), navController: NavCo
                 onValueChange = { password = it },
                 label = { Text("password") },
                 maxLines = 1,
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
             )
             Spacer(modifier = Modifier.height(8.dp))
             if (pageState is LoginError) {
@@ -72,14 +70,16 @@ fun LoginPage(viewModel: LoginPageViewModel = koinInject(), navController: NavCo
                 Checkbox(checked = shouldSavePassword, onCheckedChange = { viewModel.setSavePassword(it) })
                 Text(
                     text = "Remember Me",
-                    modifier = Modifier.onClick(onClick = { viewModel.setSavePassword(!shouldSavePassword) })
+                    modifier = Modifier.onClick(onClick = { viewModel.setSavePassword(!shouldSavePassword) }),
                 )
             }
-            Button(onClick = {
-                if (username.isNotBlank() && password.isNotBlank()) {
-                    viewModel.attemptManualLogin(username, password)
-                }
-            }) {
+            Button(
+                onClick = {
+                    if (username.isNotBlank() && password.isNotBlank()) {
+                        viewModel.attemptManualLogin(username, password)
+                    }
+                },
+            ) {
                 Text("Sign in")
             }
         }

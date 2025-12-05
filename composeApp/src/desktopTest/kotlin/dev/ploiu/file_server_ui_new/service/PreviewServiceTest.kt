@@ -1,22 +1,12 @@
 package dev.ploiu.file_server_ui_new.service
 
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.PreviewClient
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
+import io.mockk.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody
 import org.junit.Rule
@@ -101,9 +91,11 @@ class PreviewServiceTest {
         val fileClient: FileClient = mockk()
         // FolderApi contains file with id 2
         val folder = FolderApi(
-            1, 0, "./test", "test", emptyList(), listOf(
-                FileApi(2, 1, "file2", emptyList(), 0, "", "Image")
-            ), emptyList()
+            1, 0, "./test", "test", emptyList(),
+            listOf(
+                FileApi(2, 1, "file2", emptyList(), 0, "", "Image"),
+            ),
+            emptyList(),
         )
         val dir = File("./testDirs/${getTestName()}/cache/${folder.id}")
         dir.mkdirs()
@@ -145,7 +137,7 @@ class PreviewServiceTest {
                 previewClient = previewClient,
                 directoryService = directoryService,
             )
-            val result = previewService.getFolderPreview(folder).map {it.first}.toSet()
+            val result = previewService.getFolderPreview(folder).map { it.first }.toSet()
 
             // All previews should be downloaded and stored
             assertEquals(fileIds.toSet(), result)
@@ -168,16 +160,18 @@ class PreviewServiceTest {
             // FolderApi contains one file with id 1
             val fileId = 1L
             val folder = FolderApi(
-                1, 0, "./test", "test", emptyList(), listOf(
-                    FileApi(fileId, 1, "file1", emptyList(), 0, "", "Image")
-                ), emptyList()
+                1, 0, "./test", "test", emptyList(),
+                listOf(
+                    FileApi(fileId, 1, "file1", emptyList(), 0, "", "Image"),
+                ),
+                emptyList(),
             )
             // Simulate no preview available (404)
             coEvery { fileClient.getFilePreview(fileId) } returns Response.error(
                 404,
-                ResponseBody.create(null, "")
+                ResponseBody.create(null, ""),
             )
-            coEvery { previewClient.downloadFolderPreviews(any())} returns flowOf()
+            coEvery { previewClient.downloadFolderPreviews(any()) } returns flowOf()
             val previewService = DesktopPreviewService(
                 fileClient = fileClient,
                 previewClient = previewClient,
@@ -203,8 +197,8 @@ class PreviewServiceTest {
         coEvery { fileClient.getFilePreview(any()) } returns Response.success(
             ResponseBody.create(
                 null,
-                bytes
-            )
+                bytes,
+            ),
         )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNotNull(result)
@@ -222,7 +216,7 @@ class PreviewServiceTest {
         )
         coEvery { fileClient.getFilePreview(any()) } returns Response.error(
             404,
-            ResponseBody.create(null, "")
+            ResponseBody.create(null, ""),
         )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNull(result)

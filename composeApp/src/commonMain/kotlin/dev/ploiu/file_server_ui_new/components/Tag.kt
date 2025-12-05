@@ -1,6 +1,5 @@
 package dev.ploiu.file_server_ui_new.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -12,8 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.model.TagApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -27,7 +24,7 @@ class TagChipColors(
 private fun TagChipColors.into() = inputChipColors(
     containerColor = containerColor,
     labelColor = labelColor,
-    leadingIconColor = iconColor
+    leadingIconColor = iconColor,
 )
 
 // TODO this needs to be expect because Android will need a press and hold for deleting
@@ -38,11 +35,11 @@ fun Tag(
     colors: TagChipColors = TagChipColors(
         containerColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .12f),
         labelColor = LocalContentColor.current,
-        iconColor = LocalContentColor.current
+        iconColor = LocalContentColor.current,
     ),
     requestDelete: (TaggedItemApi) -> Unit,
 ) {
-    val deletable = remember {tag.implicitFrom == null}
+    val deletable = remember { tag.implicitFrom == null }
     InputChip(
         // TODO for android this needs to be pulled out into something that gets pressed and held to be deleted. Use expect fun
         onClick = {
@@ -56,7 +53,7 @@ fun Tag(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Delete Tag Icon",
-                    modifier = Modifier.testTag("tag_${tag.title}_delete_icon")
+                    modifier = Modifier.testTag("tag_${tag.title}_delete_icon"),
                 )
             }
         },
@@ -70,16 +67,15 @@ fun Tag(
 @Preview
 @Composable
 private fun RegularTagPreview() {
-   Surface {
-       Tag(tag = TaggedItemApi(id = 1, title = "Explicit Tag", implicitFrom = null), requestDelete = {})
-   }
+    Surface {
+        Tag(tag = TaggedItemApi(id = 1, title = "Explicit Tag", implicitFrom = null), requestDelete = {})
+    }
 }
-
 
 @Preview
 @Composable
 private fun ImplicatedTagPreview() {
     Surface {
-        Tag(tag = TaggedItemApi(id = 1, title = "Implicit Tag", implicitFrom = 2), requestDelete = {  } )
+        Tag(tag = TaggedItemApi(id = 1, title = "Implicit Tag", implicitFrom = 2), requestDelete = { })
     }
 }

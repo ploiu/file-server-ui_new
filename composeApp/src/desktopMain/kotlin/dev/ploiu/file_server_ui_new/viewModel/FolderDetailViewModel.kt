@@ -5,13 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.model.TagApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import dev.ploiu.file_server_ui_new.service.FolderService
 import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.exists
-import io.github.vinceglb.filekit.isDirectory
+import io.github.vinceglb.filekit.sink
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -19,9 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.div
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 
 /** controls the display of the entire folder detail view sheet itself */
 sealed interface FolderDetailUiState
@@ -52,8 +49,8 @@ class FolderDetailViewModel(
         _state.update {
             it.copy(
                 sheetState = FolderDetailErrored(
-                    "Failed to process folder information: " + (throwable.message ?: throwable.javaClass)
-                )
+                    "Failed to process folder information: " + (throwable.message ?: throwable.javaClass),
+                ),
             )
         }
     }
@@ -90,8 +87,8 @@ class FolderDetailViewModel(
                             it.copy(
                                 sheetState = FolderDetailMessage(
                                     folder = currentState.folder,
-                                    message = msg
-                                )
+                                    message = msg,
+                                ),
                             )
                         }
                     }
@@ -100,8 +97,8 @@ class FolderDetailViewModel(
                     it.copy(
                         sheetState = FolderDetailMessage(
                             folder = currentState.folder,
-                            message = "The folder name you passed does not match. Not deleting folder."
-                        )
+                            message = "The folder name you passed does not match. Not deleting folder.",
+                        ),
                     )
                 }
             }
@@ -123,26 +120,29 @@ class FolderDetailViewModel(
         }
     }
 
-    fun downloadFolder(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+    fun downloadFolder(tarFile: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FolderDetailHasFolder) {
-            if (!saveLocation.exists() || !saveLocation.isDirectory()) {
-                _state.update {
-                    it.copy(sheetState = FolderDetailMessage(currentState.folder, "Selected directory does not exist"))
-                }
-            } else {
-                folderService.downloadFolder(currentState.folder.id)
-                    .onSuccess { res ->
-                        val archiveName = currentState.folder.name + ".tar"
-                        Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
-                        res.close()
-                    }
-                    .onFailure { msg ->
+            folderService.downloadFolder(currentState.folder.id)
+                .onSuccess { res ->
+                    tarFile.sink(false).buffered().use { sink ->
+                        sink.transferFrom(res.asSource())
                         _state.update {
-                            it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
+                            it.copy(
+                                sheetState = FolderDetailMessage(
+                                    folder = currentState.folder,
+                                    message = "Successfully downloaded folder",
+                                ),
+                            )
                         }
                     }
-            }
+                    res.close()
+                }
+                .onFailure { msg ->
+                    _state.update {
+                        it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
+                    }
+                }
         }
     }
 
@@ -158,8 +158,8 @@ class FolderDetailViewModel(
                     it.copy(
                         sheetState = FolderDetailMessage(
                             currentState.folder,
-                            "Failed to update folder: $msg"
-                        )
+                            "Failed to update folder: $msg",
+                        ),
                     )
                 }
                 delay(5_000L)

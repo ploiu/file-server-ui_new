@@ -28,7 +28,7 @@ import dev.ploiu.file_server_ui_new.viewModel.*
 import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.draft
 import file_server_ui_new.composeapp.generated.resources.folder
-import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.painterResource
 import java.util.*
@@ -41,13 +41,13 @@ fun FolderDetailSheet(
     refreshKey: Int,
     /** used if an action within this sheet should cause the sheet to close (e.g. when the folder is deleted) */
     closeSelf: () -> Unit,
-    onChange: () -> Unit
+    onChange: () -> Unit,
 ) {
     val (pageState) = viewModel.state.collectAsState().value
     var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
-    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
-        if (directory != null) {
-            viewModel.downloadFolder(directory)
+    val saveFolderPicker = rememberFileSaverLauncher { tarFile ->
+        if (tarFile != null) {
+            viewModel.downloadFolder(tarFile)
         }
     }
 
@@ -60,7 +60,7 @@ fun FolderDetailSheet(
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CircularProgressIndicator(Modifier.testTag("spinner"))
             }
@@ -73,10 +73,11 @@ fun FolderDetailSheet(
                 onSaveClick = {
                     println("save clicked!")
                     dialogState = NoDialogState()
-                    directoryPicker.launch()
+                    saveFolderPicker.launch(pageState.folder.name, "tar")
                 },
                 onDeleteClick = { dialogState = DeleteDialogState(pageState.folder) },
-                onUpdateTags = { viewModel.updateTags(it) })
+                onUpdateTags = { viewModel.updateTags(it) },
+            )
             if (pageState is FolderDetailMessage) {
                 Snackbar {
                     Text(pageState.message, modifier = Modifier.testTag("message"))
@@ -90,7 +91,7 @@ fun FolderDetailSheet(
             Column(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(Icons.Default.Error, "Error Icon", tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(32.dp))
@@ -114,7 +115,7 @@ fun FolderDetailSheet(
                         viewModel.renameFolder(it)
                         onChange()
                     }
-                }
+                },
             )
         }
 
@@ -128,7 +129,7 @@ fun FolderDetailSheet(
                     dialogState = NoDialogState()
                     viewModel.deleteFolder(it)
                     onChange()
-                }
+                },
             )
         }
 
@@ -141,13 +142,13 @@ private fun MainFolderDetails(
     onRenameClick: () -> Unit,
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onUpdateTags: (Collection<TaggedItemApi>) -> Unit
+    onUpdateTags: (Collection<TaggedItemApi>) -> Unit,
 ) {
     val actionButtonColors: IconButtonColors = filledIconButtonColors()
 
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("loadedRoot"),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // image and title
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -155,7 +156,7 @@ private fun MainFolderDetails(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
                 Modifier.width(108.dp).height(108.dp).testTag("folderImage"),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
             )
             Text(folder.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("folderName"))
         }
@@ -163,7 +164,7 @@ private fun MainFolderDetails(
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
-            shape = MaterialTheme.shapes.small
+            shape = MaterialTheme.shapes.small,
         ) {
             FlowRow(
                 modifier = Modifier.padding(8.dp),
@@ -179,12 +180,12 @@ private fun MainFolderDetails(
                 Pill(
                     text = folder.folders.uiCount(),
                     colors = pillColors,
-                    icon = { Icon(Icons.Default.Folder, "Folder") }
+                    icon = { Icon(Icons.Default.Folder, "Folder") },
                 )
                 Pill(
                     text = folder.files.uiCount(),
                     colors = pillColors,
-                    icon = { Icon(painterResource(Res.drawable.draft), "Files") }
+                    icon = { Icon(painterResource(Res.drawable.draft), "Files") },
                 )
                 Pill(
                     "~/" + folder.path,
@@ -201,17 +202,26 @@ private fun MainFolderDetails(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
             shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.primaryContainer
+            color = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.Center) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onDeleteClick, colors = actionButtonColors) {
+                    Icon(Icons.Default.Delete, "Delete")
+                }
+                VerticalDivider(
+                    thickness = 2.dp,
+                    modifier = Modifier.height(30.dp).padding(start = 4.dp, end = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
                 IconButton(onClick = onRenameClick, colors = actionButtonColors) {
                     Icon(Icons.Default.Edit, "Edit")
                 }
                 IconButton(onClick = onSaveClick, colors = actionButtonColors) {
                     Icon(Icons.Default.Save, "Save")
-                }
-                IconButton(onClick = onDeleteClick, colors = actionButtonColors) {
-                    Icon(Icons.Default.Delete, "Delete")
                 }
             }
         }

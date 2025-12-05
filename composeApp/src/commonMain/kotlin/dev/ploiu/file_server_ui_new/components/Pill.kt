@@ -34,7 +34,7 @@ fun pillColors(
     backgroundColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f)
         .compositeOver(MaterialTheme.colorScheme.surface),
     contentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .87f),
-    iconColor: Color = contentColor.copy(alpha = .54f)
+    iconColor: Color = contentColor.copy(alpha = .54f),
 ) = PillColors(backgroundColor, contentColor, iconColor)
 
 @Composable
@@ -43,14 +43,14 @@ fun Pill(
     modifier: Modifier = Modifier,
     colors: PillColors = pillColors(),
     icon: @Composable (() -> Unit)? = null,
-    textStyle: TextStyle = MaterialTheme.typography.labelSmall
+    textStyle: TextStyle = MaterialTheme.typography.labelSmall,
 ) {
     CompositionLocalProvider(LocalContentColor provides colors.contentColor) {
         Row(
             modifier = Modifier.background(color = colors.backgroundColor, shape = MaterialTheme.shapes.extraSmall)
                 .then(modifier).padding(3.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
         ) {
             if (icon != null) {
                 CompositionLocalProvider(LocalContentColor provides colors.iconColor, content = icon)
@@ -74,7 +74,6 @@ private fun PillWithIcon() {
     Pill(text = "with icon", icon = { Icon(Icons.Default.Preview, "Preview") })
 }
 
-
 @Preview
 @Composable
 private fun PillWithColoredText() {
@@ -82,8 +81,8 @@ private fun PillWithColoredText() {
         text = "colored text",
         colors = pillColors(
             backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        )
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
     )
 }
 
@@ -95,11 +94,10 @@ private fun PillWithIconAndColoredText() {
         icon = { Icon(Icons.Default.Close, "close") },
         colors = pillColors(
             backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        )
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
     )
 }
-
 
 @Preview
 @Composable

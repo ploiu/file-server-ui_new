@@ -35,7 +35,7 @@ fun FileEntry(file: FileApi, preview: ByteArray? = null) {
                 formatFileOrFolderName(file.name),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                minLines = 2
+                minLines = 2,
             )
         }
     }

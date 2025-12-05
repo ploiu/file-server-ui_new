@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +30,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
@@ -87,7 +88,7 @@ fun FolderPage(
     val (pageState, previews, errorMessage) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
-            NoFolderAction()
+            NoFolderAction(),
         )
     }
     var fileActionState: FileContextState by remember {
@@ -95,24 +96,16 @@ fun FolderPage(
             NoFileAction(),
         )
     }
-    val directoryPicker = rememberDirectoryPickerLauncher { directory ->
+    val directoryPicker = rememberFileSaverLauncher { selectedFile ->
         val actionState = folderActionState
-        if (directory != null && actionState is DownloadFolderAction) {
-            if (view.checkDownloadFolder(actionState.folder, directory)) {
-                view.downloadFolder(actionState.folder, directory)
-                folderActionState = NoFolderAction()
-            } else {
-                folderActionState = ConfirmReplaceDownloadFolder(actionState.folder, directory)
-            }
+        if (selectedFile != null && actionState is DownloadFolderAction) {
+            view.downloadFolder(actionState.folder, selectedFile)
+            folderActionState = NoFolderAction()
         }
         val fileAction = fileActionState
-        if (directory != null && fileAction is DownloadFileAction) {
-            if (view.checkDownloadFile(fileAction.file, directory)) {
-                view.downloadFile(fileAction.file, directory)
-                fileActionState = NoFileAction()
-            } else {
-                fileActionState = ConfirmReplaceDownloadFile(fileAction.file, directory)
-            }
+        if (selectedFile != null && fileAction is DownloadFileAction) {
+            view.downloadFile(fileAction.file, selectedFile)
+            fileActionState = NoFileAction()
         }
     }
 
@@ -176,7 +169,7 @@ fun FolderPage(
                         IconButton(onClick = { view.clearMessage() }) {
                             Icon(Icons.Default.Close, contentDescription = "Dismiss error message")
                         }
-                    }
+                    },
                 ) {
                     Text(text = errorMessage, modifier = Modifier.testTag("folderErrorMessage"))
                 }
@@ -206,11 +199,12 @@ fun FolderPage(
                         view.updateFolder(newFolder)
                         onUpdate()
                     }
-                })
+                },
+            )
         }
 
         is DownloadFolderAction -> {
-            directoryPicker.launch()
+            directoryPicker.launch(action.folder.name, "tar")
         }
 
         is DeleteFolderAction -> TextDialog(
@@ -234,10 +228,10 @@ fun FolderPage(
             confirmText = "Replace",
             dismissText = "Cancel",
             onDismissRequest = { folderActionState = NoFolderAction() },
-            onConfirmation = {
+            onConfirm = {
                 view.downloadFolder(action.folder, action.directory)
                 folderActionState = NoFolderAction()
-            }
+            },
         )
 
         is NoFolderAction -> Unit
@@ -262,20 +256,19 @@ fun FolderPage(
         }
 
         is DownloadFileAction -> {
-            directoryPicker.launch()
+            directoryPicker.launch(action.file.nameWithoutExtension, action.file.extension)
         }
 
-        is DeleteFileAction -> TextDialog(
+        is DeleteFileAction -> Dialog(
             title = "Delete file",
-            bodyText = "Are you sure you want to delete this file? Type the name to confirm",
+            text = "Are you sure you want to delete this file?",
             confirmText = "Delete",
             onConfirm = {
-                if (it == action.file.name) {
-                    fileActionState = NoFileAction()
-                    view.deleteFile(action.file)
-                }
+                fileActionState = NoFileAction()
+                view.deleteFile(action.file)
             },
-            onCancel = { fileActionState = NoFileAction() },
+            icon = Icons.Default.Warning,
+            onDismissRequest = { fileActionState = NoFileAction() },
         )
 
         is ConfirmReplaceDownloadFile -> Dialog(
@@ -286,7 +279,7 @@ fun FolderPage(
             confirmText = "Replace",
             dismissText = "Cancel",
             onDismissRequest = { fileActionState = NoFileAction() },
-            onConfirmation = {
+            onConfirm = {
                 view.downloadFile(action.file, action.directory)
                 fileActionState = NoFileAction()
             },
@@ -341,25 +334,33 @@ private fun DesktopFolderEntry(
     onClick: (f: FolderApi) -> Unit,
     onContextAction: (FolderContextAction) -> Unit,
 ) {
-    ContextMenuArea(items = {
-        listOf(ContextMenuItem("Rename Folder") {
-            onContextAction(RenameFolderAction(folder))
-        }, ContextMenuItem("Delete Folder") {
-            onContextAction(DeleteFolderAction(folder))
-        }, ContextMenuItem("Download Folder") {
-            onContextAction(DownloadFolderAction(folder))
-        }, ContextMenuItem("Info") {
-            onContextAction(InfoFolderAction(folder))
-        })
-    }) {
+    ContextMenuArea(
+        items = {
+            listOf(
+                ContextMenuItem("Rename Folder") {
+                    onContextAction(RenameFolderAction(folder))
+                },
+                ContextMenuItem("Delete Folder") {
+                    onContextAction(DeleteFolderAction(folder))
+                },
+                ContextMenuItem("Download Folder") {
+                    onContextAction(DownloadFolderAction(folder))
+                },
+                ContextMenuItem("Info") {
+                    onContextAction(InfoFolderAction(folder))
+                },
+            )
+        },
+    ) {
         TooltipArea(
             tooltip = {
                 Surface(
                     tonalElevation = 10.dp,
                     color = MaterialTheme.colorScheme.tertiary,
-                    shape = MaterialTheme.shapes.small
+                    shape = MaterialTheme.shapes.small,
                 ) { Text(folder.name, modifier = Modifier.padding(3.dp)) }
-            }) {
+            },
+        ) {
             FolderEntry(folder, onClick = onClick)
         }
     }
@@ -378,7 +379,7 @@ private fun LoadedFolderList(
     LazyVerticalGrid(
         // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(
-            start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp
+            start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
         ),
         columns = GridCells.Adaptive(150.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -395,7 +396,7 @@ private fun LoadedFolderList(
                 is FileApi -> DesktopFileEntry(
                     file = child,
                     preview = previews[child.id],
-                    onClick = {},
+                    onClick = {TODO("file single / double click not implemented")},
                     onContextAction = onFileContextAction,
                 )
             }

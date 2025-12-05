@@ -4,7 +4,6 @@ import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.flow.Flow
-import java.io.File
 
 sealed class BatchUploadResult(val errorMessage: String?) {
     val isSuccess: Boolean

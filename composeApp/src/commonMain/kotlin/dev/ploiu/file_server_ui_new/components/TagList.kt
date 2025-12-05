@@ -36,7 +36,7 @@ fun TagList(tags: Collection<TaggedItemApi>, onUpdate: (Collection<TaggedItemApi
         tonalElevation = 3.dp,
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.tertiaryContainer
+        color = MaterialTheme.colorScheme.tertiaryContainer,
     ) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -60,12 +60,15 @@ fun TagList(tags: Collection<TaggedItemApi>, onUpdate: (Collection<TaggedItemApi
     }
 
     if (isAddingTag) {
-        TextDialog(title = "Add tag", onCancel = { isAddingTag = false }, confirmText = "Add", onConfirm = {
-            val updateTags = tags.toMutableSet()
-            updateTags.add(TaggedItemApi(id = null, title = it.lowercase(), implicitFrom = null))
-            onUpdate(updateTags)
-            isAddingTag = false
-        })
+        TextDialog(
+            title = "Add tag", onCancel = { isAddingTag = false }, confirmText = "Add",
+            onConfirm = {
+                val updateTags = tags.toMutableSet()
+                updateTags.add(TaggedItemApi(id = null, title = it.lowercase(), implicitFrom = null))
+                onUpdate(updateTags)
+                isAddingTag = false
+            },
+        )
     }
 }
 
@@ -82,11 +85,10 @@ private fun TagListWithTags() {
         listOf(
             TaggedItemApi(0, "Tag1", null),
             TaggedItemApi(1, "tag with a really really long name", null),
-            TaggedItemApi(2, "Tag with medium name", null)
-        )
+            TaggedItemApi(2, "Tag with medium name", null),
+        ),
     ) {}
 }
-
 
 @Preview
 @Composable
@@ -96,7 +98,7 @@ private fun TagListWithInheritedTags() {
             TaggedItemApi(0, "Tag1", null),
             TaggedItemApi(1, "tag with a really really long name", null),
             TaggedItemApi(id = 3, title = "Inherited Tag", implicitFrom = 5),
-            TaggedItemApi(2, "Tag with medium name", null)
-        )
+            TaggedItemApi(2, "Tag with medium name", null),
+        ),
     ) {}
 }

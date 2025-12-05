@@ -44,8 +44,10 @@ class SearchResultsPageViewModel(
         val res = fileService.search(searchTerm)
         res.onSuccess { files ->
             val sorted = files.toList()
-                .sortedWith(compareBy<FileApi> { it.name.lowercase() }.thenBy { it.dateCreated }
-                    .thenBy { it.id })
+                .sortedWith(
+                    compareBy<FileApi> { it.name.lowercase() }.thenBy { it.dateCreated }
+                        .thenBy { it.id },
+                )
             _state.update { it.copy(pageState = SearchResultsLoaded(sorted, mapOf())) }
             val previews = previewService.getFilePreviews(*files.toTypedArray())
             if (previews.isOk) {

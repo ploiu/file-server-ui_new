@@ -10,16 +10,15 @@ import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
-import dev.ploiu.file_server_ui_new.util.saveFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.exists
-import io.github.vinceglb.filekit.isDirectory
-import io.github.vinceglb.filekit.resolve
+import io.github.vinceglb.filekit.sink
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -47,7 +46,7 @@ class FolderPageViewModel(
     private val _state = MutableStateFlow(FolderPageUiModel(FolderPageLoading(), emptyMap()))
     val state = _state.asStateFlow()
 
-    private val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         _state.update {
             val errorMessage = throwable.message ?: "Unknown error: ${throwable.javaClass.name}"
             it.copy(message = errorMessage)
@@ -75,31 +74,15 @@ class FolderPageViewModel(
     }
 
     /**
-     * checks if the folder can be downloaded in the passed [saveLocation]. If so, the folder is downloaded. Otherwise,
-     * the state is updated for the ui to signal a confirmation or error to the user
+     * Handles downloading the folder to the passed [downloadedFolder].
      */
-    fun checkDownloadFolder(folder: FolderApi, saveLocation: PlatformFile): Boolean {
-        return if (!saveLocation.exists() || !saveLocation.isDirectory()) {
-            _state.update {
-                it.copy(message = "Selected directory does not exist")
-            }
-            false
-        } else {
-            !saveLocation.resolve("${folder.name}.tar").exists()
-        }
-    }
-
-    /**
-     * Handles downloading the folder to the passed [saveLocation].
-     *
-     * This should only be called if [checkDownloadFolder] succeeds or if the user confirms they want to overwrite
-     * */
-    fun downloadFolder(folder: FolderApi, saveLocation: PlatformFile) =
+    fun downloadFolder(folder: FolderApi, downloadedFolder: PlatformFile) =
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             folderService.downloadFolder(folder.id)
                 .onSuccess { res ->
-                    val archiveName = folder.name + ".tar"
-                    saveFile(res, saveLocation, archiveName)
+                    downloadedFolder.sink(false).buffered().use { sink ->
+                        sink.transferFrom(res.asSource())
+                    }
                     res.close()
                     _state.update { it.copy(message = "Folder downloaded successfully") }
                 }
@@ -147,30 +130,15 @@ class FolderPageViewModel(
     }
 
     /**
-     * checks if the file can be downloaded in the passed [saveLocation]. If so, the file is downloaded. Otherwise,
-     * the state is updated for the ui to signal a confirmation or error to the user
+     * Handles downloading the file to the passed [saveFile].
      */
-    fun checkDownloadFile(file: FileApi, saveLocation: PlatformFile): Boolean {
-        return if (!saveLocation.exists() || !saveLocation.isDirectory()) {
-            _state.update {
-                it.copy(message = "Selected directory does not exist")
-            }
-            false
-        } else {
-            !saveLocation.resolve(file.name).exists()
-        }
-    }
-
-    /**
-     * Handles downloading the file to the passed [saveLocation].
-     *
-     * This should only be called if [checkDownloadFile] succeeds or if the user confirms they want to overwrite
-     * */
-    fun downloadFile(file: FileApi, saveLocation: PlatformFile) =
+    fun downloadFile(file: FileApi, saveFile: PlatformFile) =
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             fileService.getFileContents(file.id)
                 .onSuccess { res ->
-                    saveFile(res, saveLocation, file.name)
+                    saveFile.sink(false).buffered().use { sink ->
+                        sink.transferFrom(res.asSource())
+                    }
                     res.close()
                     _state.update { it.copy(message = "File downloaded successfully") }
                 }

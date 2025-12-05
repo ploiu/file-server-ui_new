@@ -30,7 +30,10 @@ class TagListTests {
     @Test
     fun `should show a chip for each tag`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TaggedItemApi(id = null, title = "tag1", implicitFrom = null), TaggedItemApi(id = null, title = "tag2", implicitFrom = null))
+        val tags = listOf(
+            TaggedItemApi(id = null, title = "tag1", implicitFrom = null),
+            TaggedItemApi(id = null, title = "tag2", implicitFrom = null),
+        )
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
@@ -46,7 +49,10 @@ class TagListTests {
     @Test
     fun `should show the Add Tag Button`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TaggedItemApi(id = null, title = "tag1", implicitFrom = null), TaggedItemApi(id = null, title = "tag2", implicitFrom = null))
+        val tags = listOf(
+            TaggedItemApi(id = null, title = "tag1", implicitFrom = null),
+            TaggedItemApi(id = null, title = "tag2", implicitFrom = null),
+        )
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
@@ -90,10 +96,12 @@ class TagListTests {
         onNodeWithTag("textDialogInput").performTextInput("new tag name")
         onNodeWithTag("textDialogConfirmButton").performClick()
         verify {
-            callback(match {
-                it.contains(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
-                        && it.contains(TaggedItemApi(id = null, title = "new tag name", implicitFrom = null))
-            })
+            callback(
+                match {
+                    it.contains(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
+                            && it.contains(TaggedItemApi(id = null, title = "new tag name", implicitFrom = null))
+                },
+            )
         }
     }
 
@@ -101,12 +109,27 @@ class TagListTests {
     @Test
     fun `clicking on a tag pill should call update callback without that tag`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TaggedItemApi(id = 1, title = "whatever", implicitFrom = null), TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null))
+        val tags = listOf(
+            TaggedItemApi(id = 1, title = "whatever", implicitFrom = null),
+            TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null),
+        )
         setContent {
             TagList(tags = tags, onUpdate = callback)
         }
         onNodeWithTag("tag_whatever").performClick()
-        verify(exactly = 1) { callback(match { it.size == 1 && it.contains(TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null)) }) }
+        verify(exactly = 1) {
+            callback(
+                match {
+                    it.size == 1 && it.contains(
+                        TaggedItemApi(
+                            id = 2,
+                            title = "whatever2",
+                            implicitFrom = null,
+                        ),
+                    )
+                },
+            )
+        }
     }
 
 }

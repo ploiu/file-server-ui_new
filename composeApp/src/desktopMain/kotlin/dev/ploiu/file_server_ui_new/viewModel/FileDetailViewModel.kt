@@ -10,9 +10,11 @@ import dev.ploiu.file_server_ui_new.model.*
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.exists
-import io.github.vinceglb.filekit.isDirectory
+import io.github.vinceglb.filekit.dialogs.openFileWithDefaultApplication
+import io.github.vinceglb.filekit.sink
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -20,9 +22,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.div
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+import kotlin.io.path.createTempFile
+import kotlin.io.path.deleteExisting
+import kotlin.io.path.outputStream
 
 /** controls the display of the entire file detail view sheet itself */
 sealed interface FileDetailUiState
@@ -67,26 +71,29 @@ data class FileDetailErrored(val message: String) : FileDetailUiState
 
 /** used if a non-critical error occurs (such as failing to delete a tag, or failing to load a preview) */
 data class FileDetailMessage(override val file: FileApi, override val folder: FolderApi, val message: String) :
-    FileDetailUiState,
-    FileDetailHasFile
+    FileDetailUiState, FileDetailHasFile
 
 data class FileDetailUiModel(
     val sheetState: FileDetailUiState,
 )
 
-// TODO this has potential to be pulled into common code (? - downloading a file would behave differently on android and desktop)
+// TODO this should be pulled into common code, not desktop module (look at why MutableStateFlow isn't accessible in commonMain)
 class FileDetailViewModel(
     private val fileService: FileService,
     private val folderService: FolderService,
     private val previewService: PreviewService,
     val fileId: Long,
 ) : ViewModel() {
-    private val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
+    private val log = KotlinLogging.logger { }
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        log.error(throwable) {
+            "Failed to process file information"
+        }
         _state.update {
             it.copy(
                 sheetState = FileDetailErrored(
-                    "Failed to process file information: " + (throwable.message ?: throwable.javaClass)
-                )
+                    "Failed to process file information: " + (throwable.message ?: throwable.javaClass),
+                ),
             )
         }
     }
@@ -109,31 +116,30 @@ class FileDetailViewModel(
     private fun getPreview(file: FileApi) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FileDetailHasFile) {
-            previewService.getFilePreviews(file)
-                .onSuccess { previews ->
-                    val preview = previews[currentState.file.id]
-                    if (preview != null) {
-                        _state.update {
-                            it.copy(
-                                sheetState = FilePreviewLoaded(
-                                    file = currentState.file,
-                                    folder = currentState.folder,
-                                    preview = preview,
-                                ),
-                            )
-                        }
-                    }
-                }.onFailure { msg ->
+            previewService.getFilePreviews(file).onSuccess { previews ->
+                val preview = previews[currentState.file.id]
+                if (preview != null) {
                     _state.update {
                         it.copy(
-                            sheetState = FileDetailMessage(
+                            sheetState = FilePreviewLoaded(
                                 file = currentState.file,
                                 folder = currentState.folder,
-                                message = "Failed to load preview for file: $msg",
+                                preview = preview,
                             ),
                         )
                     }
                 }
+            }.onFailure { msg ->
+                _state.update {
+                    it.copy(
+                        sheetState = FileDetailMessage(
+                            file = currentState.file,
+                            folder = currentState.folder,
+                            message = "Failed to load preview for file: $msg",
+                        ),
+                    )
+                }
+            }
         }
     }
 
@@ -145,38 +151,54 @@ class FileDetailViewModel(
         }
     }
 
-    fun deleteFile(confirmText: String) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+    fun deleteFile() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FileDetailHasFile) {
-            val fileName = currentState.file.name.lowercase().trim()
-            if (confirmText.lowercase().trim() == fileName) {
-                fileService.deleteFile(currentState.file.id)
-                    .onSuccess {
-                        _state.update { it.copy(sheetState = FileDeleted()) }
-                    }
-                    .onFailure { msg ->
-                        _state.update {
-                            it.copy(
-                                sheetState = FileDetailMessage(
-                                    file = currentState.file,
-                                    folder = currentState.folder,
-                                    message = msg,
-                                ),
-                            )
-                        }
-                    }
-            } else {
+            fileService.deleteFile(currentState.file.id).onSuccess {
+                _state.update { it.copy(sheetState = FileDeleted()) }
+            }.onFailure { msg ->
                 _state.update {
                     it.copy(
                         sheetState = FileDetailMessage(
                             file = currentState.file,
                             folder = currentState.folder,
-                            message = "The file name you passed does not match. Not deleting file.",
+                            message = msg,
                         ),
                     )
                 }
             }
         }
+    }
+
+    fun openFile() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+        val currentState = _state.value.sheetState
+        if (currentState is FileDetailHasFile) {
+            // TODO move this to cross-platform version
+            val tempFile = createTempFile()
+            fileService.getFileContents(currentState.file.id)
+                .onSuccess { res ->
+                    res.use { inputStream ->
+                        tempFile.outputStream().use { os ->
+                            inputStream.transferTo(os)
+                        }
+                    }
+                    val file = PlatformFile(file = tempFile.toFile())
+                    FileKit.openFileWithDefaultApplication(file)
+                }
+                .onFailure { msg ->
+                    _state.update {
+                        it.copy(
+                            sheetState = FileDetailMessage(
+                                file = currentState.file,
+                                folder = currentState.folder,
+                                message = msg,
+                            ),
+                        )
+                    }
+                    tempFile.deleteExisting()
+                }
+        }
+
     }
 
     fun updateTags(tags: Collection<TaggedItemApi>) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
@@ -201,63 +223,29 @@ class FileDetailViewModel(
         }
     }
 
-    fun downloadFile(saveLocation: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+    fun downloadFile(saveFile: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FileDetailHasFile) {
-            if (!saveLocation.exists() || !saveLocation.isDirectory()) {
-                _state.update {
-                    it.copy(
-                        sheetState = FileDetailMessage(
-                            folder = currentState.folder,
-                            file = currentState.file,
-                            message = "Selected directory does not exist",
-                        ),
-                    )
+            fileService.getFileContents(currentState.file.id).onSuccess { res ->
+                saveFile.sink(false).buffered().use { sink ->
+                    sink.transferFrom(res.asSource())
+                    _state.update {
+                        it.copy(
+                            sheetState = FileDetailMessage(
+                                folder = currentState.folder,
+                                file = currentState.file,
+                                message = "Successfully saved file",
+                            ),
+                        )
+                    }
                 }
-            } else {
-                fileService.getFileContents(currentState.file.id)
-                    .onSuccess { res ->
-                        val archiveName = currentState.file.name
-                        Files.copy(res, saveLocation.file.toPath() / archiveName, StandardCopyOption.REPLACE_EXISTING)
-                        res.close()
-                    }
-                    .onFailure { msg ->
-                        _state.update {
-                            it.copy(
-                                sheetState = FileDetailMessage(
-                                    file = currentState.file,
-                                    message = msg,
-                                    folder = currentState.folder,
-                                ),
-                            )
-                        }
-                    }
-            }
-        }
-    }
-
-    private fun updateFile(toUpdate: FileRequest) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-        // this is nice just in case
-        clearNonCriticalError()
-        val currentState = _state.value.sheetState
-        // basically the same exact behavior as without the non-critical error
-        if (currentState is FileDetailHasFile) {
-            _state.update { it.copy(sheetState = FileDetailLoading()) }
-            fileService.updateFile(toUpdate).onSuccess { loadFile() }.onFailure { msg ->
+                res.close()
+            }.onFailure { msg ->
                 _state.update {
                     it.copy(
                         sheetState = FileDetailMessage(
                             file = currentState.file,
-                            folder = currentState.folder,
-                            message = "Failed to update file: $msg",
-                        ),
-                    )
-                }
-                delay(5_000L)
-                _state.update {
-                    it.copy(
-                        sheetState = FileDetailLoaded(
-                            file = currentState.file,
+                            message = msg,
                             folder = currentState.folder,
                         ),
                     )
@@ -265,4 +253,34 @@ class FileDetailViewModel(
             }
         }
     }
+
+    private fun updateFile(toUpdate: FileRequest) =
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) { // this is nice just in case
+            clearNonCriticalError()
+            val currentState =
+                _state.value.sheetState // basically the same exact behavior as without the non-critical error
+            if (currentState is FileDetailHasFile) {
+                _state.update { it.copy(sheetState = FileDetailLoading()) }
+                fileService.updateFile(toUpdate).onSuccess { loadFile() }.onFailure { msg ->
+                    _state.update {
+                        it.copy(
+                            sheetState = FileDetailMessage(
+                                file = currentState.file,
+                                folder = currentState.folder,
+                                message = "Failed to update file: $msg",
+                            ),
+                        )
+                    }
+                    delay(5_000L)
+                    _state.update {
+                        it.copy(
+                            sheetState = FileDetailLoaded(
+                                file = currentState.file,
+                                folder = currentState.folder,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
 }
