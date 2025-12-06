@@ -396,7 +396,7 @@ private fun LoadedFolderList(
                 is FileApi -> DesktopFileEntry(
                     file = child,
                     preview = previews[child.id],
-                    onClick = {TODO("file single / double click not implemented")},
+                    onClick = { TODO("file single / double click not implemented") },
                     onContextAction = onFileContextAction,
                 )
             }

@@ -138,4 +138,5 @@ class ApplicationViewModel(
     fun closeModal() {
         _modalState.value = NoModal
     }
+
 }

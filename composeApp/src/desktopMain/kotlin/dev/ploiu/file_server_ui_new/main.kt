@@ -30,6 +30,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dev.ploiu.file_server_ui_new.MessageTypes.FOCUS_SEARCHBAR
+import dev.ploiu.file_server_ui_new.MessageTypes.HIDE_ACTIVE_ELEMENT
 import dev.ploiu.file_server_ui_new.components.*
 import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
@@ -76,8 +78,6 @@ actual fun AppTheme(
 
 
 fun main() = application {
-    // TODO move configModule to desktopMain and separate out from commonMain - desktops are less likely to be shared,
-    //  and I want the user to type username + password on the android version since those devices are more easily losable
     try {
         startKoin {
             modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule)
@@ -86,7 +86,7 @@ fun main() = application {
         println("Koin already started")
     }
     FileKit.init(appId = "PloiuFileServer")
-    val searchBarFocuser = remember { FocusRequester() }
+    val messagePasser = remember { ObservableMessagePasser() }
     val viewModel = koinInject<ApplicationViewModel>()
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(
@@ -97,9 +97,11 @@ fun main() = application {
             when (it.key) {
                 Key.K -> {
                     if (it.isCtrlPressed) {
-                        searchBarFocuser.requestFocus()
+                        messagePasser.passMessage(FOCUS_SEARCHBAR)
                     }
                 }
+
+                Key.Escape -> messagePasser.passMessage(HIDE_ACTIVE_ELEMENT)
 
                 else -> {}
             }
@@ -107,7 +109,7 @@ fun main() = application {
         },
     ) {
         AppTheme {
-            MainDesktopBody(searchBarFocuser = searchBarFocuser, appViewModel = viewModel)
+            MainDesktopBody(appViewModel = viewModel, messagePasser = messagePasser)
         }
     }
 }
@@ -146,8 +148,8 @@ fun LoadingModalDialog(loadingModal: LoadingModal) {
 @Composable
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
-    searchBarFocuser: FocusRequester,
     appViewModel: ApplicationViewModel,
+    messagePasser: ObservableMessagePasser,
 ) {
     var navBarState: NavState by remember {
         mutableStateOf(
@@ -164,6 +166,7 @@ fun MainDesktopBody(
         )
     }
     val (sideSheetStatus, headerUpdateKey) = appViewModel.state.collectAsState().value
+    val searchBarFocuser = remember { FocusRequester() }
     val modalState = appViewModel.modalState.collectAsState().value
     val mainContentWidth =
         animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 1f else .7f, animationSpec = tween())
@@ -188,6 +191,10 @@ fun MainDesktopBody(
             appViewModel.uploadFolder(directory, folderId)
         }
     }
+
+    messagePasser += FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
+    // TODO use a custom class to keep track of dialogs in a central place (named like DialogController or something), and use that to determine if the sheet needs to be closed
+    messagePasser += HIDE_ACTIVE_ELEMENT { appViewModel.closeSideSheet() }
 
     LaunchedEffect(currentRoute) {
         shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)

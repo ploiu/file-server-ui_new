@@ -26,10 +26,6 @@ import kotlinx.coroutines.runBlocking
 import java.util.*
 
 
-/*
-    TODO
-      6) press escape to close
- */
 @Composable
 // intellij believes that changing dialogState in lambda functions is useless, but they're very important
 @Suppress("AssignedValueIsNeverRead")

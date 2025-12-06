@@ -19,12 +19,12 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun TextDialog(
     title: String,
+    modifier: Modifier = Modifier,
     bodyText: String? = null,
     defaultValue: String = "",
     onCancel: () -> Unit,
     onConfirm: (String) -> Unit,
     bodyColor: Color? = null,
-    modifier: Modifier = Modifier,
     cancelText: String = "Cancel",
     confirmText: String = "Confirm",
 ) {
