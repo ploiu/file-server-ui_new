@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import dev.ploiu.file_server_ui_new.components.Dialog
+import dev.ploiu.file_server_ui_new.components.dialog.Dialog
 import dev.ploiu.file_server_ui_new.service.ErrorResult
 import dev.ploiu.file_server_ui_new.service.IncompatibleResult
 import dev.ploiu.file_server_ui_new.viewModel.LoadingPageViewModel

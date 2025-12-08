@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Pill
 import dev.ploiu.file_server_ui_new.components.TagList
-import dev.ploiu.file_server_ui_new.components.TextDialog
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.components.pillColors
 import dev.ploiu.file_server_ui_new.extensions.uiCount
 import dev.ploiu.file_server_ui_new.model.FolderApi

@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.components
+package dev.ploiu.file_server_ui_new.components.dialog
 
 
 import androidx.compose.foundation.layout.*

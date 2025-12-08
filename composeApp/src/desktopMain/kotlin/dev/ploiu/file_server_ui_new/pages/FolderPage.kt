@@ -18,10 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.components.Dialog
+import dev.ploiu.file_server_ui_new.components.dialog.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
-import dev.ploiu.file_server_ui_new.components.TextDialog
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi

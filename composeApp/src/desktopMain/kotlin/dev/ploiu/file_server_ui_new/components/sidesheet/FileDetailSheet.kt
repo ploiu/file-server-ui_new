@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.*
+import dev.ploiu.file_server_ui_new.components.dialog.Dialog
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.util.getFileSizeAlias

@@ -33,6 +33,7 @@ import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.MessageTypes.FOCUS_SEARCHBAR
 import dev.ploiu.file_server_ui_new.MessageTypes.HIDE_ACTIVE_ELEMENT
 import dev.ploiu.file_server_ui_new.components.*
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.StandardSideSheet
@@ -295,7 +296,7 @@ fun MainDesktopBody(
                 },
             )
 
-            is ApplicationErrorModal -> Dialog(
+            is ApplicationErrorModal -> dev.ploiu.file_server_ui_new.components.dialog.Dialog(
                 title = "Failed to upload folder",
                 onDismissRequest = { appViewModel.closeModal() },
                 text = "PLACEHOLDER ERROR MESSAGE: ${modalState.message}",

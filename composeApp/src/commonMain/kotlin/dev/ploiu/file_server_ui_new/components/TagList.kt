@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 

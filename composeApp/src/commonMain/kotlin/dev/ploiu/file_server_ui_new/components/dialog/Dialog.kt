@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.components
+package dev.ploiu.file_server_ui_new.components.dialog
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -9,8 +9,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 fun Dialog(
     title: String,
     text: String? = null,
-    icon: ImageVector,
+    icon: ImageVector?,
     iconColor: Color = LocalContentColor.current,
+    bodyColor: Color = LocalContentColor.current,
     onDismissRequest: (() -> Unit)? = null,
     onConfirm: (() -> Unit)? = null,
     confirmText: String = "Confirm",
@@ -18,14 +19,17 @@ fun Dialog(
 ) {
     AlertDialog(
         icon = {
-            Icon(icon, tint = iconColor, contentDescription = "Header icon for modal")
+            if (icon != null) {
+                Icon(icon, tint = iconColor, contentDescription = "Header icon for modal")
+            }
         },
         title = {
             Text(text = title)
         },
         text = {
             if (text != null) {
-                Text(text = text)
+                val style = MaterialTheme.typography.bodyLarge.copy(color = bodyColor)
+                Text(text = text, style = style)
             }
         },
         onDismissRequest = {

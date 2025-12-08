@@ -21,16 +21,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * represents modal state for the root application view, for things that aren't children of the main folder view or the side sheet
- */
-sealed interface ApplicationModalState
-object NoModal : ApplicationModalState
-object CreatingEmptyFolder : ApplicationModalState
-object SelectingFolderUpload : ApplicationModalState
-data class ApplicationErrorModal(val message: String) : ApplicationModalState
-data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState
-
-/**
  * represents the state of the side sheet
  */
 sealed interface SideSheetUiState
@@ -51,16 +41,12 @@ data class ApplicationUiModel(
 class ApplicationViewModel(
     private val folderService: FolderService,
     private val folderUploadService: FolderUploadService,
+    private val modalController: ModalController
 ) :
     ViewModel() {
     private val log = KotlinLogging.logger("ApplicationViewModel")
     private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
-
-    // Generic modal state for all modals (including loading, error, etc). Separate because the loading modal can get a _ton_ of state updates in quick succession,
-    // and we don't want to force an entire application re-render every time progress updates
-    private val _modalState = MutableStateFlow<ApplicationModalState>(NoModal)
-    val modalState = _modalState.asStateFlow()
 
     // TODO exception handler (look at folder detail view model)
     fun addEmptyFolder(name: String) = viewModelScope.launch(Dispatchers.IO) {
@@ -70,7 +56,7 @@ class ApplicationViewModel(
     }
 
     fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
-        closeModal()
+        modalController.closeModal()
         log.info { "upload started!" }
         var total: Int
         var progress = 0
@@ -82,13 +68,13 @@ class ApplicationViewModel(
         if (total == 0) {
             total = 1
         }
-        openModal(LoadingModal(max = total, progress = 0))
+        modalController.openModal(LoadingModal(max = total, progress = 0))
         folderUploadService.uploadFolder(folder, currentFolderId)
             .collect { result ->
                 when (result) {
                     is BatchUploadFileResult -> {
                         progress++
-                        _modalState.update { LoadingModal(max = total, progress = progress) }
+                        modalController.updateModalState(LoadingModal(max = total, progress = progress))
                         if (result.errorMessage != null) {
                             errors.add(result.errorMessage)
                         }
@@ -102,7 +88,7 @@ class ApplicationViewModel(
                     }
                 }
             }
-        closeModal()
+        modalController.closeModal()
         if (errors.isNotEmpty()) {
             log.error {
                 "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
@@ -130,13 +116,4 @@ class ApplicationViewModel(
         }
         _state.update { it.copy(sideSheetState = sheetState) }
     }
-
-    fun openModal(which: ApplicationModalState) {
-        _modalState.value = which
-    }
-
-    fun closeModal() {
-        _modalState.value = NoModal
-    }
-
 }
