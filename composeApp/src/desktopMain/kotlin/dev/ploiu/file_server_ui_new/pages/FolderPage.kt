@@ -18,9 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.components.dialog.Dialog
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
+import dev.ploiu.file_server_ui_new.components.dialog.Dialog
 import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
@@ -79,7 +79,7 @@ data class DownloadFileAction(val file: FileApi) : FileContextAction, FileContex
 fun FolderPage(
     view: FolderPageViewModel,
     /** used to force re-renders if data is updated externally (e.g. via a side sheet) */
-    refreshKey: Int,
+    refreshKey: String,
     onUpdate: () -> Unit,
     onFolderInfo: (FolderApi) -> Unit,
     onFileInfo: (FileApi) -> Unit,

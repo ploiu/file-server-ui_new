@@ -9,7 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.filledIconButtonColors
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
@@ -19,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.Pill
 import dev.ploiu.file_server_ui_new.components.TagList
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.components.pillColors
 import dev.ploiu.file_server_ui_new.extensions.uiCount
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -29,7 +30,6 @@ import file_server_ui_new.composeapp.generated.resources.Res
 import file_server_ui_new.composeapp.generated.resources.draft
 import file_server_ui_new.composeapp.generated.resources.folder
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.painterResource
 import java.util.*
 
@@ -38,13 +38,12 @@ import java.util.*
 fun FolderDetailSheet(
     viewModel: FolderDetailViewModel,
     /** used when outside changes (e.g. from the main folder page) makes changes, so we know to refresh ourselves */
-    refreshKey: Int,
+    refreshKey: String,
     /** used if an action within this sheet should cause the sheet to close (e.g. when the folder is deleted) */
     closeSelf: () -> Unit,
     onChange: () -> Unit,
 ) {
     val (pageState) = viewModel.state.collectAsState().value
-    var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
     val saveFolderPicker = rememberFileSaverLauncher { tarFile ->
         if (tarFile != null) {
             viewModel.downloadFolder(tarFile)
@@ -69,13 +68,13 @@ fun FolderDetailSheet(
         is FolderDetailHasFolder -> {
             MainFolderDetails(
                 folder = pageState.folder,
-                onRenameClick = { dialogState = RenameDialogState(pageState.folder) },
+                onRenameClick = viewModel::openRenameDialog,
                 onSaveClick = {
                     println("save clicked!")
-                    dialogState = NoDialogState()
+                    viewModel.closeModal()
                     saveFolderPicker.launch(pageState.folder.name, "tar")
                 },
-                onDeleteClick = { dialogState = DeleteDialogState(pageState.folder) },
+                onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
             )
             if (pageState is FolderDetailMessage) {
@@ -98,41 +97,6 @@ fun FolderDetailSheet(
                 Text(pageState.message, textAlign = TextAlign.Center)
             }
         }
-    }
-
-    when (val state = dialogState) {
-        is NoDialogState -> Unit /* No Op */
-
-        is RenameDialogState -> {
-            TextDialog(
-                title = "Rename folder",
-                defaultValue = (state.item as FolderApi).name,
-                modifier = Modifier.testTag("renameDialog"),
-                onCancel = { dialogState = NoDialogState() },
-                onConfirm = {
-                    dialogState = NoDialogState()
-                    runBlocking {
-                        viewModel.renameFolder(it)
-                        onChange()
-                    }
-                },
-            )
-        }
-
-        is DeleteDialogState -> {
-            TextDialog(
-                title = "Delete folder",
-                bodyText = "Are you sure you want to delete? Type the folder name to confirm",
-                modifier = Modifier.testTag("deleteDialog"),
-                onCancel = { dialogState = NoDialogState() },
-                onConfirm = {
-                    dialogState = NoDialogState()
-                    viewModel.deleteFolder(it)
-                    onChange()
-                },
-            )
-        }
-
     }
 }
 

@@ -1,11 +1,14 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
-import androidx.lifecycle.ViewModel
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
 import dev.ploiu.file_server_ui_new.model.*
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
@@ -75,6 +78,7 @@ data class FileDetailMessage(override val file: FileApi, override val folder: Fo
 
 data class FileDetailUiModel(
     val sheetState: FileDetailUiState,
+    val updateKey: Int = 0,
 )
 
 // TODO this should be pulled into common code, not desktop module (look at why MutableStateFlow isn't accessible in commonMain)
@@ -83,7 +87,8 @@ class FileDetailViewModel(
     private val folderService: FolderService,
     private val previewService: PreviewService,
     val fileId: Long,
-) : ViewModel() {
+    modalController: ModalController,
+) : ViewModelWithModal(modalController) {
     private val log = KotlinLogging.logger { }
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         log.error(throwable) {
@@ -252,6 +257,47 @@ class FileDetailViewModel(
                 }
             }
         }
+    }
+
+    fun openRenameModal() {
+        val current = _state.value.sheetState
+        if (current is FileDetailHasFile) {
+            val file = current.file
+            openModal(
+                TextModal(
+                    TextDialogProps(
+                        title = "Rename file",
+                        modifier = Modifier.testTag("renameDialog"),
+                        confirmText = "Rename",
+                        defaultValue = file.name,
+                        onCancel = this::closeModal,
+                        onConfirm = {
+                            closeModal()
+                            renameFile(it)
+                            _state.update { old -> old.copy(updateKey = old.updateKey + 1) }
+                        },
+                    ),
+                ),
+            )
+        }
+    }
+
+    fun openDeleteDialog() {
+        openModal(
+            ConfirmModal(
+                PromptDialogProps(
+                    title = "Delete file",
+                    bodyText = "Are you sure you want to delete?",
+                    confirmText = "Delete",
+                    onCancel = this::closeModal,
+                    onConfirm = {
+                        deleteFile()
+                        _state.update { it.copy(updateKey = it.updateKey + 1) }
+                        closeModal()
+                    },
+                ),
+            ),
+        )
     }
 
     private fun updateFile(toUpdate: FileRequest) =

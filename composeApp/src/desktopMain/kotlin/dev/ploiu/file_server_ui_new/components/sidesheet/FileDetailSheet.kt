@@ -8,48 +8,54 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButtonDefaults.filledIconButtonColors
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.components.*
-import dev.ploiu.file_server_ui_new.components.dialog.Dialog
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
+import dev.ploiu.file_server_ui_new.components.PickFileImage
+import dev.ploiu.file_server_ui_new.components.Pill
+import dev.ploiu.file_server_ui_new.components.TagList
+import dev.ploiu.file_server_ui_new.components.pillColors
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.util.getFileSizeAlias
 import dev.ploiu.file_server_ui_new.util.toShortHandBytes
 import dev.ploiu.file_server_ui_new.viewModel.*
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
-import kotlinx.coroutines.runBlocking
 import java.util.*
 
 
 @Composable
 // intellij believes that changing dialogState in lambda functions is useless, but they're very important
-@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterialApi::class)
 fun FileDetailSheet(
     viewModel: FileDetailViewModel,
     /** used when outside changes (e.g. from the main file page) makes changes, so we know to refresh ourselves */
-    refreshKey: Int,
+    refreshKey: String,
     /** used if an action within this sheet should cause the sheet to close (e.g. when the file is deleted) */
     closeSelf: () -> Unit,
     onChange: () -> Unit,
 ) {
-    val (pageState) = viewModel.state.collectAsState().value
-    var dialogState: DialogState by remember { mutableStateOf(NoDialogState()) }
+    val (pageState, updateKey) = viewModel.state.collectAsState().value
     val filePicker = rememberFileSaverLauncher { file ->
         if (file != null) {
             viewModel.downloadFile(file)
         }
     }
 
+    // for when a new file is selected
     LaunchedEffect(Objects.hash(viewModel.fileId, refreshKey)) {
         viewModel.loadFile()
+    }
+
+    // for when a change is made and we need to signal to the parent to refresh
+    LaunchedEffect(updateKey) {
+        onChange()
     }
 
     when (pageState) {
@@ -67,13 +73,13 @@ fun FileDetailSheet(
             MainFileDetails(
                 file = pageState.file,
                 filePath = pageState.filePath,
-                onRenameClick = { dialogState = RenameDialogState(pageState.file) },
+                onRenameClick = viewModel::openRenameModal,
                 onSaveClick = {
                     println("save clicked!")
-                    dialogState = NoDialogState()
+                    viewModel.closeModal()
                     filePicker.launch(pageState.file.nameWithoutExtension, pageState.file.extension)
                 },
-                onDeleteClick = { dialogState = DeleteDialogState(pageState.file) },
+                onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
                 onOpenClick = { viewModel.openFile() },
                 preview = if (pageState is FilePreviewLoaded) {
@@ -103,42 +109,6 @@ fun FileDetailSheet(
             }
         }
     }
-
-    when (val state = dialogState) {
-        is NoDialogState -> Unit /* No Op */
-
-        is RenameDialogState -> {
-            TextDialog(
-                title = "Rename file",
-                defaultValue = (state.item as FileApi).name,
-                modifier = Modifier.testTag("renameDialog"),
-                onCancel = { dialogState = NoDialogState() },
-                onConfirm = {
-                    dialogState = NoDialogState()
-                    runBlocking {
-                        viewModel.renameFile(it)
-                        onChange()
-                    }
-                },
-            )
-        }
-
-        is DeleteDialogState -> {
-            Dialog(
-                title = "Delete file",
-                text = "Are you sure you want to delete?",
-                confirmText = "Delete",
-                dismissText = "Cancel",
-                onDismissRequest = { dialogState = NoDialogState() },
-                onConfirm = {
-                    viewModel.deleteFile()
-                    onChange()
-                },
-                icon = Icons.Default.Warning,
-            )
-        }
-
-    }
 }
 
 @Composable
@@ -157,12 +127,14 @@ private fun MainFileDetails(
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("loadedRoot"),
         horizontalAlignment = Alignment.CenterHorizontally,
-    ) { // image and title
+    ) {
+        // image and title
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             PickFileImage(file, preview, Modifier.width(108.dp).height(108.dp).testTag("fileImage"))
             Text(file.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("fileName"))
         }
-        Spacer(Modifier.height(16.dp)) // file attributes
+        Spacer(Modifier.height(16.dp))
+        // file attributes
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),
@@ -205,7 +177,8 @@ private fun MainFileDetails(
         }
         Spacer(Modifier.height(8.dp))
         TagList(file.tags, onUpdate = onUpdateTags)
-        Spacer(Modifier.height(8.dp)) // action buttons TODO can probably pull out into common code
+        Spacer(Modifier.height(8.dp))
+        // action buttons TODO can probably pull out into common code
         Surface(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp),

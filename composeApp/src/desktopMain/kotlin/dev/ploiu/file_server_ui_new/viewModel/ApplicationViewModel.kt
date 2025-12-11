@@ -1,9 +1,12 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
-import androidx.lifecycle.ViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -19,6 +22,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * represents the state of the side sheet
@@ -28,22 +33,22 @@ class NoSideSheet : SideSheetUiState
 data class FileSideSheet(val file: FileApi) : SideSheetUiState
 data class FolderSideSheet(val folder: FolderApi) : SideSheetUiState
 
-data class ApplicationUiModel(
+data class ApplicationUiModel @OptIn(ExperimentalUuidApi::class) constructor(
     val sideSheetState: SideSheetUiState,
     /** used to force refreshes of other components when the header causes something (e.g. a folder's contents via file/folder upload) to change */
-    val headerUpdateKey: Int = 0,
+    val updateKey: String = Uuid.toString(),
 )
 
 // I actually still don't like this but it's cleaner to handle it this way than a bunch of random handlers all over the place.
-// However, this is only intended for the "root" application state. Things like the folder page, folder side sheet, etc should
+// However, this is only intended for the "root" application state. Things like the folder page, folder side sheet, etc. should
 // handle api calls in their own view models. This isn't a "catch all", this serves a small scope of the application
 // (that just so happens to be top level)
 class ApplicationViewModel(
     private val folderService: FolderService,
     private val folderUploadService: FolderUploadService,
-    private val modalController: ModalController
+    modalController: ModalController,
 ) :
-    ViewModel() {
+    ViewModelWithModal(modalController) {
     private val log = KotlinLogging.logger("ApplicationViewModel")
     private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
@@ -56,10 +61,9 @@ class ApplicationViewModel(
     }
 
     fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
-        modalController.closeModal()
+        closeModal()
         log.info { "upload started!" }
         var total: Int
-        var progress = 0
         val errors = mutableListOf<String>()
         // TODO I don't like having to generate a second folder approximation since one is already being generated...maybe send a tuple, with the first element being the number of items?
         val approximation = FolderApproximator.convertDir(folder.file, 1)
@@ -68,13 +72,12 @@ class ApplicationViewModel(
         if (total == 0) {
             total = 1
         }
-        modalController.openModal(LoadingModal(max = total, progress = 0))
+        openModal(LoadingModal(max = total, progress = 0))
         folderUploadService.uploadFolder(folder, currentFolderId)
             .collect { result ->
                 when (result) {
                     is BatchUploadFileResult -> {
-                        progress++
-                        modalController.updateModalState(LoadingModal(max = total, progress = progress))
+                        updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
                         if (result.errorMessage != null) {
                             errors.add(result.errorMessage)
                         }
@@ -88,17 +91,25 @@ class ApplicationViewModel(
                     }
                 }
             }
-        modalController.closeModal()
+        modalController.close(this@ApplicationViewModel)
         if (errors.isNotEmpty()) {
             log.error {
                 "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
             }
-            // TODO: Show detailed error dialog/modal with error list
-            _state.update {
-                it.copy(headerUpdateKey = it.headerUpdateKey + 1)
-            }
+            openModal(
+                ErrorModal(
+                    PromptDialogProps(
+                        title = "Failed to upload folder",
+                        bodyText = "An error occurred attempting to upload the folder. Check server logs for details",
+                        icon = Icons.Default.Error,
+                        onCancel = this@ApplicationViewModel::closeModal,
+                        onConfirm = { this@ApplicationViewModel.closeModal() },
+                    ),
+                ),
+            )
+            changeUpdateKey()
         } else {
-            _state.update { it.copy(headerUpdateKey = it.headerUpdateKey + 1) }
+            changeUpdateKey()
             log.info { "upload ended!" }
         }
     }
@@ -115,5 +126,30 @@ class ApplicationViewModel(
             else -> throw UnsupportedOperationException("object of type ${item.javaClass} is not null, FileApi, or FolderApi")
         }
         _state.update { it.copy(sideSheetState = sheetState) }
+    }
+
+    fun openCreateEmptyFolderModal() {
+        openModal(
+            TextModal(
+                props = TextDialogProps(
+                    title = "Create empty folder",
+                    bodyText = "Folder name",
+                    confirmText = "Create",
+                    onCancel = this::closeModal,
+                    onConfirm = {
+                        if (it.isNotBlank()) {
+                            closeModal()
+                            addEmptyFolder(it)
+                            changeUpdateKey()
+                        }
+                    },
+                ),
+            ),
+        )
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    fun changeUpdateKey() {
+        _state.update { it.copy(updateKey = Uuid.toString()) }
     }
 }

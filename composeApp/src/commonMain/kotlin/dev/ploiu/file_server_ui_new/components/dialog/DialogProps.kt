@@ -59,8 +59,8 @@ data class TextDialogProps(
     override val confirmText: String = "Confirm",
     val defaultValue: String = "",
     override val onCancel: () -> Unit,
-    override val onConfirm: (String) -> Unit
-): DialogProps<String> {
+    override val onConfirm: (String) -> Unit,
+) : DialogProps<String> {
     @Composable
     override fun invoke() = TextDialog(
         title = title,
@@ -71,7 +71,7 @@ data class TextDialogProps(
         onConfirm = onConfirm,
         bodyColor = bodyColor,
         cancelText = cancelText,
-        confirmText = confirmText
+        confirmText = confirmText,
     )
 }
 

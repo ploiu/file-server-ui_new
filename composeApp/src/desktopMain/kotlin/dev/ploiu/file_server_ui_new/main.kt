@@ -8,11 +8,9 @@ import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
@@ -20,7 +18,6 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -32,14 +29,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.MessageTypes.FOCUS_SEARCHBAR
 import dev.ploiu.file_server_ui_new.MessageTypes.HIDE_ACTIVE_ELEMENT
-import dev.ploiu.file_server_ui_new.components.*
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
+import dev.ploiu.file_server_ui_new.components.AppHeader
+import dev.ploiu.file_server_ui_new.components.NavBar
+import dev.ploiu.file_server_ui_new.components.NavState
+import dev.ploiu.file_server_ui_new.components.dialog.CurrentDialog
 import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.StandardSideSheet
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.module.clientModule
 import dev.ploiu.file_server_ui_new.module.configModule
+import dev.ploiu.file_server_ui_new.module.miscModule
 import dev.ploiu.file_server_ui_new.module.serviceModule
 import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoadingPage
@@ -81,14 +81,13 @@ actual fun AppTheme(
 fun main() = application {
     try {
         startKoin {
-            modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule)
+            modules(configModule, clientModule, serviceModule, pageModule, desktopServiceModule, miscModule)
         }
     } catch (_: Exception) {
         println("Koin already started")
     }
     FileKit.init(appId = "PloiuFileServer")
     val messagePasser = remember { ObservableMessagePasser() }
-    val viewModel = koinInject<ApplicationViewModel>()
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(
         onCloseRequest = ::exitApplication,
@@ -110,7 +109,7 @@ fun main() = application {
         },
     ) {
         AppTheme {
-            MainDesktopBody(appViewModel = viewModel, messagePasser = messagePasser)
+            MainDesktopBody(appViewModel = koinInject(), messagePasser = messagePasser)
         }
     }
 }
@@ -122,29 +121,6 @@ val headerlessRoutes = listOf(
 )
 
 private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
-
-// TODO pull this out into its own file (probably same with other modals)
-@Composable
-fun LoadingModalDialog(loadingModal: LoadingModal) {
-    Dialog(onDismissRequest = {}) {
-        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                CircularProgressIndicator(
-                    progress = { loadingModal.progress / loadingModal.max.toFloat() },
-                    modifier = Modifier.size(48.dp),
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = "Uploading... ${loadingModal.progress} / ${loadingModal.max}",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun MainDesktopBody(
@@ -166,9 +142,8 @@ fun MainDesktopBody(
             ),
         )
     }
-    val (sideSheetStatus, headerUpdateKey) = appViewModel.state.collectAsState().value
+    val (sideSheetStatus, updateKey) = appViewModel.state.collectAsState().value
     val searchBarFocuser = remember { FocusRequester() }
-    val modalState = appViewModel.modalState.collectAsState().value
     val mainContentWidth =
         animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 1f else .7f, animationSpec = tween())
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
@@ -176,15 +151,11 @@ fun MainDesktopBody(
     // TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
     val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 0f else 1f)
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
-    var sideSheetUpdateKey by remember { mutableStateOf(0) }
-    var folderPageUpdateKey by remember { mutableStateOf(0) }
-    var actionButtonsUpdateKey by remember { mutableStateOf(0) }
     var shouldShowHeader by remember { mutableStateOf(false) }
     val currentRoute = navController.currentBackStackEntryAsState().value
     // for uploading folders
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
-        appViewModel.closeModal()
-        if (modalState == SelectingFolderUpload && directory?.isDirectory() ?: false && currentRoute?.destination?.route?.contains(
+        if (directory?.isDirectory() ?: false && currentRoute?.destination?.route?.contains(
                 FolderRoute::class.simpleName!!,
             ) ?: false
         ) {
@@ -208,8 +179,8 @@ fun MainDesktopBody(
                     searchBarFocuser = searchBarFocuser,
                     navController = navController,
                     sideSheetActive = sideSheetStatus !is NoSideSheet,
-                    onCreateFolderClick = { appViewModel.openModal(CreatingEmptyFolder) },
-                    onUploadFolderClick = { appViewModel.openModal(SelectingFolderUpload) },
+                    onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
+                    onUploadFolderClick = directoryPicker::launch,
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
@@ -235,10 +206,10 @@ fun MainDesktopBody(
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
                     FolderPage(
                         view = viewModel,
-                        refreshKey = sideSheetUpdateKey + actionButtonsUpdateKey + headerUpdateKey,
+                        refreshKey = updateKey,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
-                        onUpdate = { folderPageUpdateKey += 1 },
+                        onUpdate = appViewModel::changeUpdateKey,
                     ) {
                         navController.navigate(FolderRoute(it.id))
                         navBarState += it
@@ -251,6 +222,7 @@ fun MainDesktopBody(
                     SearchResultsPage(viewModel)
                 }
             }
+            CurrentDialog()
         }
         StandardSideSheet(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
@@ -262,10 +234,9 @@ fun MainDesktopBody(
                     FolderDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
-                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey,
-                    ) {
-                        sideSheetUpdateKey += 1
-                    }
+                        refreshKey = updateKey,
+                        onChange = appViewModel::changeUpdateKey,
+                    )
                 }
 
                 is FileSideSheet -> {
@@ -273,39 +244,13 @@ fun MainDesktopBody(
                     FileDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
-                        refreshKey = folderPageUpdateKey + actionButtonsUpdateKey,
-                    ) { sideSheetUpdateKey += 1 }
+                        refreshKey = updateKey,
+                        onChange = appViewModel::changeUpdateKey,
+                    )
                 }
 
                 is NoSideSheet -> {}
             }
-        }
-        // app modals
-        when (modalState) {
-            CreatingEmptyFolder -> TextDialog(
-                title = "Create empty folder",
-                bodyText = "Folder name",
-                onCancel = { appViewModel.closeModal() },
-                confirmText = "Create",
-                onConfirm = {
-                    if (it.isNotBlank()) {
-                        appViewModel.closeModal()
-                        appViewModel.addEmptyFolder(it)
-                        actionButtonsUpdateKey += 1
-                    }
-                },
-            )
-
-            is ApplicationErrorModal -> dev.ploiu.file_server_ui_new.components.dialog.Dialog(
-                title = "Failed to upload folder",
-                onDismissRequest = { appViewModel.closeModal() },
-                text = "PLACEHOLDER ERROR MESSAGE: ${modalState.message}",
-                icon = Icons.Default.Error,
-            )
-
-            is LoadingModal -> LoadingModalDialog(modalState)
-            SelectingFolderUpload -> directoryPicker.launch()
-            NoModal -> {}
         }
     }
 }

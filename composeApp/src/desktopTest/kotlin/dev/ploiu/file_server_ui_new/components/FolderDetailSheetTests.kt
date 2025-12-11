@@ -3,6 +3,7 @@
 package dev.ploiu.file_server_ui_new.components
 
 import androidx.compose.ui.test.*
+import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.viewModel.*
 import io.mockk.every
@@ -20,7 +21,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
+            FolderDetailSheet(viewModel, "", {}, {})
         }
         onNodeWithTag("spinner").assertIsDisplayed()
         onNodeWithTag("loadedRoot").assertDoesNotExist()
@@ -50,7 +51,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
+            FolderDetailSheet(viewModel, "", {}, {})
         }
 
         onNodeWithTag("spinner").assertDoesNotExist()
@@ -80,7 +81,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
+            FolderDetailSheet(viewModel, "", {}, {})
         }
         val messageNode = onNodeWithTag("message")
         onNodeWithTag("loadedRoot").assertIsDisplayed()
@@ -109,7 +110,7 @@ class FolderDetailSheetTests {
         every { viewModel.folderId } returns 1
         every { viewModel.loadFolder() } returns Job()
         setContent {
-            _root_ide_package_.dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet(viewModel, 0, {}, {})
+            FolderDetailSheet(viewModel, "", {}, {})
         }
         val image = onNodeWithTag("folderImage")
         val folderName = onNodeWithTag("folderName")

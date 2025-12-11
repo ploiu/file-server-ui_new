@@ -1,9 +1,11 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
-import androidx.lifecycle.ViewModel
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
@@ -38,13 +40,15 @@ data class FolderDetailMessage(override val folder: FolderApi, val message: Stri
 
 data class FolderDetailUiModel(
     val sheetState: FolderDetailUiState,
+    val updateKey: Int = 0,
 )
 
 // TODO this has potential to be pulled into common code (? - downloading a folder would behave differently on android and desktop)
 class FolderDetailViewModel(
     private val folderService: FolderService,
     val folderId: Long,
-) : ViewModel() {
+    controller: ModalController,
+) : ViewModelWithModal(controller) {
     private val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
         _state.update {
             it.copy(
@@ -144,6 +148,47 @@ class FolderDetailViewModel(
                     }
                 }
         }
+    }
+
+    fun openRenameDialog() {
+        val current = _state.value.sheetState
+        if (current is FolderDetailHasFolder) {
+            openModal(
+                TextModal(
+                    TextDialogProps(
+                        title = "Rename folder",
+                        modifier = Modifier.testTag("renameDialog"),
+                        confirmText = "Rename",
+                        defaultValue = current.folder.name,
+                        onCancel = this::closeModal,
+                        onConfirm = {
+                            closeModal()
+                            renameFolder(it)
+                            _state.update { old -> old.copy(updateKey = old.updateKey + 1) }
+                        },
+                    ),
+                ),
+            )
+        }
+    }
+
+    fun openDeleteDialog() {
+        openModal(
+            TextModal(
+                TextDialogProps(
+                    title = "Delete folder",
+                    modifier = Modifier.testTag("deleteDialog"),
+                    bodyText = "Are you sure you want to delete? Type the folder name to confirm",
+                    confirmText = "Delete",
+                    onCancel = this::closeModal,
+                    onConfirm = {
+                        closeModal()
+                        deleteFolder(it)
+                        _state.update { old -> old.copy(updateKey = old.updateKey + 1) }
+                    },
+                ),
+            ),
+        )
     }
 
     private fun updateFolder(toUpdate: UpdateFolder) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
