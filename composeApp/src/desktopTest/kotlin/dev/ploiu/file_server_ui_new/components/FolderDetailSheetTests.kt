@@ -129,6 +129,6 @@ class FolderDetailSheetTagsTests {
 
 }
 
-class FolderDetailSheetActionsPPanelTests {
+class FolderDetailSheetActionsPanelTests {
 
 }

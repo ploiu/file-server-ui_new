@@ -7,8 +7,6 @@ import java.util.stream.Collectors
 class ServerConfig(
     val baseUrl: String,
     val compatibleVersion: String,
-    val host: String,
-    val port: Int,
 ) {
     fun generateCompatibleVersionPattern(): Pattern {
         // our regex builder will only work if the whole version follows the right property

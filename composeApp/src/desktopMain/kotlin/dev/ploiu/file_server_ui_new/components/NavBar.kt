@@ -38,7 +38,7 @@ data class NavState(private val folders: LinkedList<FolderApi>) {
     operator fun get(item: FolderApi) = folders.indexOfFirst { it.id == item.id }
 
     operator fun get(range: UIntRange): MutableList<FolderApi> {
-        return folders.subList(range.start.toInt(), range.endInclusive.toInt())
+        return folders.subList(range.first.toInt(), range.last.toInt())
     }
 }
 

@@ -7,20 +7,3 @@ import androidx.compose.runtime.Composable
 expect fun AppTheme(
     content: @Composable () -> Unit,
 )
-
-/* @Preview
-@Composable
-fun App() {
-    AppTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Surface {
-                ShowPlatformView()
-            }
-        }
-    }
-} */

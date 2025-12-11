@@ -1,11 +1,12 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dev.ploiu.file_server_ui_new.components.dialog.DialogProps
 import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
 import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlin.reflect.KClass
 
 /**
@@ -18,8 +19,18 @@ data class ConfirmModal(val props: PromptDialogProps) : ApplicationModalState<Pr
 data class ErrorModal(val props: PromptDialogProps) : ApplicationModalState<PromptDialogProps>
 data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState<Nothing>
 
-
-data class ModalState(val modal: ApplicationModalState<*>, val opener: KClass<out ViewModel>?) {
+/**
+ * represents modal state, which is used to actually build the composable modal during rendering
+ *
+ * @param modal the actual props and wrapper for the modal data
+ * @param opener who opened the modal. Used to lock the modal and prevent other classes from closing or opening a new modal
+ * @param dialogJustClosed used to control if the escape key should close opened elements that _aren't_ a dialog. If `true`, the other elements shouldn't be closed
+ */
+data class ModalState(
+    val modal: ApplicationModalState<*>,
+    val opener: KClass<out ViewModel>?,
+    val dialogJustClosed: Boolean,
+) {
     val isOpen: Boolean
         get() = modal !is NoModal
 }
@@ -37,15 +48,10 @@ data class ModalState(val modal: ApplicationModalState<*>, val opener: KClass<ou
 class ModalController : ViewModel() {
 
     @Deprecated(level = DeprecationLevel.WARNING, message = "don't ever use this externally")
-    val _state = MutableStateFlow(ModalState(NoModal, null))
+    val _state = MutableStateFlow(ModalState(NoModal, null, dialogJustClosed = false))
     val state = _state.asStateFlow()
-
-    val isOpen: StateFlow<Boolean> = _state.map { it.isOpen }
-        .stateIn(
-            scope = viewModelScope,
-            initialValue = _state.value.isOpen,
-            started = SharingStarted.Eagerly,
-        )
+    val isJustClosed: Boolean
+        get() = _state.value.dialogJustClosed
 
     /**
      * attempts to change the currently-opened modal.
@@ -58,7 +64,7 @@ class ModalController : ViewModel() {
         if (currentState.isOpen) {
             return false
         }
-        _state.update { ModalState(modal = modal, opener = opener::class) }
+        _state.update { ModalState(modal = modal, opener = opener::class, dialogJustClosed = false) }
         return true
     }
 
@@ -68,11 +74,20 @@ class ModalController : ViewModel() {
     fun close(closer: ViewModel): Boolean {
         if (closer::class == _state.value.opener) {
             _state.update {
-                ModalState(modal = NoModal, opener = null)
+                ModalState(modal = NoModal, opener = null, dialogJustClosed = true)
             }
             return true
         } else {
             return false
+        }
+    }
+
+    /**
+     * used to reset the dialogJustClosed flag to false so that the escape key works properly
+     */
+    fun clearJustClosed() {
+        _state.update {
+            it.copy(dialogJustClosed = false)
         }
     }
 

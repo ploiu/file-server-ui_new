@@ -15,16 +15,16 @@ import dev.ploiu.file_server_ui_new.viewModel.LoadingModal
 @Composable
 fun LoadingModalDialog(loadingModal: LoadingModal) {
     Dialog(onDismissRequest = {}) {
-        OutlinedCard(modifier = Modifier.Companion.fillMaxWidth()) {
+        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.Companion.padding(32.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.Companion.CenterHorizontally,
+                modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CircularProgressIndicator(
                     progress = { loadingModal.progress / loadingModal.max.toFloat() },
-                    modifier = Modifier.Companion.size(48.dp),
+                    modifier = Modifier.size(48.dp),
                 )
-                Spacer(Modifier.Companion.height(16.dp))
+                Spacer(Modifier.height(16.dp))
                 Text(
                     text = "Uploading... ${loadingModal.progress} / ${loadingModal.max}",
                     style = MaterialTheme.typography.bodyLarge,

@@ -16,7 +16,6 @@ data class FolderApi(
         id = id, name = name, parentId = parentId ?: 0, tags = tags,
     )
 
-    fun containsFolder(name: String) = folders.map { it.name }.contains(name)
 }
 
 @Serializable

@@ -61,6 +61,7 @@ fun TagList(tags: Collection<TaggedItemApi>, onUpdate: (Collection<TaggedItemApi
     }
 
     if (isAddingTag) {
+        TODO("figure out how to set in ModalController")
         TextDialog(
             title = "Add tag", onCancel = { isAddingTag = false }, confirmText = "Add",
             onConfirm = {

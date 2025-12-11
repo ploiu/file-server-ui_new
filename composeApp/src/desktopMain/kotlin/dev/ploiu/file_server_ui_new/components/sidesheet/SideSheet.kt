@@ -23,7 +23,7 @@ fun StandardSideSheet(
     content: @Composable () -> Unit,
 ) {
     Surface(tonalElevation = 2.dp, modifier = modifier.then(Modifier.fillMaxHeight())) {
-        Column() {
+        Column {
             FlowRow(modifier = Modifier.fillMaxWidth()) {
                 Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
                 IconButton(onClick = onCloseAction) {

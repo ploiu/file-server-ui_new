@@ -9,6 +9,7 @@ import io.mockk.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Rule
 import org.junit.rules.TestName
 import retrofit2.Response
@@ -86,6 +87,7 @@ class PreviewServiceTest {
         }
 
     @Test
+    @Suppress("UnusedFlow")
     fun `previews that are still in FolderApi are not removed from the disk`() = runTest {
         val previewClient: PreviewClient = mockk()
         val fileClient: FileClient = mockk()
@@ -114,6 +116,7 @@ class PreviewServiceTest {
         verify(exactly = 0) { previewClient.downloadFolderPreviews(any()) }
     }
 
+    @Suppress("UnusedFlow")
     @Test
     fun `when the folder is retrieved from folderService, if fewer than 21 previews aren't cached on disk, download each preview individually in chunks of 5 and store them in the cache`() =
         runTest {
@@ -127,7 +130,7 @@ class PreviewServiceTest {
             // No files exist in cache dir
             val previewBytes = ByteArray(10) { 42 }
             coEvery { fileClient.getFilePreview(any()) } answers {
-                Response.success(200, ResponseBody.create(null, previewBytes))
+                Response.success(200, previewBytes.toResponseBody(null))
             }
             // Should not call getPreviewsForFolder
             every { previewClient.downloadFolderPreviews(any()) } returns flowOf()
@@ -169,7 +172,7 @@ class PreviewServiceTest {
             // Simulate no preview available (404)
             coEvery { fileClient.getFilePreview(fileId) } returns Response.error(
                 404,
-                ResponseBody.create(null, ""),
+                "".toResponseBody(null),
             )
             coEvery { previewClient.downloadFolderPreviews(any()) } returns flowOf()
             val previewService = DesktopPreviewService(
@@ -195,10 +198,7 @@ class PreviewServiceTest {
         )
         val bytes = byteArrayOf(1, 2, 3)
         coEvery { fileClient.getFilePreview(any()) } returns Response.success(
-            ResponseBody.create(
-                null,
-                bytes,
-            ),
+            bytes.toResponseBody(null),
         )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNotNull(result)
@@ -216,7 +216,7 @@ class PreviewServiceTest {
         )
         coEvery { fileClient.getFilePreview(any()) } returns Response.error(
             404,
-            ResponseBody.create(null, ""),
+            "".toResponseBody(null),
         )
         val result = previewService.downloadPreview(123L).unwrap()
         assertNull(result)

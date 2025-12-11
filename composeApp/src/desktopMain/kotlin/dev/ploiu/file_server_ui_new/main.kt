@@ -52,6 +52,7 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.isDirectory
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import java.util.*
@@ -127,6 +128,7 @@ fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     appViewModel: ApplicationViewModel,
     messagePasser: ObservableMessagePasser,
+    modalController: ModalController = koinViewModel(),
 ) {
     var navBarState: NavState by remember {
         mutableStateOf(
@@ -142,6 +144,7 @@ fun MainDesktopBody(
             ),
         )
     }
+    val modalState = modalController.state.collectAsState().value
     val (sideSheetStatus, updateKey) = appViewModel.state.collectAsState().value
     val searchBarFocuser = remember { FocusRequester() }
     val mainContentWidth =
@@ -164,9 +167,18 @@ fun MainDesktopBody(
         }
     }
 
-    messagePasser += FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
-    // TODO use a custom class to keep track of dialogs in a central place (named like DialogController or something), and use that to determine if the sheet needs to be closed
-    messagePasser += HIDE_ACTIVE_ELEMENT { appViewModel.closeSideSheet() }
+    LaunchedEffect(Unit) {
+        messagePasser += FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
+        // TODO use a custom class to keep track of dialogs in a central place (named like DialogController or something), and use that to determine if the sheet needs to be closed
+        messagePasser += HIDE_ACTIVE_ELEMENT {
+            if (!modalController.isJustClosed) {
+                appViewModel.closeSideSheet()
+            } else {
+                // don't close anything, but be sure to reset the dialog just closed flag
+                modalController.clearJustClosed()
+            }
+        }
+    }
 
     LaunchedEffect(currentRoute) {
         shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)

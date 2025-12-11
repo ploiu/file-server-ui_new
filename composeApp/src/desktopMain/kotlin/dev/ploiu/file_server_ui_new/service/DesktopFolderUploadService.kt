@@ -31,7 +31,7 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
         }
         if (res.isErr) {
             emit(BatchFolderUploadResult(null, res.getError()))
-            return@flow;
+            return@flow
         } else {
             val created = res.unwrap()
             // folder has been created, but to prevent the server from being overloaded, we need to "window" the files in groups of a good number (like 30), upload them all, and then wait for them to finish uploading
@@ -51,7 +51,7 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
      * uploads a batch of files to the specified folder.
      *
      */
-    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = channelFlow() {
+    private fun uploadBatch(files: List<File>, folderId: Long): Flow<BatchUploadFileResult> = channelFlow {
         // report as each file uploads, but wait for all files to upload before returning. This prevents us from ruining the server with too much spam
         files.map { file ->
             launch(Dispatchers.IO) {

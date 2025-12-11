@@ -188,6 +188,7 @@ fun FolderPage(
     getter and not a raw value) */
     when (val action = folderActionState) {
         is RenameFolderAction -> {
+            TODO("register with ModalController")
             TextDialog(
                 title = "Rename folder",
                 defaultValue = action.folder.name,
@@ -207,32 +208,38 @@ fun FolderPage(
             directoryPicker.launch(action.folder.name, "tar")
         }
 
-        is DeleteFolderAction -> TextDialog(
-            title = "Delete folder",
-            bodyText = "Are you sure you want to delete this folder? Type the name to confirm",
-            confirmText = "Delete",
-            onConfirm = {
-                if (it == action.folder.name) {
-                    folderActionState = NoFolderAction()
-                    view.deleteFolder(action.folder)
-                }
-            },
-            onCancel = { folderActionState = NoFolderAction() },
-        )
+        is DeleteFolderAction -> {
+            TODO("register with modal controller")
+            TextDialog(
+                title = "Delete folder",
+                bodyText = "Are you sure you want to delete this folder? Type the name to confirm",
+                confirmText = "Delete",
+                onConfirm = {
+                    if (it == action.folder.name) {
+                        folderActionState = NoFolderAction()
+                        view.deleteFolder(action.folder)
+                    }
+                },
+                onCancel = { folderActionState = NoFolderAction() },
+            )
+        }
 
-        is ConfirmReplaceDownloadFolder -> Dialog(
-            title = "File already exists",
-            text = "A file named ${action.folder.name}.tar already exists in the selected directory. Do you want to replace it?",
-            icon = Icons.Default.Error,
-            iconColor = MaterialTheme.colorScheme.error,
-            confirmText = "Replace",
-            dismissText = "Cancel",
-            onDismissRequest = { folderActionState = NoFolderAction() },
-            onConfirm = {
-                view.downloadFolder(action.folder, action.directory)
-                folderActionState = NoFolderAction()
-            },
-        )
+        is ConfirmReplaceDownloadFolder -> {
+            TODO("register with modal controller")
+            Dialog(
+                title = "File already exists",
+                text = "A file named ${action.folder.name}.tar already exists in the selected directory. Do you want to replace it?",
+                icon = Icons.Default.Error,
+                iconColor = MaterialTheme.colorScheme.error,
+                confirmText = "Replace",
+                dismissText = "Cancel",
+                onDismissRequest = { folderActionState = NoFolderAction() },
+                onConfirm = {
+                    view.downloadFolder(action.folder, action.directory)
+                    folderActionState = NoFolderAction()
+                },
+            )
+        }
 
         is NoFolderAction -> Unit
     }
@@ -240,6 +247,7 @@ fun FolderPage(
     /* handle file actions */
     when (val action = fileActionState) {
         is RenameFileAction -> {
+            TODO("register with modal controller")
             TextDialog(
                 title = "Rename file",
                 defaultValue = action.file.name,
@@ -259,31 +267,37 @@ fun FolderPage(
             directoryPicker.launch(action.file.nameWithoutExtension, action.file.extension)
         }
 
-        is DeleteFileAction -> Dialog(
-            title = "Delete file",
-            text = "Are you sure you want to delete this file?",
-            confirmText = "Delete",
-            onConfirm = {
-                fileActionState = NoFileAction()
-                view.deleteFile(action.file)
-            },
-            icon = Icons.Default.Warning,
-            onDismissRequest = { fileActionState = NoFileAction() },
-        )
+        is DeleteFileAction -> {
+            TODO("register with modal controller")
+            Dialog(
+                title = "Delete file",
+                text = "Are you sure you want to delete this file?",
+                confirmText = "Delete",
+                onConfirm = {
+                    fileActionState = NoFileAction()
+                    view.deleteFile(action.file)
+                },
+                icon = Icons.Default.Warning,
+                onDismissRequest = { fileActionState = NoFileAction() },
+            )
+        }
 
-        is ConfirmReplaceDownloadFile -> Dialog(
-            title = "File already exists",
-            text = "A file named ${action.file.name} already exists in the selected directory. Do you want to replace it?",
-            icon = Icons.Default.Error,
-            iconColor = MaterialTheme.colorScheme.error,
-            confirmText = "Replace",
-            dismissText = "Cancel",
-            onDismissRequest = { fileActionState = NoFileAction() },
-            onConfirm = {
-                view.downloadFile(action.file, action.directory)
-                fileActionState = NoFileAction()
-            },
-        )
+        is ConfirmReplaceDownloadFile -> {
+            TODO("register with modal controller")
+            Dialog(
+                title = "File already exists",
+                text = "A file named ${action.file.name} already exists in the selected directory. Do you want to replace it?",
+                icon = Icons.Default.Error,
+                iconColor = MaterialTheme.colorScheme.error,
+                confirmText = "Replace",
+                dismissText = "Cancel",
+                onDismissRequest = { fileActionState = NoFileAction() },
+                onConfirm = {
+                    view.downloadFile(action.file, action.directory)
+                    fileActionState = NoFileAction()
+                },
+            )
+        }
 
         is NoFileAction -> Unit
     }
