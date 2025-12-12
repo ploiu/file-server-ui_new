@@ -43,7 +43,7 @@ fun FolderDetailSheet(
     closeSelf: () -> Unit,
     onChange: () -> Unit,
 ) {
-    val (pageState) = viewModel.state.collectAsState().value
+    val (pageState, updateKey) = viewModel.state.collectAsState().value
     val saveFolderPicker = rememberFileSaverLauncher { tarFile ->
         if (tarFile != null) {
             viewModel.downloadFolder(tarFile)
@@ -52,6 +52,12 @@ fun FolderDetailSheet(
 
     LaunchedEffect(Objects.hash(viewModel.folderId, refreshKey)) {
         viewModel.loadFolder()
+    }
+
+    LaunchedEffect(updateKey) {
+        if (updateKey > 0) {
+            onChange()
+        }
     }
 
     when (pageState) {
@@ -76,6 +82,7 @@ fun FolderDetailSheet(
                 },
                 onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
+                onAddTagClicked = viewModel::openAddTagDialog,
             )
             if (pageState is FolderDetailMessage) {
                 Snackbar {
@@ -107,6 +114,7 @@ private fun MainFolderDetails(
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onUpdateTags: (Collection<TaggedItemApi>) -> Unit,
+    onAddTagClicked: () -> Unit,
 ) {
     val actionButtonColors: IconButtonColors = filledIconButtonColors()
 
@@ -159,7 +167,7 @@ private fun MainFolderDetails(
             }
         }
         Spacer(Modifier.height(8.dp))
-        TagList(folder.tags, onUpdate = onUpdateTags)
+        TagList(folder.tags, onDelete = onUpdateTags, onAddClick = onAddTagClicked)
         Spacer(Modifier.height(8.dp))
         // action buttons TODO can probably pull out into common code
         Surface(

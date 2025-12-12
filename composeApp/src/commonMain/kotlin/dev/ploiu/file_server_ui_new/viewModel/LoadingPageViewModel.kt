@@ -1,7 +1,12 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
-import androidx.lifecycle.ViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
+import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
 import dev.ploiu.file_server_ui_new.service.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +22,6 @@ enum class LoadingUiState {
     /** running compatibility check */
     LOADING,
 
-    /** either an exception is thrown or the server is incompatible */
-    SHOWING_MODAL,
-
     /** compatibility result succeeded - navigating to next page */
     NAVIGATING
 }
@@ -29,7 +31,8 @@ data class LoadingPageUiModel(
     val checkResult: ServerCompatibilityResult?,
 )
 
-class LoadingPageViewModel(var apiService: ApiService) : ViewModel() {
+class LoadingPageViewModel(var apiService: ApiService, modalController: ModalController) :
+    ViewModelWithModal(modalController) {
     private val _state = MutableStateFlow(LoadingPageUiModel(LoadingUiState.LOADING, null))
     val state: StateFlow<LoadingPageUiModel> = _state.asStateFlow()
 
@@ -39,14 +42,36 @@ class LoadingPageViewModel(var apiService: ApiService) : ViewModel() {
         } catch (e: Exception) {
             ErrorResult(e)
         }
-        _state.update {
-            val pageState = when (compatibility) {
-                is CompatibleResult -> LoadingUiState.NAVIGATING
-                is IncompatibleResult -> LoadingUiState.SHOWING_MODAL
-                is ErrorResult -> LoadingUiState.SHOWING_MODAL
+        if (compatibility is CompatibleResult) {
+            _state.update { LoadingPageUiModel(LoadingUiState.NAVIGATING, compatibility) }
+        } else {
+            when (compatibility) {
+                is IncompatibleResult -> {
+                    ErrorModal.open(
+                        ErrorModalProps(
+                            title = "Incompatible server version",
+                            text = "The server is on ${compatibility.serverVersion}, but this client only supports ${compatibility.compatibleVersion}",
+                            icon = Icons.Default.Info,
+                            iconColorProvider = @Composable { MaterialTheme.colorScheme.secondary },
+                            onClose = {},
+                        ),
+                    )
+                }
+
+                is ErrorResult -> {
+                    ErrorModal.open(
+                        ErrorModalProps(
+                            title = "An error occurred",
+                            text = compatibility.error.message,
+                            icon = Icons.Default.Error,
+                            iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                            onClose = {},
+                        ),
+                    )
+                }
+
+                else -> throw UnsupportedOperationException("Invalid state reached when rendering the loading page!: $compatibility")
             }
-            LoadingPageUiModel(pageState, compatibility)
         }
-        compatibility
     }
 }

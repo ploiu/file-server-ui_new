@@ -1,9 +1,10 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
 import androidx.lifecycle.ViewModel
-import dev.ploiu.file_server_ui_new.components.dialog.DialogProps
-import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.ModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.PromptModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -12,12 +13,25 @@ import kotlin.reflect.KClass
 /**
  * represents modal state for the root application view, for things that aren't children of the main folder view or the side sheet
  */
-sealed interface ApplicationModalState<T : DialogProps<*>>
+sealed interface ApplicationModalState<T : ModalProps<*>>
 object NoModal : ApplicationModalState<Nothing>
-data class TextModal(val props: TextDialogProps) : ApplicationModalState<TextDialogProps>
-data class ConfirmModal(val props: PromptDialogProps) : ApplicationModalState<PromptDialogProps>
-data class ErrorModal(val props: PromptDialogProps) : ApplicationModalState<PromptDialogProps>
-data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState<Nothing>
+
+// all of these classes have a companion object for ease of use in opening modals (so that we don't need to wrap 3 functions every time to open a modal)
+data class TextModal(val props: TextModalProps) : ApplicationModalState<TextModalProps> {
+    companion object
+}
+
+data class ConfirmModal(val props: PromptModalProps) : ApplicationModalState<PromptModalProps> {
+    companion object
+}
+
+data class ErrorModal(val props: ErrorModalProps) : ApplicationModalState<ErrorModalProps> {
+    companion object
+}
+
+data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState<Nothing> {
+    companion object
+}
 
 /**
  * represents modal state, which is used to actually build the composable modal during rendering
@@ -28,7 +42,7 @@ data class LoadingModal(val max: Int, val progress: Int) : ApplicationModalState
  */
 data class ModalState(
     val modal: ApplicationModalState<*>,
-    val opener: KClass<out ViewModel>?,
+    val opener: KClass<out Any>?,
     val dialogJustClosed: Boolean,
 ) {
     val isOpen: Boolean
@@ -134,4 +148,12 @@ abstract class ViewModelWithModal(protected val modalController: ModalController
 
     protected inline fun <reified T : ApplicationModalState<*>> updateModal(crossinline updateFn: (T) -> T) =
         modalController.updateModalState(updater = this, updateFn = updateFn)
+
+    fun ConfirmModal.Companion.open(props: PromptModalProps) = openModal(ConfirmModal(props))
+
+    fun TextModal.Companion.open(props: TextModalProps) = openModal(TextModal(props))
+
+    fun LoadingModal.Companion.open(max: Int, progress: Int) = openModal(LoadingModal(max = max, progress = progress))
+
+    fun ErrorModal.Companion.open(props: ErrorModalProps) = openModal(ErrorModal(props))
 }

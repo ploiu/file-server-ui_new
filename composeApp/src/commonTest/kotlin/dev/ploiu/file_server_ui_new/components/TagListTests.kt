@@ -6,7 +6,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
-import io.mockk.called
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.Test
@@ -19,7 +18,7 @@ class TagListTests {
     fun `should not show any tag chips if no tags`() = runComposeUiTest {
         val callback = mockk<TagCallback>(relaxed = true)
         setContent {
-            TagList(tags = listOf(), onUpdate = callback)
+            TagList(tags = listOf(), onAddClick = {}, onDelete = callback)
         }
 
         val tagMatcher = SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Tag Chip"))
@@ -35,7 +34,7 @@ class TagListTests {
             TaggedItemApi(id = null, title = "tag2", implicitFrom = null),
         )
         setContent {
-            TagList(tags = tags, onUpdate = callback)
+            TagList(tags = tags, onAddClick = {}, onDelete = callback)
         }
 
         for ((_, title) in tags) {
@@ -54,54 +53,21 @@ class TagListTests {
             TaggedItemApi(id = null, title = "tag2", implicitFrom = null),
         )
         setContent {
-            TagList(tags = tags, onUpdate = callback)
+            TagList(tags = tags, onAddClick = {}, onDelete = callback)
         }
         val matcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
         onAllNodes(matcher).onFirst().assertTextEquals("Add Tag")
     }
 
     @Test
-    fun `clicking add tag button shows a text dialog`() = runComposeUiTest {
-        val callback = mockk<TagCallback>(relaxed = true)
+    fun `clicking add tag button calls the add tag click callback`() = runComposeUiTest {
+        val callback = mockk<() -> Unit>(relaxed = true)
         setContent {
-            TagList(tags = listOf(), onUpdate = callback)
+            TagList(tags = listOf(), onAddClick = callback, onDelete = {})
         }
         onNodeWithTag("addTag").performClick()
-        val dialog = onNodeWithTag("textDialog")
-        val dialogTitle = onNodeWithText("Add tag")
-        dialog.assertIsDisplayed()
-        dialogTitle.assertIsDisplayed()
-    }
-
-    @Test
-    fun `should not call update callback when cancel is clicked on tag name dialog`() = runComposeUiTest {
-        val callback = mockk<TagCallback>(relaxed = true)
-        setContent {
-            TagList(tags = listOf(), onUpdate = callback)
-        }
-        onNodeWithTag("addTag").performClick()
-        val cancelButton = onNodeWithTag("textDialogCancelButton")
-        cancelButton.performClick()
-        verify { callback wasNot called }
-    }
-
-    @Test
-    fun `should call update callback including the new tag when tag name is submitted`() = runComposeUiTest {
-        val callback = mockk<TagCallback>(relaxed = true)
-        val tags = listOf(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
-        setContent {
-            TagList(tags = tags, onUpdate = callback)
-        }
-        onNodeWithTag("addTag").performClick()
-        onNodeWithTag("textDialogInput").performTextInput("new tag name")
-        onNodeWithTag("textDialogConfirmButton").performClick()
-        verify {
-            callback(
-                match {
-                    it.contains(TaggedItemApi(id = 1, title = "original", implicitFrom = null))
-                            && it.contains(TaggedItemApi(id = null, title = "new tag name", implicitFrom = null))
-                },
-            )
+        verify(exactly = 1) {
+            callback()
         }
     }
 
@@ -114,7 +80,7 @@ class TagListTests {
             TaggedItemApi(id = 2, title = "whatever2", implicitFrom = null),
         )
         setContent {
-            TagList(tags = tags, onUpdate = callback)
+            TagList(tags = tags, onAddClick = {}, onDelete = callback)
         }
         onNodeWithTag("tag_whatever").performClick()
         verify(exactly = 1) {

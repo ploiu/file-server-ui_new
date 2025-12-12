@@ -1,9 +1,16 @@
 package dev.ploiu.file_server_ui_new.viewModel
 
-import androidx.lifecycle.ViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.PromptModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -27,11 +34,12 @@ data class FolderRoute(val id: Long)
 sealed interface FolderPageUiState
 class FolderPageLoading : FolderPageUiState
 data class FolderPageLoaded(val folder: FolderApi) : FolderPageUiState
-data class FolderPageError(val message: String) : FolderPageUiState
 
 data class FolderPageUiModel(
     val pageState: FolderPageUiState,
     val previews: BatchFilePreview,
+    /** used to signal to the main app view that it needs to refresh its view */
+    val updateKey: Int = 0,
     /** for non-critical messages that show as a snackbar. Not part of a "HasFolder" state because it's just simpler to do it this way since it doesn't impact main page state */
     val message: String? = null,
 )
@@ -41,7 +49,8 @@ class FolderPageViewModel(
     private val fileService: FileService,
     private val previewService: PreviewService,
     val folderId: Long,
-) : ViewModel() {
+    modalController: ModalController,
+) : ViewModelWithModal(modalController) {
     private val log = KotlinLogging.logger { }
     private val _state = MutableStateFlow(FolderPageUiModel(FolderPageLoading(), emptyMap()))
     val state = _state.asStateFlow()
@@ -56,21 +65,25 @@ class FolderPageViewModel(
     fun loadFolder() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         _state.update { it.copy(pageState = FolderPageLoading()) }
         val folderRes = folderService.getFolder(folderId)
-        folderRes.onSuccess { folder ->
-            _state.update { it.copy(pageState = FolderPageLoaded(folder)) }
-            previewService.getFolderPreview(folder).onEach { preview ->
-                _state.update {
-                    val previews = it.previews.toMutableMap()
-                    previews[preview.first] = preview.second
-                    it.copy(previews = previews)
-                }
-            }.catch {
-                _state.update { it.copy(pageState = FolderPageError("Failed to load previews: ${it.message}")) }
-            }.launchIn(this)
-        }.onFailure { error ->
-            _state.update { it.copy(pageState = FolderPageError(error)) }
-            log.error { "Failed to get folder information: $error" }
-        }
+        folderRes
+            .onSuccess { folder ->
+                _state.update { it.copy(pageState = FolderPageLoaded(folder)) }
+                // previews can now be pulled since we know what to pull. Errors are non-critical so they don't show a dialog
+                previewService.getFolderPreview(folder).onEach { preview ->
+                    _state.update {
+                        val previews = it.previews.toMutableMap()
+                        previews[preview.first] = preview.second
+                        it.copy(previews = previews)
+                    }
+                }.catch {
+                    _state.update { it.copy(message = "Failed to load previews: ${it.message}") }
+                }.launchIn(this)
+            }
+            .onFailure { error ->
+                // failed to pull folder at _all_
+                openErrorModal(error)
+                log.error { "Failed to get folder information: $error" }
+            }
     }
 
     /**
@@ -103,14 +116,15 @@ class FolderPageViewModel(
         if (currentState is FolderPageLoaded) {
             _state.update { it.copy(pageState = FolderPageLoading()) }
             val updateRes = folderService.updateFolder(folder.toUpdateFolder())
-            updateRes.onSuccess {
-                // TODO going round trip to the server just to update 1 folder might be wasteful.
-                //  Might be better to just update the folder in our existing model without
-                //  having to pull again...will need refresh logic though (ctrl + r)
-                loadFolder()
-            }.onFailure { msg ->
-                _state.update { it.copy(pageState = FolderPageError(msg)) }
-            }
+            updateRes
+                .onSuccess {
+                    // TODO going round trip to the server just to update 1 folder might be wasteful.
+                    //  Might be better to just update the folder in our existing model without
+                    //  having to pull again...will need refresh logic though (ctrl + r)
+                    // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
+                    _state.update { it.copy(updateKey = it.updateKey + 1) }
+                }
+                .onFailure(this@FolderPageViewModel::openErrorModal)
         }
     }
 
@@ -121,8 +135,8 @@ class FolderPageViewModel(
     fun deleteFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
         folderService.deleteFolder(folder.id)
             .onSuccess {
-                _state.update { it.copy(message = "Folder deleted successfully") }
-                loadFolder()
+                // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
+                _state.update { it.copy(message = "Folder deleted successfully", updateKey = it.updateKey + 1) }
             }
             .onFailure { msg ->
                 _state.update { it.copy(message = msg) }
@@ -142,11 +156,7 @@ class FolderPageViewModel(
                     res.close()
                     _state.update { it.copy(message = "File downloaded successfully") }
                 }
-                .onFailure { msg ->
-                    _state.update {
-                        it.copy(message = msg)
-                    }
-                }
+                .onFailure(this@FolderPageViewModel::openErrorModal)
         }
 
     fun updateFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
@@ -154,11 +164,12 @@ class FolderPageViewModel(
         if (currentState is FolderPageLoaded) {
             _state.update { it.copy(pageState = FolderPageLoading()) }
             val updateRes = fileService.updateFile(file.toFileRequest())
-            updateRes.onSuccess {
-                loadFolder()
-            }.onFailure { msg ->
-                _state.update { it.copy(pageState = FolderPageError(msg)) }
-            }
+            updateRes
+                .onSuccess {
+                    // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
+                    _state.update { it.copy(updateKey = it.updateKey + 1) }
+                }
+                .onFailure(this@FolderPageViewModel::openErrorModal)
         }
     }
 
@@ -169,11 +180,84 @@ class FolderPageViewModel(
     fun deleteFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
         fileService.deleteFile(file.id)
             .onSuccess {
-                _state.update { it.copy(message = "File deleted successfully") }
-                loadFolder()
+                // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
+                _state.update { it.copy(message = "File deleted successfully", updateKey = it.updateKey + 1) }
             }
             .onFailure { msg ->
                 _state.update { it.copy(message = msg) }
             }
+    }
+
+    fun openDeleteFolderModal(folder: FolderApi) {
+        TextModal.open(
+            TextModalProps(
+                title = "Delete folder",
+                text = "Are you sure you want to delete this folder? Type the name to confirm",
+                confirmText = "Delete",
+                onCancel = this::closeModal,
+                onConfirm = {
+                    if (it == folder.name) {
+                        closeModal()
+                        deleteFolder(folder)
+                    }
+                },
+            ),
+        )
+    }
+
+    fun openRenameFolderModal(folder: FolderApi) {
+        TextModal.open(
+            TextModalProps(
+                title = "Rename folder",
+                defaultValue = folder.name,
+                onCancel = this::closeModal,
+                onConfirm = {
+                    closeModal()
+                    updateFolder(folder.copy(name = it))
+                },
+            ),
+        )
+    }
+
+    fun openRenameFileModal(file: FileApi) {
+        TextModal.open(
+            TextModalProps(
+                title = "Rename file",
+                defaultValue = file.name,
+                onCancel = this::closeModal,
+                onConfirm = {
+                    updateFile(file.copy(name = it))
+                    closeModal()
+                },
+            ),
+        )
+    }
+
+    fun openDeleteFileModal(file: FileApi) {
+        ConfirmModal.open(
+            PromptModalProps(
+                title = "Delete file",
+                text = "Are you sure you want to delete this file?",
+                confirmText = "Delete",
+                icon = Icons.Default.Warning,
+                onCancel = this::closeModal,
+                onConfirm = {
+                    deleteFile(file)
+                    closeModal()
+                },
+            ),
+        )
+    }
+
+    fun openErrorModal(message: String) {
+        ErrorModal.open(
+            ErrorModalProps(
+                title = "An error occurred",
+                text = message,
+                icon = Icons.Default.Error,
+                iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                onClose = this::closeModal,
+            ),
+        )
     }
 }

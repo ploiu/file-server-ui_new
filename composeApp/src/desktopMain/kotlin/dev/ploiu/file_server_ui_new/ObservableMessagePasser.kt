@@ -6,18 +6,18 @@ package dev.ploiu.file_server_ui_new
 class ObservableMessagePasser {
     private val consumers: MutableSet<MessageObserver> = mutableSetOf()
 
-    operator fun plusAssign(observer: MessageObserver) {
-        consumers.add(observer)
-    }
-
-    operator fun minusAssign(observer: MessageObserver) {
-        consumers.remove(observer)
-    }
-
     fun passMessage(msg: MessageTypes) {
         for (consumer in consumers) {
             consumer(msg)
         }
+    }
+
+    infix fun handles(observer: MessageObserver) {
+        consumers.add(observer)
+    }
+
+    infix fun ignores(observer: MessageObserver) {
+        consumers.remove(observer)
     }
 }
 
@@ -29,6 +29,7 @@ enum class MessageTypes {
     FOCUS_SEARCHBAR,
     HIDE_ACTIVE_ELEMENT,
     NAVIGATE_FORWARD,
+    REFRESH_PAGE,
     NAVIGATE_BACKWARDS;
 
     operator fun invoke(handler: (MessageTypes) -> Unit) = MessageObserver(this, handler)

@@ -53,7 +53,9 @@ fun Pill(
             horizontalArrangement = Arrangement.Center,
         ) {
             if (icon != null) {
-                CompositionLocalProvider(LocalContentColor provides colors.iconColor, content = icon)
+                CompositionLocalProvider(LocalContentColor provides colors.iconColor) {
+                    icon()
+                }
             }
             Spacer(Modifier.width(3.dp))
             Text(text = text, style = textStyle)

@@ -57,11 +57,16 @@ class ApiService(private val serverConfig: ServerConfig, private val client: Api
      * checks if creds have been loaded properly. Success means the credentials input by the user work. Failure will return an http status code
      */
     suspend fun authenticatedPing(): Result<Unit, Int> {
-        val res = client.getStorageInfo()
-        return if (res.isSuccessful) {
-            Ok(Unit)
-        } else {
-            Err(res.code())
+        return try {
+            val res = client.getStorageInfo()
+            if (res.isSuccessful) {
+                Ok(Unit)
+            } else {
+                Err(res.code())
+            }
+        } catch (e: Exception) {
+            log.error(e) { "Failed to ping service!" }
+            Err(-1)
         }
     }
 }

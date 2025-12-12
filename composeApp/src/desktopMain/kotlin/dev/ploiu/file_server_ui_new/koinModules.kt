@@ -8,7 +8,7 @@ import org.koin.dsl.module
 
 val pageModule = module {
     viewModelOf(::LoadingPageViewModel)
-    viewModel { (folderId: Long) -> FolderPageViewModel(get(), get(), get(), folderId) }
+    viewModel { (folderId: Long) -> FolderPageViewModel(get(), get(), get(), folderId, get()) }
     viewModel { (searchTerm: String) -> SearchResultsPageViewModel(get(), get(), searchTerm) }
     viewModel { (folderId: Long) -> FolderDetailViewModel(get(), folderId, get()) }
     viewModel { (fileId: Long) -> FileDetailViewModel(get(), get(), get(), fileId, get()) }

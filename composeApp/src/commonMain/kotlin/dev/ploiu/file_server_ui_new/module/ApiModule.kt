@@ -68,10 +68,9 @@ private fun okHttpClient(): OkHttpClient {
                 chain.request().newBuilder().addHeader("Authorization", GLOBAL.creds).build()
             chain.proceed(req)
         }
-        .connectTimeout(1, TimeUnit.DAYS)
-        .callTimeout(1, TimeUnit.DAYS)
-        .readTimeout(1, TimeUnit.DAYS)
-        .writeTimeout(1, TimeUnit.DAYS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .writeTimeout(0, TimeUnit.MILLISECONDS)
         .build()
 }
 

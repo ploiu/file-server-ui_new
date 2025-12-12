@@ -5,7 +5,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
@@ -155,7 +155,7 @@ class FolderDetailViewModel(
         if (current is FolderDetailHasFolder) {
             openModal(
                 TextModal(
-                    TextDialogProps(
+                    TextModalProps(
                         title = "Rename folder",
                         modifier = Modifier.testTag("renameDialog"),
                         confirmText = "Rename",
@@ -175,10 +175,10 @@ class FolderDetailViewModel(
     fun openDeleteDialog() {
         openModal(
             TextModal(
-                TextDialogProps(
+                TextModalProps(
                     title = "Delete folder",
                     modifier = Modifier.testTag("deleteDialog"),
-                    bodyText = "Are you sure you want to delete? Type the folder name to confirm",
+                    text = "Are you sure you want to delete? Type the folder name to confirm",
                     confirmText = "Delete",
                     onCancel = this::closeModal,
                     onConfirm = {
@@ -187,6 +187,26 @@ class FolderDetailViewModel(
                         _state.update { old -> old.copy(updateKey = old.updateKey + 1) }
                     },
                 ),
+            ),
+        )
+    }
+
+    fun openAddTagDialog() {
+        TextModal.open(
+            TextModalProps(
+                title = "Add tag",
+                confirmText = "Add",
+                onCancel = this::closeModal,
+                onConfirm = {
+                    val current = _state.value.sheetState
+                    if (current is FolderDetailHasFolder) {
+                        val folderTags = current.folder.tags
+                        val newTags = folderTags.toMutableSet()
+                        newTags.add(TaggedItemApi(id = null, title = it.lowercase(), implicitFrom = null))
+                        closeModal()
+                        updateTags(newTags)
+                    }
+                },
             ),
         )
     }

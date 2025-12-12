@@ -144,15 +144,17 @@ fun MainDesktopBody(
             ),
         )
     }
-    val modalState = modalController.state.collectAsState().value
-    val (sideSheetStatus, updateKey) = appViewModel.state.collectAsState().value
+    val appState = appViewModel.state.collectAsState().value
     val searchBarFocuser = remember { FocusRequester() }
     val mainContentWidth =
-        animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 1f else .7f, animationSpec = tween())
+        animateFloatAsState(
+            targetValue = if (appState.sideSheetState is NoSideSheet) 1f else .7f,
+            animationSpec = tween(),
+        )
     // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
     // This is lifted up and used to make FolderPage refresh its data when needed
     // TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
-    val sideSheetOpacity = animateFloatAsState(targetValue = if (sideSheetStatus is NoSideSheet) 0f else 1f)
+    val sideSheetOpacity = animateFloatAsState(targetValue = if (appState.sideSheetState is NoSideSheet) 0f else 1f)
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var shouldShowHeader by remember { mutableStateOf(false) }
     val currentRoute = navController.currentBackStackEntryAsState().value
@@ -168,9 +170,9 @@ fun MainDesktopBody(
     }
 
     LaunchedEffect(Unit) {
-        messagePasser += FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
-        // TODO use a custom class to keep track of dialogs in a central place (named like DialogController or something), and use that to determine if the sheet needs to be closed
-        messagePasser += HIDE_ACTIVE_ELEMENT {
+        messagePasser handles FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
+        messagePasser handles HIDE_ACTIVE_ELEMENT {
+            // we're using this instead of the state variable because at this point, the state hasn't updated yet and we need a live version
             if (!modalController.isJustClosed) {
                 appViewModel.closeSideSheet()
             } else {
@@ -190,7 +192,7 @@ fun MainDesktopBody(
                 AppHeader(
                     searchBarFocuser = searchBarFocuser,
                     navController = navController,
-                    sideSheetActive = sideSheetStatus !is NoSideSheet,
+                    sideSheetActive = appState.sideSheetState !is NoSideSheet,
                     onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
                     onUploadFolderClick = directoryPicker::launch,
                 )
@@ -218,7 +220,7 @@ fun MainDesktopBody(
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
                     FolderPage(
                         view = viewModel,
-                        refreshKey = updateKey,
+                        refreshKey = appState.updateKey,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = appViewModel::changeUpdateKey,
@@ -240,23 +242,23 @@ fun MainDesktopBody(
             modifier = Modifier.weight(1.01f - mainContentWidth.value, true).alpha(sideSheetOpacity.value),
             onCloseAction = appViewModel::closeSideSheet,
         ) {
-            when (sideSheetStatus) {
+            when (val sideSheetState = appState.sideSheetState) {
                 is FolderSideSheet -> {
-                    val viewModel = koinInject<FolderDetailViewModel> { parametersOf(sideSheetStatus.folder.id) }
+                    val viewModel = koinInject<FolderDetailViewModel> { parametersOf(sideSheetState.folder.id) }
                     FolderDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
-                        refreshKey = updateKey,
+                        refreshKey = appState.updateKey,
                         onChange = appViewModel::changeUpdateKey,
                     )
                 }
 
                 is FileSideSheet -> {
-                    val viewModel = koinInject<FileDetailViewModel> { parametersOf(sideSheetStatus.file.id) }
+                    val viewModel = koinInject<FileDetailViewModel> { parametersOf(sideSheetState.file.id) }
                     FileDetailSheet(
                         viewModel = viewModel,
                         closeSelf = { appViewModel.sideSheetItem(null) },
-                        refreshKey = updateKey,
+                        refreshKey = appState.updateKey,
                         onChange = appViewModel::changeUpdateKey,
                     )
                 }

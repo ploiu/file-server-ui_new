@@ -82,6 +82,7 @@ fun FileDetailSheet(
                 onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
                 onOpenClick = { viewModel.openFile() },
+                onAddTagClicked = viewModel::openAddTagDialog,
                 preview = if (pageState is FilePreviewLoaded) {
                     pageState.preview
                 } else {
@@ -119,6 +120,7 @@ private fun MainFileDetails(
     onDeleteClick: () -> Unit,
     onOpenClick: () -> Unit,
     onUpdateTags: (Collection<TaggedItemApi>) -> Unit,
+    onAddTagClicked: () -> Unit,
     filePath: String,
     preview: ByteArray? = null,
 ) {
@@ -176,7 +178,7 @@ private fun MainFileDetails(
             }
         }
         Spacer(Modifier.height(8.dp))
-        TagList(file.tags, onUpdate = onUpdateTags)
+        TagList(file.tags, onDelete = onUpdateTags, onAddClick = onAddTagClicked)
         Spacer(Modifier.height(8.dp))
         // action buttons TODO can probably pull out into common code
         Surface(

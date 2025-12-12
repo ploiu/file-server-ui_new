@@ -7,8 +7,8 @@ import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.PromptModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import dev.ploiu.file_server_ui_new.model.*
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
@@ -265,7 +265,7 @@ class FileDetailViewModel(
             val file = current.file
             openModal(
                 TextModal(
-                    TextDialogProps(
+                    TextModalProps(
                         title = "Rename file",
                         modifier = Modifier.testTag("renameDialog"),
                         confirmText = "Rename",
@@ -283,19 +283,37 @@ class FileDetailViewModel(
     }
 
     fun openDeleteDialog() {
-        openModal(
-            ConfirmModal(
-                PromptDialogProps(
-                    title = "Delete file",
-                    bodyText = "Are you sure you want to delete?",
-                    confirmText = "Delete",
-                    onCancel = this::closeModal,
-                    onConfirm = {
-                        deleteFile()
-                        _state.update { it.copy(updateKey = it.updateKey + 1) }
+        ConfirmModal.open(
+            PromptModalProps(
+                title = "Delete file",
+                text = "Are you sure you want to delete?",
+                confirmText = "Delete",
+                onCancel = this::closeModal,
+                onConfirm = {
+                    deleteFile()
+                    _state.update { it.copy(updateKey = it.updateKey + 1) }
+                    closeModal()
+                },
+            ),
+        )
+    }
+
+    fun openAddTagDialog() {
+        TextModal.open(
+            TextModalProps(
+                title = "Add tag",
+                confirmText = "Add",
+                onCancel = this::closeModal,
+                onConfirm = {
+                    val current = _state.value.sheetState
+                    if (current is FileDetailHasFile) {
+                        val fileTags = current.file.tags
+                        val newTags = fileTags.toMutableSet()
+                        newTags.add(TaggedItemApi(id = null, title = it.lowercase(), implicitFrom = null))
                         closeModal()
-                    },
-                ),
+                        updateTags(newTags)
+                    }
+                },
             ),
         )
     }

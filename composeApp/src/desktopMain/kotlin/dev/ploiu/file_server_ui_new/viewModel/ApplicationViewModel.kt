@@ -2,11 +2,13 @@ package dev.ploiu.file_server_ui_new.viewModel
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
-import dev.ploiu.file_server_ui_new.components.dialog.PromptDialogProps
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialogProps
+import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
+import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -36,7 +38,7 @@ data class FolderSideSheet(val folder: FolderApi) : SideSheetUiState
 data class ApplicationUiModel @OptIn(ExperimentalUuidApi::class) constructor(
     val sideSheetState: SideSheetUiState,
     /** used to force refreshes of other components when the header causes something (e.g. a folder's contents via file/folder upload) to change */
-    val updateKey: String = Uuid.toString(),
+    val updateKey: String = Uuid.random().toString(),
 )
 
 // I actually still don't like this but it's cleaner to handle it this way than a bunch of random handlers all over the place.
@@ -72,9 +74,10 @@ class ApplicationViewModel(
         if (total == 0) {
             total = 1
         }
-        openModal(LoadingModal(max = total, progress = 0))
+        LoadingModal.open(max = total, progress = 0)
         folderUploadService.uploadFolder(folder, currentFolderId)
             .collect { result ->
+                log.info { "Got result! $result" }
                 when (result) {
                     is BatchUploadFileResult -> {
                         updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
@@ -96,15 +99,13 @@ class ApplicationViewModel(
             log.error {
                 "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
             }
-            openModal(
-                ErrorModal(
-                    PromptDialogProps(
-                        title = "Failed to upload folder",
-                        bodyText = "An error occurred attempting to upload the folder. Check server logs for details",
-                        icon = Icons.Default.Error,
-                        onCancel = this@ApplicationViewModel::closeModal,
-                        onConfirm = { this@ApplicationViewModel.closeModal() },
-                    ),
+            ErrorModal.open(
+                ErrorModalProps(
+                    title = "Failed to upload folder",
+                    text = "An error occurred attempting to upload the folder. Check server logs for details",
+                    icon = Icons.Default.Error,
+                    iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                    onClose = this@ApplicationViewModel::closeModal,
                 ),
             )
             changeUpdateKey()
@@ -129,27 +130,25 @@ class ApplicationViewModel(
     }
 
     fun openCreateEmptyFolderModal() {
-        openModal(
-            TextModal(
-                props = TextDialogProps(
-                    title = "Create empty folder",
-                    bodyText = "Folder name",
-                    confirmText = "Create",
-                    onCancel = this::closeModal,
-                    onConfirm = {
-                        if (it.isNotBlank()) {
-                            closeModal()
-                            addEmptyFolder(it)
-                            changeUpdateKey()
-                        }
-                    },
-                ),
+        TextModal.open(
+            TextModalProps(
+                title = "Create empty folder",
+                text = "Folder name",
+                confirmText = "Create",
+                onCancel = this::closeModal,
+                onConfirm = {
+                    if (it.isNotBlank()) {
+                        closeModal()
+                        addEmptyFolder(it)
+                        changeUpdateKey()
+                    }
+                },
             ),
         )
     }
 
     @OptIn(ExperimentalUuidApi::class)
     fun changeUpdateKey() {
-        _state.update { it.copy(updateKey = Uuid.toString()) }
+        _state.update { it.copy(updateKey = Uuid.random().toString()) }
     }
 }

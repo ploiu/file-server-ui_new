@@ -10,8 +10,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,18 +18,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
-import dev.ploiu.file_server_ui_new.components.dialog.Dialog
-import dev.ploiu.file_server_ui_new.components.dialog.TextDialog
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.viewModel.FolderPageError
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
-import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
-import kotlinx.coroutines.runBlocking
 import java.util.*
 
 /**
@@ -50,9 +43,6 @@ private class NoFolderAction : FolderContextAction, FolderContextState
 private data class RenameFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 private data class DeleteFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
-// used when a modal should show to confirm replacing an existing download
-private data class ConfirmReplaceDownloadFolder(val folder: FolderApi, val directory: PlatformFile) : FolderContextState
-
 // This doesn't affect page state in the same way the others do
 private data class DownloadFolderAction(val folder: FolderApi) : FolderContextAction, FolderContextState
 
@@ -69,9 +59,6 @@ class NoFileAction : FileContextAction, FileContextState
 data class RenameFileAction(val file: FileApi) : FileContextAction, FileContextState
 data class DeleteFileAction(val file: FileApi) : FileContextAction, FileContextState
 
-// used when a modal should show to confirm replacing an existing download
-data class ConfirmReplaceDownloadFile(val file: FileApi, val directory: PlatformFile) : FileContextState
-
 // This doesn't affect page state in the same way the others do
 data class DownloadFileAction(val file: FileApi) : FileContextAction, FileContextState
 
@@ -85,7 +72,7 @@ fun FolderPage(
     onFileInfo: (FileApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
-    val (pageState, previews, errorMessage) = view.state.collectAsState().value
+    val (pageState, previews, updateKey, errorMessage) = view.state.collectAsState().value
     var folderActionState: FolderContextState by remember {
         mutableStateOf(
             NoFolderAction(),
@@ -111,6 +98,13 @@ fun FolderPage(
 
     LaunchedEffect(Objects.hash(view.folderId, refreshKey)) {
         view.loadFolder()
+    }
+
+    // every time our controller makes an update to data, we trigger the app to refresh its views
+    LaunchedEffect(updateKey) {
+        if (updateKey > 0) {
+            onUpdate()
+        }
     }
 
     /** used to trigger behavior when a context menu item is clicked */
@@ -175,33 +169,14 @@ fun FolderPage(
                 }
             }
         }
-
-        is FolderPageError -> Dialog(
-            title = "An Error Occurred",
-            text = pageState.message,
-            icon = Icons.Default.Error,
-            iconColor = MaterialTheme.colorScheme.error,
-        )
     }
 
     /* have to create a new variable here because folderActionState is delegated (basically a
     getter and not a raw value) */
     when (val action = folderActionState) {
         is RenameFolderAction -> {
-            TODO("register with ModalController")
-            TextDialog(
-                title = "Rename folder",
-                defaultValue = action.folder.name,
-                onCancel = { folderActionState = NoFolderAction() },
-                onConfirm = {
-                    val newFolder = action.folder.copy(name = it)
-                    runBlocking {
-                        folderActionState = NoFolderAction()
-                        view.updateFolder(newFolder)
-                        onUpdate()
-                    }
-                },
-            )
+            folderActionState = NoFolderAction()
+            view.openRenameFolderModal(action.folder)
         }
 
         is DownloadFolderAction -> {
@@ -209,36 +184,8 @@ fun FolderPage(
         }
 
         is DeleteFolderAction -> {
-            TODO("register with modal controller")
-            TextDialog(
-                title = "Delete folder",
-                bodyText = "Are you sure you want to delete this folder? Type the name to confirm",
-                confirmText = "Delete",
-                onConfirm = {
-                    if (it == action.folder.name) {
-                        folderActionState = NoFolderAction()
-                        view.deleteFolder(action.folder)
-                    }
-                },
-                onCancel = { folderActionState = NoFolderAction() },
-            )
-        }
-
-        is ConfirmReplaceDownloadFolder -> {
-            TODO("register with modal controller")
-            Dialog(
-                title = "File already exists",
-                text = "A file named ${action.folder.name}.tar already exists in the selected directory. Do you want to replace it?",
-                icon = Icons.Default.Error,
-                iconColor = MaterialTheme.colorScheme.error,
-                confirmText = "Replace",
-                dismissText = "Cancel",
-                onDismissRequest = { folderActionState = NoFolderAction() },
-                onConfirm = {
-                    view.downloadFolder(action.folder, action.directory)
-                    folderActionState = NoFolderAction()
-                },
-            )
+            folderActionState = NoFolderAction()
+            view.openDeleteFolderModal(action.folder)
         }
 
         is NoFolderAction -> Unit
@@ -247,20 +194,8 @@ fun FolderPage(
     /* handle file actions */
     when (val action = fileActionState) {
         is RenameFileAction -> {
-            TODO("register with modal controller")
-            TextDialog(
-                title = "Rename file",
-                defaultValue = action.file.name,
-                onCancel = { fileActionState = NoFileAction() },
-                onConfirm = {
-                    val newFile = action.file.copy(name = it)
-                    runBlocking {
-                        fileActionState = NoFileAction()
-                        view.updateFile(newFile)
-                        onUpdate()
-                    }
-                },
-            )
+            fileActionState = NoFileAction()
+            view.openRenameFileModal(action.file)
         }
 
         is DownloadFileAction -> {
@@ -268,35 +203,8 @@ fun FolderPage(
         }
 
         is DeleteFileAction -> {
-            TODO("register with modal controller")
-            Dialog(
-                title = "Delete file",
-                text = "Are you sure you want to delete this file?",
-                confirmText = "Delete",
-                onConfirm = {
-                    fileActionState = NoFileAction()
-                    view.deleteFile(action.file)
-                },
-                icon = Icons.Default.Warning,
-                onDismissRequest = { fileActionState = NoFileAction() },
-            )
-        }
-
-        is ConfirmReplaceDownloadFile -> {
-            TODO("register with modal controller")
-            Dialog(
-                title = "File already exists",
-                text = "A file named ${action.file.name} already exists in the selected directory. Do you want to replace it?",
-                icon = Icons.Default.Error,
-                iconColor = MaterialTheme.colorScheme.error,
-                confirmText = "Replace",
-                dismissText = "Cancel",
-                onDismissRequest = { fileActionState = NoFileAction() },
-                onConfirm = {
-                    view.downloadFile(action.file, action.directory)
-                    fileActionState = NoFileAction()
-                },
-            )
+            fileActionState = NoFileAction()
+            view.openDeleteFileModal(action.file)
         }
 
         is NoFileAction -> Unit
