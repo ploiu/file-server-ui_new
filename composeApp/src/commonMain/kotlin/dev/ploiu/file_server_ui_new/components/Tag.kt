@@ -11,8 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import dev.ploiu.file_server_ui_new.model.TaggedItemApi
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class TagChipColors(
     val containerColor: Color,

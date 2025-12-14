@@ -5,6 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 
 typealias ComposableColor = @Composable () -> Color
 
@@ -37,6 +40,14 @@ data class PromptModalProps(
         title = title,
         text = text,
         icon = icon,
+        modifier = modifier.onPreviewKeyEvent { k ->
+            if (k.key == Key.Escape) {
+                onCancel()
+                true
+            } else {
+                false
+            }
+        },
         iconColor = iconColorProvider?.invoke() ?: LocalContentColor.current,
         bodyColor = bodyColorProvider?.invoke() ?: LocalContentColor.current,
         dismissText = cancelText,
@@ -60,7 +71,14 @@ data class ErrorModalProps(
     override fun invoke() {
         Dialog(
             title = title,
-            modifier = modifier,
+            modifier = modifier.onPreviewKeyEvent { k ->
+                if (k.key == Key.Escape) {
+                    onClose()
+                    true
+                } else {
+                    false
+                }
+            },
             text = text,
             icon = icon,
             iconColor = iconColorProvider?.invoke() ?: LocalContentColor.current,
@@ -87,7 +105,14 @@ data class TextModalProps(
     @Composable
     override fun invoke() = TextDialog(
         title = title,
-        modifier = modifier,
+        modifier = modifier.onPreviewKeyEvent { k ->
+            if (k.key == Key.Escape) {
+                onCancel()
+                true
+            } else {
+                false
+            }
+        },
         bodyText = text,
         defaultValue = defaultValue,
         onCancel = onCancel,

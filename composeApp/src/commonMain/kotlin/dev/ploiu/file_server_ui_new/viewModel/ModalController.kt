@@ -66,6 +66,8 @@ class ModalController : ViewModel() {
     val state = _state.asStateFlow()
     val isJustClosed: Boolean
         get() = _state.value.dialogJustClosed
+    val isOpen: Boolean
+        get() = _state.value.isOpen
 
     /**
      * attempts to change the currently-opened modal.
@@ -83,10 +85,12 @@ class ModalController : ViewModel() {
     }
 
     /**
-     * attempts to close the current modal
+     * attempts to close the current modal.
+     * @param closer the viewModel attempting to close the dialog. If it doesn't match the opener and `override` is not passed, the attempt is rejected
+     * @param override whether to ignore the closer. Should never be used except in the atop level view model
      */
-    fun close(closer: ViewModel): Boolean {
-        if (closer::class == _state.value.opener) {
+    fun close(closer: ViewModel, override: Boolean = false): Boolean {
+        if (override || closer::class == _state.value.opener) {
             _state.update {
                 ModalState(modal = NoModal, opener = null, dialogJustClosed = true)
             }

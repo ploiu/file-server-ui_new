@@ -29,26 +29,25 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.junit.jupiter.api)
-                implementation("io.mockk:mockk:1.14.2")
+                implementation(libs.mockk)
                 implementation(libs.kotlin.test)
                 implementation(libs.kotlinx.coroutines.test)
                 // TODO https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html#how-compose-multiplatform-testing-is-different-from-jetpack-compose
-                @OptIn(ExperimentalComposeLibrary::class)
-                implementation(compose.uiTest)
+                implementation(libs.ui.test)
             }
         }
 
         androidMain.dependencies {
-            implementation(compose.preview)
+            implementation(libs.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.runtime)
+            implementation(libs.foundation)
+            implementation(libs.material3)
+            implementation(libs.ui)
+            implementation(libs.components.resources)
+            implementation(libs.ui.tooling.preview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.okhttp)

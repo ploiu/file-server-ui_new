@@ -55,7 +55,9 @@ fun FileDetailSheet(
 
     // for when a change is made and we need to signal to the parent to refresh
     LaunchedEffect(updateKey) {
-        onChange()
+        if (updateKey > 0) {
+            onChange()
+        }
     }
 
     when (pageState) {

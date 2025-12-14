@@ -18,14 +18,15 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
         folder: PlatformFile, parentFolderId: Long,
     ): Flow<BatchUploadResult> = internalUploadFolder(folder.file, parentFolderId)
 
-    fun internalUploadFolder(folder: File, parentFolderId: Long): Flow<BatchUploadResult> = flow {
+    private fun internalUploadFolder(folder: File, parentFolderId: Long): Flow<BatchUploadResult> = flow {
         // arbitrary number and size of files being uploaded, so care must be taken here to not destroy the poor raspberry pi the server is running on.
         // also, we need to make sure the folder doesn't already exist. folder might not be the current folder and therefore won't have populated data
         val res = folderService.getFolder(parentFolderId).flatMap { parent ->
             val potentialSiblingFolders = parent.folders.map { it.name }
             if (folder.name in potentialSiblingFolders) {
                 Err("A folder with the name ${folder.name} already exists in this folder")
-            } else { // no folder exists with that name, so let's start
+            } else {
+                // no folder exists with that name, so let's start
                 folderService.createFolder(CreateFolder(name = folder.name, parentId = parent.id, tags = listOf()))
             }
         }
@@ -55,8 +56,7 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
         // report as each file uploads, but wait for all files to upload before returning. This prevents us from ruining the server with too much spam
         files.map { file ->
             launch(Dispatchers.IO) {
-                val res =
-                    fileService.createFile(CreateFileRequest(file = file, folderId = folderId, force = false))
+                val res = fileService.createFile(CreateFileRequest(file = file, folderId = folderId, force = false))
                 val result = if (res.isOk) {
                     BatchUploadFileResult(res.unwrap(), null)
                 } else {

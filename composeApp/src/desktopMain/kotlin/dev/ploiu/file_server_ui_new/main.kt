@@ -146,14 +146,10 @@ fun MainDesktopBody(
     }
     val appState = appViewModel.state.collectAsState().value
     val searchBarFocuser = remember { FocusRequester() }
-    val mainContentWidth =
-        animateFloatAsState(
-            targetValue = if (appState.sideSheetState is NoSideSheet) 1f else .7f,
-            animationSpec = tween(),
-        )
-    // because the side sheet can update folders and files, we need a way to tell the folder page when to refresh.
-    // This is lifted up and used to make FolderPage refresh its data when needed
-    // TODO("figure out folder update key issues. I'd rather have just 1 but it seems like the side sheet doesn't close when the folder is deleted if that's the case - something to do with a rendering race condition? idk")
+    val mainContentWidth = animateFloatAsState(
+        targetValue = if (appState.sideSheetState is NoSideSheet) 1f else .7f,
+        animationSpec = tween(),
+    )
     val sideSheetOpacity = animateFloatAsState(targetValue = if (appState.sideSheetState is NoSideSheet) 0f else 1f)
     // same as sideSheetUpdateKey, but for changes originating from FolderPage
     var shouldShowHeader by remember { mutableStateOf(false) }
@@ -173,7 +169,12 @@ fun MainDesktopBody(
         messagePasser handles FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
         messagePasser handles HIDE_ACTIVE_ELEMENT {
             // we're using this instead of the state variable because at this point, the state hasn't updated yet and we need a live version
-            if (!modalController.isJustClosed) {
+            if (modalController.isOpen) {
+                // there's currently a bug in the desktop implementation of compose where modals don't close on the
+                // escape key. Most are handled manually but the AlertDialog does not work even with that manual
+                // handling. This is a fallback.
+                modalController.close(appViewModel, true)
+            } else if (!modalController.isJustClosed) {
                 appViewModel.closeSideSheet()
             } else {
                 // don't close anything, but be sure to reset the dialog just closed flag
@@ -231,8 +232,7 @@ fun MainDesktopBody(
                 }
                 composable<SearchResultsRoute> { backStack ->
                     val route: SearchResultsRoute = backStack.toRoute()
-                    val viewModel =
-                        koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
+                    val viewModel = koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
                     SearchResultsPage(viewModel)
                 }
             }
