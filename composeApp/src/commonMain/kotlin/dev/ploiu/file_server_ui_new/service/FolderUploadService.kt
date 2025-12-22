@@ -10,7 +10,7 @@ sealed class BatchUploadResult(val errorMessage: String?) {
         get() = errorMessage == null
 }
 
-class BatchFolderUploadResult(val folder: FolderApi?, errorMessage: String? = null) :
+class BatchUploadFolderResult(val folder: FolderApi?, errorMessage: String? = null) :
     BatchUploadResult(errorMessage)
 
 class BatchUploadFileResult(val file: FileApi?, errorMessage: String? = null) : BatchUploadResult(errorMessage)

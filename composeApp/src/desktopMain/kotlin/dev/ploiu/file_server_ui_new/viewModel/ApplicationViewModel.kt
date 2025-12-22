@@ -13,7 +13,7 @@ import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.FolderApproximator
-import dev.ploiu.file_server_ui_new.service.BatchFolderUploadResult
+import dev.ploiu.file_server_ui_new.service.BatchUploadFolderResult
 import dev.ploiu.file_server_ui_new.service.BatchUploadFileResult
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.FolderUploadService
@@ -86,7 +86,7 @@ class ApplicationViewModel(
                         }
                     }
 
-                    is BatchFolderUploadResult -> {
+                    is BatchUploadFolderResult -> {
                         // Could handle folder-level errors here
                         if (result.errorMessage != null) {
                             errors.add(result.errorMessage)

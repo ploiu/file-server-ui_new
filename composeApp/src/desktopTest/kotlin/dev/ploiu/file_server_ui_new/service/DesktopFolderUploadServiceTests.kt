@@ -147,12 +147,66 @@ class DesktopFolderUploadServiceTests {
 
     @Test
     fun `uploadFolder works for a folder with empty folders`() = runTest {
-        fail()
-    }
-
-    @Test
-    fun `uploadFolder works for nested folder structure`() = runTest {
-        fail()
+        val tempFile = createTempDirectory("whatever").toFile()
+        val childFolders = (1..5).map {
+            FolderApproximation(
+                self = createTempDirectory(
+                    directory = tempFile.toPath(),
+                    prefix = it.toString(),
+                ).toFile(),
+                childFiles = listOf(), childFolders = listOf(),
+            )
+        }
+        tempFile.deleteOnExit()
+        val file = mockk<PlatformFile> {
+            every { file } returns tempFile
+        }
+        coEvery { folderService.getFolder(any()) } returns Ok(
+            FolderApi(
+                0L,
+                null,
+                "",
+                "",
+                listOf(),
+                listOf(),
+                listOf(),
+            ),
+        )
+        coEvery { folderService.createFolder(any()) } coAnswers {
+            val f = firstArg<CreateFolder>()
+            Ok(
+                FolderApi(
+                    0L,
+                    null,
+                    "",
+                    f.name,
+                    listOf(),
+                    listOf(),
+                    listOf(),
+                ),
+            )
+        }
+        every { FolderApproximator.convertDir(any(), any()) } coAnswers {
+            val f = firstArg<File>()
+            if (f == tempFile) {
+                FolderApproximation(
+                    tempFile,
+                    childFolders = childFolders,
+                    childFiles = listOf(),
+                )
+            } else {
+                FolderApproximation(
+                    f,
+                    listOf(),
+                    listOf()
+                )
+            }
+        }
+        service.uploadFolder(file, 0L).toSet()
+        coVerifyCount {
+            // 1 for root + 5 for extras
+            6 * { folderService.createFolder(any()) }
+        }
     }
 
     @Test

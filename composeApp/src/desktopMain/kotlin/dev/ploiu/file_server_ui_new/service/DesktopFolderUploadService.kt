@@ -31,7 +31,7 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
             }
         }
         if (res.isErr) {
-            emit(BatchFolderUploadResult(null, res.getError()))
+            emit(BatchUploadFolderResult(null, res.getError()))
             return@flow
         } else {
             val created = res.unwrap()
