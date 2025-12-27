@@ -49,8 +49,11 @@ import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
 import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.isDirectory
+import io.github.vinceglb.filekit.isRegularFile
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.context.startKoin
@@ -156,12 +159,22 @@ fun MainDesktopBody(
     val currentRoute = navController.currentBackStackEntryAsState().value
     // for uploading folders
     val directoryPicker = rememberDirectoryPickerLauncher { directory ->
+        // the second part of this check is to make sure we can't upload a folder unless we are on a folder page, since we perform a cast later on
         if (directory?.isDirectory() ?: false && currentRoute?.destination?.route?.contains(
                 FolderRoute::class.simpleName!!,
             ) ?: false
         ) {
             val folderId = currentRoute.toRoute<FolderRoute>().id
             appViewModel.uploadFolder(directory, folderId)
+        }
+    }
+
+    val filePicker = rememberFilePickerLauncher(mode = FileKitMode.Multiple()) { files ->
+
+        if (files != null && currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false
+        ) {
+            val folderId = currentRoute.toRoute<FolderRoute>().id
+            appViewModel.uploadBulk(files, folderId)
         }
     }
 
@@ -196,6 +209,7 @@ fun MainDesktopBody(
                     sideSheetActive = appState.sideSheetState !is NoSideSheet,
                     onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
                     onUploadFolderClick = directoryPicker::launch,
+                    onUploadFileClick = filePicker::launch
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->

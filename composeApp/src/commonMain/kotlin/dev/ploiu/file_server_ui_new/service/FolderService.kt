@@ -28,12 +28,10 @@ class FolderService(private val client: FolderClient) {
 
     suspend fun downloadFolder(id: Long): Result<InputStream, String> {
         if (id <= 0) {
-            Err("id ($id) must be > 0")
+            return Err("id ($id) must be > 0")
         }
         val processed = processResponse(client.downloadFolder(id))
-        return processed
-            .map { it.byteStream() }
-            .mapError { it.message }
+        return processed.map { it.byteStream() }.mapError { it.message }
     }
 
     @Deprecated("Use PreviewClient instead for streaming previews")
@@ -42,14 +40,11 @@ class FolderService(private val client: FolderClient) {
             return Err("id ($id) must be >= 0")
         }
         val res = processResponse(client.getPreviewsForFolder(id))
-        return res
-            .map { rawPreviews ->
-                rawPreviews
-                    .mapValues { entry ->
+        return res.map { rawPreviews ->
+                rawPreviews.mapValues { entry ->
                         entry.value.map { it.toByte() }.toByteArray()
                     }
-            }
-            .mapError { it.message }
+            }.mapError { it.message }
     }
 
     suspend fun createFolder(req: CreateFolder): Result<FolderApi, String> {
@@ -81,4 +76,15 @@ class FolderService(private val client: FolderClient) {
         }
         return processResponseUnit(client.deleteFolder(id)).mapError { it.message }
     }
+
+    /**
+     * Checks if the folder with the passed [folderId] has any direct child folder / file
+     * with a case-insensitive name match inside [checkNames]
+     */
+    suspend fun hasNameClash(folderId: Long, checkNames: Collection<String>): Result<Boolean, String> =
+        getFolder(folderId).map { folder ->
+            val childNames = folder.folders.map { it.name.lowercase() } + folder.files.map { it.name.lowercase() }
+            val cleanedCheckNames = checkNames.map { it.lowercase() }.toSet()
+            cleanedCheckNames.intersect(childNames.toSet()).isNotEmpty()
+        }
 }

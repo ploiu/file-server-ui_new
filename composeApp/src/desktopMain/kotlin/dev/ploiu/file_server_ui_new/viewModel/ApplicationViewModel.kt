@@ -5,6 +5,9 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.map
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
@@ -13,12 +16,15 @@ import dev.ploiu.file_server_ui_new.model.CreateFolder
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.FolderApproximator
-import dev.ploiu.file_server_ui_new.service.BatchUploadFolderResult
 import dev.ploiu.file_server_ui_new.service.BatchUploadFileResult
+import dev.ploiu.file_server_ui_new.service.BatchUploadFolderResult
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.FolderUploadService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.isDirectory
+import io.github.vinceglb.filekit.isRegularFile
+import io.github.vinceglb.filekit.name
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,19 +55,20 @@ class ApplicationViewModel(
     private val folderService: FolderService,
     private val folderUploadService: FolderUploadService,
     modalController: ModalController,
-) :
-    ViewModelWithModal(modalController) {
+) : ViewModelWithModal(modalController) {
     private val log = KotlinLogging.logger("ApplicationViewModel")
     private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
 
     // TODO exception handler (look at folder detail view model)
     fun addEmptyFolder(name: String) = viewModelScope.launch(Dispatchers.IO) {
-        folderService.createFolder(CreateFolder(name, 0L, listOf()))
+        folderService
+            .createFolder(CreateFolder(name, 0L, listOf()))
             .onSuccess { /* TODO cause re-render */ }
             .onFailure { TODO("on Failure not handled for add empty folder") }
     }
 
+    // we shouldn't pass currentFolderId - it should be maintained within the app state itself
     fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
         closeModal()
         log.info { "upload started!" }
@@ -75,26 +82,25 @@ class ApplicationViewModel(
             total = 1
         }
         LoadingModal.open(max = total, progress = 0)
-        folderUploadService.uploadFolder(folder, currentFolderId)
-            .collect { result ->
-                log.info { "Got result! $result" }
-                when (result) {
-                    is BatchUploadFileResult -> {
-                        updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
-                        if (result.errorMessage != null) {
-                            errors.add(result.errorMessage)
-                        }
+        folderUploadService.uploadFolder(folder, currentFolderId).collect { result ->
+            log.info { "Got result! $result" }
+            when (result) {
+                is BatchUploadFileResult -> {
+                    updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
+                    if (result.errorMessage != null) {
+                        errors.add(result.errorMessage)
                     }
+                }
 
-                    is BatchUploadFolderResult -> {
-                        // Could handle folder-level errors here
-                        if (result.errorMessage != null) {
-                            errors.add(result.errorMessage)
-                        }
+                is BatchUploadFolderResult -> {
+                    // Could handle folder-level errors here
+                    if (result.errorMessage != null) {
+                        errors.add(result.errorMessage)
                     }
                 }
             }
-        modalController.close(this@ApplicationViewModel)
+        }
+        closeModal()
         if (errors.isNotEmpty()) {
             log.error {
                 "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
@@ -113,6 +119,53 @@ class ApplicationViewModel(
             changeUpdateKey()
             log.info { "upload ended!" }
         }
+    }
+
+    /**
+     * can smartly upload multiple files and folders, reporting progress on every upload
+     */
+    fun uploadBulk(bulk: Collection<PlatformFile>, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
+        val folders = bulk.filter { it.isDirectory() }
+        val files = bulk.filter { it.isRegularFile() }
+        // make sure the files and folders don't have the exact same name, as that's not allowed on linux file systems
+        val names = mutableMapOf<String, Int>()
+        for (file in bulk) {
+            val name = file.name.lowercase()
+            names[name] = if (name in names) {
+                names[name]!! + 1
+            } else {
+                1
+            }
+        }
+        if (names.any { it.value > 1 }) {
+            ErrorModal.open(
+                ErrorModalProps(
+                    title = "Failed to upload files",
+                    text = "Could not upload files, because multiple files with the same name were selected. Please check your selection and try again",
+                    icon = Icons.Default.Error,
+                    iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                    onClose = this@ApplicationViewModel::closeModal,
+                ),
+            )
+        }
+        folderService.hasNameClash(currentFolderId, names.keys).map { hasClash ->
+            if (hasClash) {
+                Err("The folder already has folders or files with names matching what you selected. Check your selection and try again")
+            } else {
+                // there's no name clash, we do a little uploading
+
+            }
+        }.onFailure { msg ->
+                ErrorModal.open(
+                    ErrorModalProps(
+                        title = "Failed to upload files",
+                        text = msg,
+                        icon = Icons.Default.Error,
+                        iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                        onClose = this@ApplicationViewModel::closeModal,
+                    ),
+                )
+            }
     }
 
     fun closeSideSheet() {

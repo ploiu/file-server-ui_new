@@ -3,8 +3,10 @@
 package dev.ploiu.file_server_ui_new.service
 
 import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
+import com.github.michaelbull.result.unwrap
 import dev.ploiu.file_server_ui_new.client.FolderClient
 import dev.ploiu.file_server_ui_new.model.CreateFolder
+import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.model.UpdateFolder
 import io.mockk.coEvery
@@ -12,10 +14,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import retrofit2.Response
+import kotlin.test.*
 
 class FolderServiceTests {
 
@@ -128,8 +128,7 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should return an Err if the passed id is less than 1`() = runTest {
-        val updateFolder =
-            UpdateFolder(id = 0, name = "Test Folder", parentId = 0L, tags = emptyList())
+        val updateFolder = UpdateFolder(id = 0, name = "Test Folder", parentId = 0L, tags = emptyList())
         val result = folderService.updateFolder(updateFolder)
         assertTrue(result.isErr)
         assertEquals("id (0) must be > 0", result.error)
@@ -137,8 +136,7 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should return a Err if the passed parentId is less than 0`() = runTest {
-        val updateFolder =
-            UpdateFolder(id = 1, name = "Test Folder", parentId = -1, tags = emptyList())
+        val updateFolder = UpdateFolder(id = 1, name = "Test Folder", parentId = -1, tags = emptyList())
         val result = folderService.updateFolder(updateFolder)
         assertTrue(result.isErr)
         assertEquals("parentId (-1) must be >= 0", result.error)
@@ -154,8 +152,7 @@ class FolderServiceTests {
 
     @Test
     fun `updateFolder should call client updateFolder with the passed request`() = runTest {
-        val updateFolder =
-            UpdateFolder(id = 1, name = "Test Folder", parentId = 1L, tags = emptyList())
+        val updateFolder = UpdateFolder(id = 1, name = "Test Folder", parentId = 1L, tags = emptyList())
         val expectedFolder = FolderApi(
             id = 1L,
             name = "Test Folder",
@@ -188,4 +185,120 @@ class FolderServiceTests {
 
         coVerify { folderClient.deleteFolder(id) }
     }
+
+    @Test
+    fun `hasNameClash should return false if no name clash occurs`() = runTest {
+        coEvery { folderClient.getFolder(any()) } returns Response.success(
+            FolderApi(
+                id = 1L,
+                parentId = 0L,
+                path = "/test",
+                name = "test",
+                folders = listOf(
+                    FolderApi(
+                        id = 2L,
+                        parentId = 1L,
+                        path = "/subTest",
+                        name = "subTest",
+                        folders = listOf(),
+                        files = listOf(),
+                        tags = listOf(),
+                    ),
+                ),
+                files = listOf(
+                    FileApi(
+                        id = 1L,
+                        folderId = 1L,
+                        name = "file",
+                        tags = listOf(),
+                        size = 0L,
+                        dateCreated = "",
+                        fileType = "whatever",
+                    ),
+                ),
+                tags = listOf(),
+            ),
+        )
+
+        val names = listOf("whatever", "something idk", "test.txt", "some directory")
+        assertFalse { folderService.hasNameClash(1L, names).unwrap() }
+    }
+
+    @Test
+    fun `hasNameClash should return true if any of the names matches a folder name`() = runTest {
+        coEvery { folderClient.getFolder(any()) } returns Response.success(
+            FolderApi(
+                id = 1L,
+                parentId = 0L,
+                path = "/test",
+                name = "test",
+                folders = listOf(
+                    FolderApi(
+                        id = 2L,
+                        parentId = 1L,
+                        path = "/subTest",
+                        name = "subTest",
+                        folders = listOf(),
+                        files = listOf(),
+                        tags = listOf(),
+                    ),
+                ),
+                files = listOf(
+                    FileApi(
+                        id = 1L,
+                        folderId = 1L,
+                        name = "file",
+                        tags = listOf(),
+                        size = 0L,
+                        dateCreated = "",
+                        fileType = "whatever",
+                    ),
+                ),
+                tags = listOf(),
+            ),
+        )
+
+        val names = listOf("sUbTeSt", "whatever", "something idk", "test.txt", "some directory")
+        assertTrue { folderService.hasNameClash(1L, names).unwrap() }
+    }
+
+    @Test
+    fun `hasNameClash should return true if any of the names matches a file name`() = runTest {
+        coEvery { folderClient.getFolder(any()) } returns Response.success(
+            FolderApi(
+                id = 1L,
+                parentId = 0L,
+                path = "/test",
+                name = "test",
+                folders = listOf(
+                    FolderApi(
+                        id = 2L,
+                        parentId = 1L,
+                        path = "/subTest",
+                        name = "subTest",
+                        folders = listOf(),
+                        files = listOf(),
+                        tags = listOf(),
+                    ),
+                ),
+                files = listOf(
+                    FileApi(
+                        id = 1L,
+                        folderId = 1L,
+                        name = "file",
+                        tags = listOf(),
+                        size = 0L,
+                        dateCreated = "",
+                        fileType = "whatever",
+                    ),
+                ),
+                tags = listOf(),
+            ),
+        )
+
+        val names = listOf("fIlE", "whatever", "something idk", "test.txt", "some directory")
+        assertTrue { folderService.hasNameClash(1L, names).unwrap() }
+    }
+
+
 }

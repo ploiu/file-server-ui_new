@@ -48,7 +48,7 @@ fun AppHeader(
     sideSheetActive: Boolean,
     onCreateFolderClick: () -> Unit,
     onUploadFolderClick: () -> Unit,
-    onUploadFileClick: () -> Unit = { TODO("upload file not implemented") },
+    onUploadFileClick: () -> Unit,
     onSettingsClick: () -> Unit = { TODO("settings button not implemented") },
 ) {
     // setting some crazy high value but also using it for a max size will make sure we can still animate without a weird gap
@@ -82,8 +82,9 @@ fun AppHeader(
                         Icon(Icons.Default.UploadFile, "upload file")
                     }
                 }
-                ButtonTooltip("Settings") {
-                    IconButton(onClick = onSettingsClick, colors = buttonColors) {
+                // TODO remove this once the settings button is implemented
+                ButtonTooltip("Settings (not implemented)") {
+                    IconButton(onClick = onSettingsClick, colors = buttonColors, enabled = false) {
                         Icon(Icons.Default.Settings, "settings")
                     }
                 }
