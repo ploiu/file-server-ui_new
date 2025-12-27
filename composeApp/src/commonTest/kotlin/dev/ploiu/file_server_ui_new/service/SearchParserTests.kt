@@ -34,8 +34,7 @@ class SearchParserTests {
 
     @Test
     fun `parse brings all regular search parts together when separated`() {
-        val input =
-            "test @size > small .gif" // there is a space after test and a space before .gif, so we get a space
+        val input = "test @size > small .gif" // there is a space after test and a space before .gif, so we get a space
         val expected = "test .gif"
         val actual = SearchParser.parse(input).text
         assertEquals(expected, actual)

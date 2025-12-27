@@ -198,7 +198,7 @@ class DesktopFolderUploadServiceTests {
                 FolderApproximation(
                     f,
                     listOf(),
-                    listOf()
+                    listOf(),
                 )
             }
         }

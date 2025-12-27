@@ -33,6 +33,8 @@ enum class TokenTypes {
      * portion of a tag name
      */
     TAG_NAME,
+
+    /** literal space character */
     SPACE,
 
     /**
@@ -256,11 +258,7 @@ object SearchParser {
      * the current mode when parsing chars into tokens
      */
     internal enum class Modes {
-        FILE_NAME,
-        ATTRIBUTE_NAME,
-        ATTRIBUTE_OP,
-        ATTRIBUTE_VALUE,
-        TAG_NAME,
+        FILE_NAME, ATTRIBUTE_NAME, ATTRIBUTE_OP, ATTRIBUTE_VALUE, TAG_NAME,
 
         /**
          * the default mode, set whenever we encounter a space and are either in "FILE_NAME", "ATTRIBUTE_VALUE", or "TAG_NAME"

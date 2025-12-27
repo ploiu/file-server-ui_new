@@ -41,10 +41,10 @@ class FolderService(private val client: FolderClient) {
         }
         val res = processResponse(client.getPreviewsForFolder(id))
         return res.map { rawPreviews ->
-                rawPreviews.mapValues { entry ->
-                        entry.value.map { it.toByte() }.toByteArray()
-                    }
-            }.mapError { it.message }
+            rawPreviews.mapValues { entry ->
+                entry.value.map { it.toByte() }.toByteArray()
+            }
+        }.mapError { it.message }
     }
 
     suspend fun createFolder(req: CreateFolder): Result<FolderApi, String> {

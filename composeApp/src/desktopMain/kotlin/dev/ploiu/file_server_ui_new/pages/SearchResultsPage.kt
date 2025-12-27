@@ -28,14 +28,13 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
         model.performSearch()
     }
     when (pageState) {
-        is SearchResultsLoading ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                CircularProgressIndicator()
-            }
+        is SearchResultsLoading -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            CircularProgressIndicator()
+        }
 
         is SearchResultsLoaded -> {
             val files = pageState.files

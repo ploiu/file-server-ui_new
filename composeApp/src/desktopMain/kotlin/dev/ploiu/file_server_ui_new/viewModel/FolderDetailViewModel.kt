@@ -82,11 +82,9 @@ class FolderDetailViewModel(
         if (currentState is FolderDetailHasFolder) {
             val folderName = currentState.folder.name.lowercase().trim()
             if (confirmText.lowercase().trim() == folderName) {
-                folderService.deleteFolder(currentState.folder.id)
-                    .onSuccess {
+                folderService.deleteFolder(currentState.folder.id).onSuccess {
                         _state.update { it.copy(sheetState = FolderDeleted()) }
-                    }
-                    .onFailure { msg ->
+                    }.onFailure { msg ->
                         _state.update {
                             it.copy(
                                 sheetState = FolderDetailMessage(
@@ -127,8 +125,7 @@ class FolderDetailViewModel(
     fun downloadFolder(tarFile: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FolderDetailHasFolder) {
-            folderService.downloadFolder(currentState.folder.id)
-                .onSuccess { res ->
+            folderService.downloadFolder(currentState.folder.id).onSuccess { res ->
                     tarFile.sink(false).buffered().use { sink ->
                         sink.transferFrom(res.asSource())
                         _state.update {
@@ -141,8 +138,7 @@ class FolderDetailViewModel(
                         }
                     }
                     res.close()
-                }
-                .onFailure { msg ->
+                }.onFailure { msg ->
                     _state.update {
                         it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
                     }

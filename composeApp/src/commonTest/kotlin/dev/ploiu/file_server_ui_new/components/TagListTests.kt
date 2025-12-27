@@ -22,8 +22,7 @@ class TagListTests {
         }
 
         val tagMatcher = SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Tag Chip"))
-        onAllNodes(tagMatcher)
-            .assertCountEquals(0)
+        onAllNodes(tagMatcher).assertCountEquals(0)
     }
 
     @Test

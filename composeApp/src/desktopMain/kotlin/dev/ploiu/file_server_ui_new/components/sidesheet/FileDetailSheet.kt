@@ -151,7 +151,8 @@ private fun MainFileDetails(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val pillColors = pillColors(
-                    backgroundColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = .12f)
+                    backgroundColor = MaterialTheme.colorScheme.onSecondary
+                        .copy(alpha = .12f)
                         .compositeOver(MaterialTheme.colorScheme.secondary),
                     contentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = .87f),
                 )

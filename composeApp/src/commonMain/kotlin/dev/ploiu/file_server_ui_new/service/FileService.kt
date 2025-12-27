@@ -61,8 +61,6 @@ class FileService(private val client: FileClient) {
         }
         val mimeType = URLConnection.guessContentTypeFromName(file.name) ?: "text/plain"
         val (name, extension) = splitFileName(file.name)
-        // TODO figure out why file names were getting ( and ) replaced with leftParenthese and rightParenthese in the client even
-        //  though the server does it...also why again were we doing that?
         val filePart = MultipartBody.Part.createFormData(
             "file",
             name,
@@ -107,9 +105,7 @@ class FileService(private val client: FileClient) {
             Err("id ($id) must be > 0")
         }
         val processed = processResponse(client.getFileContents(id))
-        return processed
-            .map { it.byteStream() }
-            .mapError { it.message }
+        return processed.map { it.byteStream() }.mapError { it.message }
     }
 }
 

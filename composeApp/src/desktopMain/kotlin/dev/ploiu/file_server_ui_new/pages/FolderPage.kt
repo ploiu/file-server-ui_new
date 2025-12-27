@@ -296,8 +296,7 @@ private fun LoadedFolderList(
     onFolderContextAction: (FolderContextAction) -> Unit,
     onFileContextAction: (FileContextAction) -> Unit,
 ) {
-    val children: List<Any> =
-        folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
+    val children: List<Any> = folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
     LazyVerticalGrid(
         // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(

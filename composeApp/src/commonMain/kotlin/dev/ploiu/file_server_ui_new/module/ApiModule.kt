@@ -49,23 +49,19 @@ private fun readServerCerts(): HandshakeCertificates = runBlocking {
     // I'm too lazy to figure out how to select only production vs local without adding a new variable to the app.properties, so I'm including both certs
     // TODO probably should just make it a json or toml file instead of a .properties file...I do like toml but probably just because it's associated with rust
     val local = String(Res.readBytes("files/cert_local.x509"), UTF_8).decodeCertificatePem()
-    val production =
-        String(Res.readBytes("files/cert_production.x509"), UTF_8).decodeCertificatePem()
-    HandshakeCertificates.Builder()
-        .addTrustedCertificate(local)
-        .addTrustedCertificate(production)
-        .build()
+    val production = String(Res.readBytes("files/cert_production.x509"), UTF_8).decodeCertificatePem()
+    HandshakeCertificates.Builder().addTrustedCertificate(local).addTrustedCertificate(production).build()
 }
 
 private val jsonParser = Json { ignoreUnknownKeys = true }
 
 private fun okHttpClient(): OkHttpClient {
     val certificates = readServerCerts()
-    return OkHttpClient.Builder()
+    return OkHttpClient
+        .Builder()
         .sslSocketFactory(certificates.sslSocketFactory(), certificates.trustManager)
         .addInterceptor { chain ->
-            val req =
-                chain.request().newBuilder().addHeader("Authorization", GLOBAL.creds).build()
+            val req = chain.request().newBuilder().addHeader("Authorization", GLOBAL.creds).build()
             chain.proceed(req)
         }
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -78,7 +74,8 @@ private fun previewClient(serverConfig: ServerConfig, client: OkHttpClient) = Pr
 
 @OptIn(ExperimentalEncodingApi::class)
 private fun retrofitClient(serverConfig: ServerConfig, client: OkHttpClient): Retrofit {
-    return Retrofit.Builder()
+    return Retrofit
+        .Builder()
         .baseUrl(serverConfig.baseUrl)
         .addConverterFactory(jsonParser.asConverterFactory("application/json; charset=utf-8".toMediaType()))
         .client(client)

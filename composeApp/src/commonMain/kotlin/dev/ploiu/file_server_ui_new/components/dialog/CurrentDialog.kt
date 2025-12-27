@@ -13,8 +13,7 @@ fun CurrentDialog(controller: ModalController = koinViewModel()) {
         is ErrorModal -> currentModal.props()
 
         is LoadingModal -> LoadingModalDialog(currentModal)
-        NoModal -> {
-            /*no op*/
+        NoModal -> {/*no op*/
         }
 
         is TextModal -> currentModal.props()

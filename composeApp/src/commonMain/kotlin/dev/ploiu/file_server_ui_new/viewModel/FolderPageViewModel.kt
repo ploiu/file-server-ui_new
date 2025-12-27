@@ -65,8 +65,7 @@ class FolderPageViewModel(
     fun loadFolder() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         _state.update { it.copy(pageState = FolderPageLoading()) }
         val folderRes = folderService.getFolder(folderId)
-        folderRes
-            .onSuccess { folder ->
+        folderRes.onSuccess { folder ->
                 _state.update { it.copy(pageState = FolderPageLoaded(folder)) }
                 // previews can now be pulled since we know what to pull. Errors are non-critical so they don't show a dialog
                 previewService.getFolderPreview(folder).onEach { preview ->
@@ -78,8 +77,7 @@ class FolderPageViewModel(
                 }.catch {
                     _state.update { it.copy(message = "Failed to load previews: ${it.message}") }
                 }.launchIn(this)
-            }
-            .onFailure { error ->
+            }.onFailure { error ->
                 // failed to pull folder at _all_
                 openErrorModal(error)
                 log.error { "Failed to get folder information: $error" }
@@ -91,15 +89,13 @@ class FolderPageViewModel(
      */
     fun downloadFolder(folder: FolderApi, downloadedFolder: PlatformFile) =
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            folderService.downloadFolder(folder.id)
-                .onSuccess { res ->
+            folderService.downloadFolder(folder.id).onSuccess { res ->
                     downloadedFolder.sink(false).buffered().use { sink ->
                         sink.transferFrom(res.asSource())
                     }
                     res.close()
                     _state.update { it.copy(message = "Folder downloaded successfully") }
-                }
-                .onFailure { msg ->
+                }.onFailure { msg ->
                     _state.update {
                         it.copy(message = msg)
                     }
@@ -116,15 +112,13 @@ class FolderPageViewModel(
         if (currentState is FolderPageLoaded) {
             _state.update { it.copy(pageState = FolderPageLoading()) }
             val updateRes = folderService.updateFolder(folder.toUpdateFolder())
-            updateRes
-                .onSuccess {
+            updateRes.onSuccess {
                     // TODO going round trip to the server just to update 1 folder might be wasteful.
                     //  Might be better to just update the folder in our existing model without
                     //  having to pull again...will need refresh logic though (ctrl + r)
                     // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                     _state.update { it.copy(updateKey = it.updateKey + 1) }
-                }
-                .onFailure(this@FolderPageViewModel::openErrorModal)
+                }.onFailure(this@FolderPageViewModel::openErrorModal)
         }
     }
 
@@ -133,12 +127,10 @@ class FolderPageViewModel(
      * If there's an error, the state is updated to have the error message
      */
     fun deleteFolder(folder: FolderApi) = viewModelScope.launch(Dispatchers.IO) {
-        folderService.deleteFolder(folder.id)
-            .onSuccess {
+        folderService.deleteFolder(folder.id).onSuccess {
                 // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                 _state.update { it.copy(message = "Folder deleted successfully", updateKey = it.updateKey + 1) }
-            }
-            .onFailure { msg ->
+            }.onFailure { msg ->
                 _state.update { it.copy(message = msg) }
             }
     }
@@ -146,30 +138,25 @@ class FolderPageViewModel(
     /**
      * Handles downloading the file to the passed [saveFile].
      */
-    fun downloadFile(file: FileApi, saveFile: PlatformFile) =
-        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            fileService.getFileContents(file.id)
-                .onSuccess { res ->
-                    saveFile.sink(false).buffered().use { sink ->
-                        sink.transferFrom(res.asSource())
-                    }
-                    res.close()
-                    _state.update { it.copy(message = "File downloaded successfully") }
+    fun downloadFile(file: FileApi, saveFile: PlatformFile) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+        fileService.getFileContents(file.id).onSuccess { res ->
+                saveFile.sink(false).buffered().use { sink ->
+                    sink.transferFrom(res.asSource())
                 }
-                .onFailure(this@FolderPageViewModel::openErrorModal)
-        }
+                res.close()
+                _state.update { it.copy(message = "File downloaded successfully") }
+            }.onFailure(this@FolderPageViewModel::openErrorModal)
+    }
 
     fun updateFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
         val currentState = _state.value.pageState
         if (currentState is FolderPageLoaded) {
             _state.update { it.copy(pageState = FolderPageLoading()) }
             val updateRes = fileService.updateFile(file.toFileRequest())
-            updateRes
-                .onSuccess {
+            updateRes.onSuccess {
                     // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                     _state.update { it.copy(updateKey = it.updateKey + 1) }
-                }
-                .onFailure(this@FolderPageViewModel::openErrorModal)
+                }.onFailure(this@FolderPageViewModel::openErrorModal)
         }
     }
 
@@ -178,12 +165,10 @@ class FolderPageViewModel(
      * If there's an error, the state is updated to have the error message
      */
     fun deleteFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
-        fileService.deleteFile(file.id)
-            .onSuccess {
+        fileService.deleteFile(file.id).onSuccess {
                 // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                 _state.update { it.copy(message = "File deleted successfully", updateKey = it.updateKey + 1) }
-            }
-            .onFailure { msg ->
+            }.onFailure { msg ->
                 _state.update { it.copy(message = msg) }
             }
     }

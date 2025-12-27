@@ -6,18 +6,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
 import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
 import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
-import dev.ploiu.file_server_ui_new.model.CreateFolder
-import dev.ploiu.file_server_ui_new.model.FileApi
-import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.model.FolderApproximator
-import dev.ploiu.file_server_ui_new.service.BatchUploadFileResult
-import dev.ploiu.file_server_ui_new.service.BatchUploadFolderResult
+import dev.ploiu.file_server_ui_new.model.*
+import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.FolderUploadService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -30,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.max
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -53,6 +49,7 @@ data class ApplicationUiModel @OptIn(ExperimentalUuidApi::class) constructor(
 // (that just so happens to be top level)
 class ApplicationViewModel(
     private val folderService: FolderService,
+    private val fileService: FileService,
     private val folderUploadService: FolderUploadService,
     modalController: ModalController,
 ) : ViewModelWithModal(modalController) {
@@ -68,66 +65,59 @@ class ApplicationViewModel(
             .onFailure { TODO("on Failure not handled for add empty folder") }
     }
 
-    // we shouldn't pass currentFolderId - it should be maintained within the app state itself
-    fun uploadFolder(folder: PlatformFile, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
-        closeModal()
-        log.info { "upload started!" }
-        var total: Int
-        val errors = mutableListOf<String>()
-        // TODO I don't like having to generate a second folder approximation since one is already being generated...maybe send a tuple, with the first element being the number of items?
-        val approximation = FolderApproximator.convertDir(folder.file, 1)
-        total = approximation.size
-        // avoid division by zero
-        if (total == 0) {
-            total = 1
-        }
-        LoadingModal.open(max = total, progress = 0)
-        folderUploadService.uploadFolder(folder, currentFolderId).collect { result ->
-            log.info { "Got result! $result" }
-            when (result) {
-                is BatchUploadFileResult -> {
-                    updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
-                    if (result.errorMessage != null) {
-                        errors.add(result.errorMessage)
+    /**
+     * can smartly upload multiple files and folders, reporting progress on every upload
+     */
+    fun uploadBulk(bulk: Collection<PlatformFile>, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
+        log.info { "bulk upload started!" }
+        val folders = bulk.filter { it.isDirectory() }
+        val files = bulk.filter { it.isRegularFile() }
+        // make sure the files and folders don't have the exact same name, as that's not allowed on linux file systems
+        val names = validateNameCollision(bulk) ?: return@launch
+        folderService.hasNameClash(currentFolderId, names).map { hasClash ->
+            if (hasClash) {
+                Err("The folder already has folders or files with names matching what you selected. Check your selection and try again")
+            } else {
+                val errors = proceedUploadBulk(folders, files, currentFolderId)
+                if (errors.isNotEmpty()) {
+                    log.error {
+                        "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
                     }
-                }
-
-                is BatchUploadFolderResult -> {
-                    // Could handle folder-level errors here
-                    if (result.errorMessage != null) {
-                        errors.add(result.errorMessage)
-                    }
+                    ErrorModal.open(
+                        ErrorModalProps(
+                            title = "Failed to upload folder",
+                            text = "An error occurred attempting to upload the folder. Check server logs for details",
+                            icon = Icons.Default.Error,
+                            iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                            onClose = this@ApplicationViewModel::closeModal,
+                        ),
+                    )
+                    changeUpdateKey()
+                } else {
+                    changeUpdateKey()
+                    log.info { "upload ended!" }
                 }
             }
-        }
-        closeModal()
-        if (errors.isNotEmpty()) {
-            log.error {
-                "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
-            }
+        }.onFailure { msg ->
             ErrorModal.open(
                 ErrorModalProps(
-                    title = "Failed to upload folder",
-                    text = "An error occurred attempting to upload the folder. Check server logs for details",
+                    title = "Failed to upload files",
+                    text = msg,
                     icon = Icons.Default.Error,
                     iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
                     onClose = this@ApplicationViewModel::closeModal,
                 ),
             )
-            changeUpdateKey()
-        } else {
-            changeUpdateKey()
-            log.info { "upload ended!" }
         }
     }
 
     /**
-     * can smartly upload multiple files and folders, reporting progress on every upload
+     * checks if any of the files passed have the same names with each other, and then returns those names (converted to lowercase)
+     * if there is no collision
+     *
+     * @return `null` if any of the names collide, else returns a collection of the names in lowercase
      */
-    fun uploadBulk(bulk: Collection<PlatformFile>, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
-        val folders = bulk.filter { it.isDirectory() }
-        val files = bulk.filter { it.isRegularFile() }
-        // make sure the files and folders don't have the exact same name, as that's not allowed on linux file systems
+    private fun validateNameCollision(bulk: Collection<PlatformFile>): Collection<String>? {
         val names = mutableMapOf<String, Int>()
         for (file in bulk) {
             val name = file.name.lowercase()
@@ -147,25 +137,42 @@ class ApplicationViewModel(
                     onClose = this@ApplicationViewModel::closeModal,
                 ),
             )
+            return null
         }
-        folderService.hasNameClash(currentFolderId, names.keys).map { hasClash ->
-            if (hasClash) {
-                Err("The folder already has folders or files with names matching what you selected. Check your selection and try again")
-            } else {
-                // there's no name clash, we do a little uploading
+        return names.keys
+    }
 
+    /**
+     * Handles actually uploading the files and folders passed to it for the passed folder id
+     */
+    private suspend fun proceedUploadBulk(
+        folders: List<PlatformFile>,
+        files: List<PlatformFile>,
+        currentFolderId: Long,
+    ): Collection<String> {
+        // there's no name clash, we do a little uploading
+        val approximatedFolders = folders.map { FolderApproximator.convertDir(it.file, 1) }
+        val total = max(1, files.size + approximatedFolders.sumOf { it.size })
+        val errors = mutableListOf<String>()
+        LoadingModal.open(max = total, progress = 0)
+        for (folder in folders) {
+            // make sure we only upload 1 folder at a time. We batch its contents, but different calls to uploadFolder
+            // (or uploadFile) can't communicate with each other. Calling these in parallel can easily overwhelm the server
+            folderUploadService.uploadFolder(folder, currentFolderId).collect { res ->
+                log.debug { "uploadFolder Got result $res" }
+                updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
+                if (res.errorMessage != null) {
+                    errors += res.errorMessage
+                }
             }
-        }.onFailure { msg ->
-                ErrorModal.open(
-                    ErrorModalProps(
-                        title = "Failed to upload files",
-                        text = msg,
-                        icon = Icons.Default.Error,
-                        iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
-                        onClose = this@ApplicationViewModel::closeModal,
-                    ),
-                )
-            }
+        }
+        for (file in files) {
+            fileService.createFile(CreateFileRequest(currentFolderId, file.file, false)).onFailure { errors += it }
+            // regardless of if it fails, we need to bump the progress
+            updateModal<LoadingModal> { it.copy(progress = it.progress + 1) }
+        }
+        closeModal()
+        return errors
     }
 
     fun closeSideSheet() {

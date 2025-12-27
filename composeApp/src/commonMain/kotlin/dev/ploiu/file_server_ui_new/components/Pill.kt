@@ -31,7 +31,8 @@ class PillColors(
 
 @Composable
 fun pillColors(
-    backgroundColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f)
+    backgroundColor: Color = MaterialTheme.colorScheme.onSurface
+        .copy(alpha = .12f)
         .compositeOver(MaterialTheme.colorScheme.surface),
     contentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = .87f),
     iconColor: Color = contentColor.copy(alpha = .54f),
@@ -47,8 +48,10 @@ fun Pill(
 ) {
     CompositionLocalProvider(LocalContentColor provides colors.contentColor) {
         Row(
-            modifier = Modifier.background(color = colors.backgroundColor, shape = MaterialTheme.shapes.extraSmall)
-                .then(modifier).padding(3.dp),
+            modifier = Modifier
+                .background(color = colors.backgroundColor, shape = MaterialTheme.shapes.extraSmall)
+                .then(modifier)
+                .padding(3.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {

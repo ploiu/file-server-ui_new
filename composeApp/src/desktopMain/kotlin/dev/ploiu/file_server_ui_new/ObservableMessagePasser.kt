@@ -26,11 +26,7 @@ class MessageObserver(private val msgTypes: MessageTypes, private val fn: (Messa
 }
 
 enum class MessageTypes {
-    FOCUS_SEARCHBAR,
-    HIDE_ACTIVE_ELEMENT,
-    NAVIGATE_FORWARD,
-    REFRESH_PAGE,
-    NAVIGATE_BACKWARDS;
+    FOCUS_SEARCHBAR, HIDE_ACTIVE_ELEMENT, NAVIGATE_FORWARD, REFRESH_PAGE, NAVIGATE_BACKWARDS;
 
     operator fun invoke(handler: (MessageTypes) -> Unit) = MessageObserver(this, handler)
 }

@@ -53,7 +53,6 @@ import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.isDirectory
-import io.github.vinceglb.filekit.isRegularFile
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.context.startKoin
@@ -165,14 +164,13 @@ fun MainDesktopBody(
             ) ?: false
         ) {
             val folderId = currentRoute.toRoute<FolderRoute>().id
-            appViewModel.uploadFolder(directory, folderId)
+            appViewModel.uploadBulk(listOf(directory), folderId)
         }
     }
 
     val filePicker = rememberFilePickerLauncher(mode = FileKitMode.Multiple()) { files ->
 
-        if (files != null && currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false
-        ) {
+        if (files != null && currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false) {
             val folderId = currentRoute.toRoute<FolderRoute>().id
             appViewModel.uploadBulk(files, folderId)
         }
@@ -209,7 +207,7 @@ fun MainDesktopBody(
                     sideSheetActive = appState.sideSheetState !is NoSideSheet,
                     onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
                     onUploadFolderClick = directoryPicker::launch,
-                    onUploadFileClick = filePicker::launch
+                    onUploadFileClick = filePicker::launch,
                 )
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->

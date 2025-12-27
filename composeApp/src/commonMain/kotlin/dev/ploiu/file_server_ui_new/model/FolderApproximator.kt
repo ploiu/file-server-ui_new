@@ -28,9 +28,10 @@ data class FolderApproximation(
         if (Files.isSymbolicLink(self.toPath())) {
             throw UnsupportedOperationException("Cannot upload symbolic links, fix these files paths: \n\t${self.toPath()}")
         }
-        val symPaths =
-            childFiles.map { it.toPath() }.filter { Files.isSymbolicLink(it) }
-                .joinToString("\n\t") { it.toAbsolutePath().toString() }
+        val symPaths = childFiles
+            .map { it.toPath() }
+            .filter { Files.isSymbolicLink(it) }
+            .joinToString("\n\t") { it.toAbsolutePath().toString() }
         if (symPaths.isNotEmpty()) {
             throw UnsupportedOperationException("Cannot upload symbolic links, fix these files paths: \n\t$symPaths")
         }
@@ -43,7 +44,8 @@ data class FolderApproximation(
     private fun detectChildDirs() {
         val childDirs = childFiles
             .filter { it.isDirectory }
-            .map { it.toPath() }.joinToString("\n\t") { it.toAbsolutePath().toString() }
+            .map { it.toPath() }
+            .joinToString("\n\t") { it.toAbsolutePath().toString() }
         if (!childDirs.isBlank()) {
             throw java.lang.UnsupportedOperationException("Your code is broken: directories are in the list of child files: \n\t$childDirs")
         }

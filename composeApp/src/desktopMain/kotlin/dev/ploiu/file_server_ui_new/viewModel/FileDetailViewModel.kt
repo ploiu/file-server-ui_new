@@ -108,7 +108,8 @@ class FileDetailViewModel(
     fun loadFile() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         _state.update { it.copy(sheetState = FileDetailLoading()) }
         val fileRes = fileService.getMetadata(fileId)
-        fileRes.andThen { f -> folderService.getFolder(f.folderId).map { folder -> folder to f } }
+        fileRes
+            .andThen { f -> folderService.getFolder(f.folderId).map { folder -> folder to f } }
             .onSuccess { pairing ->
                 val file = pairing.second
                 val folder = pairing.first
@@ -180,8 +181,7 @@ class FileDetailViewModel(
         if (currentState is FileDetailHasFile) {
             // TODO move this to cross-platform version
             val tempFile = createTempFile()
-            fileService.getFileContents(currentState.file.id)
-                .onSuccess { res ->
+            fileService.getFileContents(currentState.file.id).onSuccess { res ->
                     res.use { inputStream ->
                         tempFile.outputStream().use { os ->
                             inputStream.transferTo(os)
@@ -189,8 +189,7 @@ class FileDetailViewModel(
                     }
                     val file = PlatformFile(file = tempFile.toFile())
                     FileKit.openFileWithDefaultApplication(file)
-                }
-                .onFailure { msg ->
+                }.onFailure { msg ->
                     _state.update {
                         it.copy(
                             sheetState = FileDetailMessage(

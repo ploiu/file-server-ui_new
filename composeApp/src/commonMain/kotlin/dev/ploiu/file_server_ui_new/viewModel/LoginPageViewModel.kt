@@ -67,15 +67,13 @@ class LoginPageViewModel(
             is RetrieveCredsSuccess -> {
                 GLOBAL.username = creds.username
                 GLOBAL.password = creds.password
-                apiService.authenticatedPing()
-                    .onSuccess {
+                apiService.authenticatedPing().onSuccess {
                         this@LoginPageViewModel._state.update {
                             it.copy(
                                 pageState = LoginSuccess(),
                             )
                         }
-                    }
-                    .onFailure {
+                    }.onFailure {
                         this@LoginPageViewModel._state.update {
                             it.copy(
                                 pageState = LoginError("Auto sign in failed: Invalid credentials"),
@@ -90,15 +88,13 @@ class LoginPageViewModel(
         GLOBAL.username = username
         GLOBAL.password = password
         _state.update { it.copy(pageState = LoginLoading()) }
-        apiService.authenticatedPing()
-            .onSuccess {
+        apiService.authenticatedPing().onSuccess {
                 this@LoginPageViewModel._state.update {
                     it.copy(
                         pageState = LoginSuccess(),
                     )
                 }
-            }
-            .onFailure {
+            }.onFailure {
                 this@LoginPageViewModel._state.update {
                     it.copy(
                         pageState = LoginError("Sign in failed: Invalid credentials"),

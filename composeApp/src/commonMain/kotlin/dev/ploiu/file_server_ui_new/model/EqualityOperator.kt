@@ -4,11 +4,7 @@ import java.util.*
 
 enum class EqualityOperator {
     // string values are equivalent to the backend server
-    LT,
-    GT,
-    EQ,
-    NEQ,
-    UNKNOWN;
+    LT, GT, EQ, NEQ, UNKNOWN;
 
     override fun toString(): String {
         return this.name.lowercase(Locale.getDefault())

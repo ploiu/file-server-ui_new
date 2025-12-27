@@ -40,10 +40,7 @@ fun FileServerSearchBar(focusRequester: FocusRequester, modifier: Modifier = Mod
         },
         label = { FileServerSearchPlaceholder(focused, text) },
         singleLine = true,
-        modifier = Modifier
-            .onFocusChanged { focused = it.isFocused }
-            .focusRequester(focusRequester)
-            .onPreviewKeyEvent {
+        modifier = Modifier.onFocusChanged { focused = it.isFocused }.focusRequester(focusRequester).onPreviewKeyEvent {
                 if (it.type != KeyEventType.KeyUp) {
                     false
                 } else {
