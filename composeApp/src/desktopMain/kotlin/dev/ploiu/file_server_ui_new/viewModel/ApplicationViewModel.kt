@@ -79,6 +79,7 @@ class ApplicationViewModel(
                 Err("The folder already has folders or files with names matching what you selected. Check your selection and try again")
             } else {
                 val errors = proceedUploadBulk(folders, files, currentFolderId)
+                changeUpdateKey()
                 if (errors.isNotEmpty()) {
                     log.error {
                         "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
@@ -92,11 +93,8 @@ class ApplicationViewModel(
                             onClose = this@ApplicationViewModel::closeModal,
                         ),
                     )
-                    changeUpdateKey()
-                } else {
-                    changeUpdateKey()
-                    log.info { "upload ended!" }
                 }
+                log.info { "upload ended!" }
             }
         }.onFailure { msg ->
             ErrorModal.open(
