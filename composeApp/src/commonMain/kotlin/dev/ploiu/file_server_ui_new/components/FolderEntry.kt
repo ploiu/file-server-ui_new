@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -19,9 +20,15 @@ import org.jetbrains.compose.resources.painterResource
 
 
 @Composable
-fun FolderEntry(folder: FolderApi, modifier: Modifier = Modifier, onClick: (f: FolderApi) -> Unit) {
+fun FolderEntry(
+    folder: FolderApi,
+    modifier: Modifier = Modifier,
+    surfaceColor: Color? = null,
+    onClick: (f: FolderApi) -> Unit,
+) {
     Surface(
         tonalElevation = 2.dp,
+        color = surfaceColor ?: MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxWidth().then(modifier),
         shape = MaterialTheme.shapes.small,
         onClick = { onClick(folder) },

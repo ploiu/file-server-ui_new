@@ -4,6 +4,7 @@ import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.components.FileEntry
@@ -216,7 +219,7 @@ fun FolderPage(
 fun DesktopFileEntry(
     file: FileApi,
     preview: ByteArray? = null,
-    onClick: (f: FileApi) -> Unit,
+    onClick: (f: FileApi) -> Unit = { TODO("normal file click") },
     onContextAction: (FileContextAction) -> Unit,
 ) {
     ContextMenuArea(
@@ -256,6 +259,34 @@ private fun DesktopFolderEntry(
     onClick: (f: FolderApi) -> Unit,
     onContextAction: (FolderContextAction) -> Unit,
 ) {
+    var isDraggingOver by remember { mutableStateOf(false) }
+
+    val dropTarget = remember {
+        object : DragAndDropTarget {
+
+            override fun onEntered(event: DragAndDropEvent) {
+                super.onEntered(event)
+                isDraggingOver = true
+            }
+
+            override fun onExited(event: DragAndDropEvent) {
+                super.onExited(event)
+                isDraggingOver = false
+            }
+
+            override fun onDrop(event: DragAndDropEvent): Boolean {
+                // TODO upload all files into the folder
+                println(event)
+                return true
+            }
+
+            override fun onEnded(event: DragAndDropEvent) {
+                super.onEnded(event)
+                isDraggingOver = false
+            }
+        }
+    }
+
     ContextMenuArea(
         items = {
             listOf(
@@ -283,7 +314,16 @@ private fun DesktopFolderEntry(
                 ) { Text(folder.name, modifier = Modifier.padding(3.dp)) }
             },
         ) {
-            FolderEntry(folder, onClick = onClick)
+            FolderEntry(
+                folder,
+                onClick = onClick,
+                modifier = Modifier.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget),
+                surfaceColor = if (isDraggingOver) {
+                    MaterialTheme.colorScheme.tertiaryContainer
+                } else {
+                    null
+                },
+            )
         }
     }
 }

@@ -26,6 +26,7 @@ fun FileEntry(file: FileApi, preview: ByteArray? = null) {
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.small,
         modifier = Modifier.fillMaxWidth(),
+        onClick = {TODO("fileEntry click")}
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
