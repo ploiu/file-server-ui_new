@@ -21,16 +21,21 @@ import dev.ploiu.file_server_ui_new.util.formatFileOrFolderName
 expect fun PickFileImage(file: FileApi, preview: ByteArray?, modifier: Modifier = Modifier)
 
 @Composable
-fun FileEntry(file: FileApi, preview: ByteArray? = null) {
+fun FileEntry(
+    file: FileApi,
+    modifier: Modifier = Modifier,
+    imageModifier: Modifier = Modifier,
+    preview: ByteArray? = null,
+) {
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth(),
-        onClick = {TODO("fileEntry click")}
+        modifier = Modifier.fillMaxWidth().then(modifier),
+        onClick = { TODO("fileEntry click") },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
-            PickFileImage(file, preview, Modifier.width(96.dp).height(96.dp))
+            PickFileImage(file, preview, Modifier.width(96.dp).height(96.dp).then(imageModifier))
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 formatFileOrFolderName(file.name),

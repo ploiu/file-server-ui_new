@@ -3,15 +3,18 @@ package dev.ploiu.file_server_ui_new
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
-import androidx.compose.foundation.LightDefaultContextMenuRepresentation
-import androidx.compose.foundation.LocalContextMenuRepresentation
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.*
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.DragData
+import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.Key
@@ -125,6 +128,11 @@ val headerlessRoutes = listOf(
 
 private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
 
+private sealed interface DragStatus
+private object NotDragging : DragStatus
+private data class IsDragging(val isFilesystem: Boolean) : DragStatus
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
@@ -132,6 +140,7 @@ fun MainDesktopBody(
     messagePasser: ObservableMessagePasser,
     modalController: ModalController = koinViewModel(),
 ) {
+    // not managed within navBar because navigation external to that component (like clicking a folder) gets bubbled up here
     var navBarState: NavState by remember {
         mutableStateOf(
             NavState(
@@ -167,15 +176,38 @@ fun MainDesktopBody(
             appViewModel.uploadBulk(listOf(directory), folderId)
         }
     }
-
+    // for uploading files
     val filePicker = rememberFilePickerLauncher(mode = FileKitMode.Multiple()) { files ->
-
         if (files != null && currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false) {
             val folderId = currentRoute.toRoute<FolderRoute>().id
             appViewModel.uploadBulk(files, folderId)
         }
     }
+    // used to determine if the header should be replaced with a box that lets the user upload dragged and dropped files/folders
+    // is any drag-and-drop active
+    var dragStatus by remember { mutableStateOf<DragStatus>(NotDragging) }
+    // used to keep track of the current app header height, so that the upload files box doesn't cause a layout shift.
+    // logic is that if you're dragging and dropping, you can't resize the window (and therefore don't have to worry about sizing this based on the box)
+    var searchBarHeight by remember { mutableStateOf(0.dp) }
 
+    /** This is only used to detect if drag and drop is active */
+    val detectDragAndDrop = remember {
+        object : DragAndDropTarget {
+            override fun onDrop(event: DragAndDropEvent): Boolean {
+                dragStatus = NotDragging
+                return false
+            }
+
+            override fun onStarted(event: DragAndDropEvent) {
+                dragStatus = IsDragging(isFilesystem = event.dragData() is DragData.FilesList)
+            }
+
+            override fun onEnded(event: DragAndDropEvent) {
+                dragStatus = NotDragging
+            }
+        }
+    }
+    // set up global keybinds
     LaunchedEffect(Unit) {
         messagePasser handles FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
         messagePasser handles HIDE_ACTIVE_ELEMENT {
@@ -194,21 +226,39 @@ fun MainDesktopBody(
         }
     }
 
+    // show the header if the route should show one
     LaunchedEffect(currentRoute) {
         shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)
     }
 
-    Row {
+    Row(modifier = Modifier.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = detectDragAndDrop)) {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
             if (shouldShowHeader) {
-                AppHeader(
-                    searchBarFocuser = searchBarFocuser,
-                    navController = navController,
-                    sideSheetActive = appState.sideSheetState !is NoSideSheet,
-                    onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
-                    onUploadFolderClick = directoryPicker::launch,
-                    onUploadFileClick = filePicker::launch,
-                )
+                // box that shows up to let you drop files from the file system TODO move to separate file to keep this one clean
+                asdfasdf
+                if (dragStatus is IsDragging) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(searchBarHeight + 8.dp)
+                            .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                            .border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = MaterialTheme.shapes.small,
+                            )
+                    ) {}
+                } else {
+                    AppHeader(
+                        searchBarFocuser = searchBarFocuser,
+                        navController = navController,
+                        sideSheetActive = appState.sideSheetState !is NoSideSheet,
+                        onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
+                        onUploadFolderClick = directoryPicker::launch,
+                        onUploadFileClick = filePicker::launch,
+                        onHeightChange = { searchBarHeight = it },
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 NavBar(state = navBarState) { folders ->
                     navBarState = navBarState.copy(folders = folders)
@@ -234,6 +284,7 @@ fun MainDesktopBody(
                     FolderPage(
                         view = viewModel,
                         refreshKey = appState.updateKey,
+                        isDragging = dragStatus is IsDragging,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = appViewModel::changeUpdateKey,

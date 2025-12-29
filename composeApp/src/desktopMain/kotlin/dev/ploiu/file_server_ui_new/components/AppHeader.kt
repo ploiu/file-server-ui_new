@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsRoute
@@ -46,6 +48,7 @@ fun AppHeader(
     searchBarFocuser: FocusRequester,
     navController: NavController,
     sideSheetActive: Boolean,
+    onHeightChange: (Dp) -> Unit,
     onCreateFolderClick: () -> Unit,
     onUploadFolderClick: () -> Unit,
     onUploadFileClick: () -> Unit,
@@ -58,7 +61,9 @@ fun AppHeader(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp),
+        modifier = Modifier
+            .padding(start = 16.dp, top = 8.dp, end = 16.dp)
+            .onGloballyPositioned { coords -> onHeightChange(coords.size.height.dp) },
     ) {
         Surface(
             tonalElevation = 2.dp,
