@@ -1,5 +1,8 @@
 package dev.ploiu.file_server_ui_new.service
 
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.getErrorOr
+import com.github.michaelbull.result.getOr
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
 import io.github.vinceglb.filekit.PlatformFile
@@ -12,7 +15,9 @@ sealed class BatchUploadResult(val errorMessage: String?) {
 
 class BatchUploadFolderResult(val folder: FolderApi?, errorMessage: String? = null) : BatchUploadResult(errorMessage)
 
-class BatchUploadFileResult(val file: FileApi?, errorMessage: String? = null) : BatchUploadResult(errorMessage)
+class BatchUploadFileResult(val file: FileApi?, errorMessage: String? = null) : BatchUploadResult(errorMessage) {
+    constructor(res: Result<FileApi, String>) : this(file = res.getOr(null), errorMessage = res.getErrorOr(null))
+}
 
 interface FolderUploadService {
     /**

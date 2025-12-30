@@ -88,8 +88,8 @@ class DesktopPreviewService(
             folderCacheDir.mkdirs()
             // not only do we need to download the previews, but we also need to cache and re-emit them
             previewClient.downloadFolderPreviews(folder.id).flowOn(Dispatchers.IO).onEach {
-                    cachePreview(folder.id, it.first, it.second)
-                }
+                cachePreview(folder.id, it.first, it.second)
+            }
         }
     }
 

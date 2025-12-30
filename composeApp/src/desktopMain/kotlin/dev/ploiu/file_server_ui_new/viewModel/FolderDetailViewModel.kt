@@ -83,17 +83,17 @@ class FolderDetailViewModel(
             val folderName = currentState.folder.name.lowercase().trim()
             if (confirmText.lowercase().trim() == folderName) {
                 folderService.deleteFolder(currentState.folder.id).onSuccess {
-                        _state.update { it.copy(sheetState = FolderDeleted()) }
-                    }.onFailure { msg ->
-                        _state.update {
-                            it.copy(
-                                sheetState = FolderDetailMessage(
-                                    folder = currentState.folder,
-                                    message = msg,
-                                ),
-                            )
-                        }
+                    _state.update { it.copy(sheetState = FolderDeleted()) }
+                }.onFailure { msg ->
+                    _state.update {
+                        it.copy(
+                            sheetState = FolderDetailMessage(
+                                folder = currentState.folder,
+                                message = msg,
+                            ),
+                        )
                     }
+                }
             } else {
                 _state.update {
                     it.copy(
@@ -126,23 +126,23 @@ class FolderDetailViewModel(
         val currentState = _state.value.sheetState
         if (currentState is FolderDetailHasFolder) {
             folderService.downloadFolder(currentState.folder.id).onSuccess { res ->
-                    tarFile.sink(false).buffered().use { sink ->
-                        sink.transferFrom(res.asSource())
-                        _state.update {
-                            it.copy(
-                                sheetState = FolderDetailMessage(
-                                    folder = currentState.folder,
-                                    message = "Successfully downloaded folder",
-                                ),
-                            )
-                        }
-                    }
-                    res.close()
-                }.onFailure { msg ->
+                tarFile.sink(false).buffered().use { sink ->
+                    sink.transferFrom(res.asSource())
                     _state.update {
-                        it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
+                        it.copy(
+                            sheetState = FolderDetailMessage(
+                                folder = currentState.folder,
+                                message = "Successfully downloaded folder",
+                            ),
+                        )
                     }
                 }
+                res.close()
+            }.onFailure { msg ->
+                _state.update {
+                    it.copy(sheetState = FolderDetailMessage(folder = currentState.folder, msg))
+                }
+            }
         }
     }
 

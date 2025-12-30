@@ -81,6 +81,7 @@ class ApplicationViewModel(
                 val errors = proceedUploadBulk(folders, files, currentFolderId)
                 changeUpdateKey()
                 if (errors.isNotEmpty()) {
+                    closeModal()
                     log.error {
                         "Failed to upload part of or all of a folder:\n${errors.joinToString("\n")}"
                     }
@@ -97,6 +98,7 @@ class ApplicationViewModel(
                 log.info { "upload ended!" }
             }
         }.onFailure { msg ->
+            closeModal()
             ErrorModal.open(
                 ErrorModalProps(
                     title = "Failed to upload files",

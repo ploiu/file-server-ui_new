@@ -34,6 +34,8 @@ class DesktopFolderUploadService(private val folderService: FolderService, priva
             emit(BatchUploadFolderResult(null, res.getError()))
             return@flow
         } else {
+            // emit an event since the folder itself was created fine
+            emit(BatchUploadFolderResult(res.unwrap()))
             val created = res.unwrap()
             // folder has been created, but to prevent the server from being overloaded, we need to "window" the files in groups of a good number (like 30), upload them all, and then wait for them to finish uploading
             val approximation = FolderApproximator.convertDir(folder, 1)

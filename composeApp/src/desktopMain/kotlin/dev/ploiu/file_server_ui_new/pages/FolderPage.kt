@@ -1,6 +1,10 @@
 package dev.ploiu.file_server_ui_new.pages
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -11,12 +15,15 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draganddrop.DragAndDropEvent
-import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.*
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction.Companion.Move
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.CustomDataFlavors
+import dev.ploiu.file_server_ui_new.FolderChildSelection
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
@@ -201,6 +208,7 @@ private fun DesktopFolderEntry(
     folder: FolderApi,
     onClick: (f: FolderApi) -> Unit,
     onContextAction: (FolderContextAction) -> Unit,
+    onDrop: (DragAndDropEvent) -> Unit,
 ) {
     var isDraggingOver by remember { mutableStateOf(false) }
 
@@ -218,8 +226,7 @@ private fun DesktopFolderEntry(
             }
 
             override fun onDrop(event: DragAndDropEvent): Boolean {
-                // TODO upload all files into the folder
-                println(event)
+                onDrop(event)
                 return true
             }
 
@@ -271,6 +278,7 @@ private fun DesktopFolderEntry(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun LoadedFolderList(
     folder: FolderApi,
@@ -298,6 +306,16 @@ private fun LoadedFolderList(
                     folder = child,
                     onClick = { onFolderNav(it) },
                     onContextAction = onFolderContextAction,
+                    onDrop = {
+                        if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
+                            val child = it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD)
+                            if (child is FileApi) {
+                                TODO("move file to new folder")
+                            } else if (child is FolderApi) {
+                                TODO("move folder to new folder")
+                            }
+                        }
+                    },
                 )
 
                 is FileApi -> DesktopFileEntry(
@@ -310,6 +328,27 @@ private fun LoadedFolderList(
                     } else {
                         Modifier
                     },
+                    modifier = Modifier.dragAndDropSource(
+                        drawDragDecoration = {
+                            // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
+                            /* val bitmap = previews[child.id]?.toImageBitmap() ?: determineBitmapIcon(child)
+                            drawImage(
+                                image = bitmap,
+                                dstSize = IntSize(width = bitmap.width, height = bitmap.height),
+                                dstOffset = IntOffset(0, 0)
+                            ) */
+                        },
+                        transferData = { offset ->
+                            DragAndDropTransferData(
+                                transferable = DragAndDropTransferable(FolderChildSelection(child)),
+                                supportedActions = listOf(Move),
+                                dragDecorationOffset = offset,
+                                onTransferCompleted = {
+                                    // TODO move the file to the folder
+                                },
+                            )
+                        },
+                    ),
                 )
             }
         }

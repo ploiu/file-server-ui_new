@@ -182,25 +182,25 @@ class FileDetailViewModel(
             // TODO move this to cross-platform version
             val tempFile = createTempFile()
             fileService.getFileContents(currentState.file.id).onSuccess { res ->
-                    res.use { inputStream ->
-                        tempFile.outputStream().use { os ->
-                            inputStream.transferTo(os)
-                        }
+                res.use { inputStream ->
+                    tempFile.outputStream().use { os ->
+                        inputStream.transferTo(os)
                     }
-                    val file = PlatformFile(file = tempFile.toFile())
-                    FileKit.openFileWithDefaultApplication(file)
-                }.onFailure { msg ->
-                    _state.update {
-                        it.copy(
-                            sheetState = FileDetailMessage(
-                                file = currentState.file,
-                                folder = currentState.folder,
-                                message = msg,
-                            ),
-                        )
-                    }
-                    tempFile.deleteExisting()
                 }
+                val file = PlatformFile(file = tempFile.toFile())
+                FileKit.openFileWithDefaultApplication(file)
+            }.onFailure { msg ->
+                _state.update {
+                    it.copy(
+                        sheetState = FileDetailMessage(
+                            file = currentState.file,
+                            folder = currentState.folder,
+                            message = msg,
+                        ),
+                    )
+                }
+                tempFile.deleteExisting()
+            }
         }
 
     }

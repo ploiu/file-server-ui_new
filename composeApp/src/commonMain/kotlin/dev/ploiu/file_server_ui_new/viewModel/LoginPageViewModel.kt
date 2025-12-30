@@ -68,18 +68,18 @@ class LoginPageViewModel(
                 GLOBAL.username = creds.username
                 GLOBAL.password = creds.password
                 apiService.authenticatedPing().onSuccess {
-                        this@LoginPageViewModel._state.update {
-                            it.copy(
-                                pageState = LoginSuccess(),
-                            )
-                        }
-                    }.onFailure {
-                        this@LoginPageViewModel._state.update {
-                            it.copy(
-                                pageState = LoginError("Auto sign in failed: Invalid credentials"),
-                            )
-                        }
+                    this@LoginPageViewModel._state.update {
+                        it.copy(
+                            pageState = LoginSuccess(),
+                        )
                     }
+                }.onFailure {
+                    this@LoginPageViewModel._state.update {
+                        it.copy(
+                            pageState = LoginError("Auto sign in failed: Invalid credentials"),
+                        )
+                    }
+                }
             }
         }
     }
@@ -89,18 +89,18 @@ class LoginPageViewModel(
         GLOBAL.password = password
         _state.update { it.copy(pageState = LoginLoading()) }
         apiService.authenticatedPing().onSuccess {
-                this@LoginPageViewModel._state.update {
-                    it.copy(
-                        pageState = LoginSuccess(),
-                    )
-                }
-            }.onFailure {
-                this@LoginPageViewModel._state.update {
-                    it.copy(
-                        pageState = LoginError("Sign in failed: Invalid credentials"),
-                    )
-                }
+            this@LoginPageViewModel._state.update {
+                it.copy(
+                    pageState = LoginSuccess(),
+                )
             }
+        }.onFailure {
+            this@LoginPageViewModel._state.update {
+                it.copy(
+                    pageState = LoginError("Sign in failed: Invalid credentials"),
+                )
+            }
+        }
     }
 
     /**

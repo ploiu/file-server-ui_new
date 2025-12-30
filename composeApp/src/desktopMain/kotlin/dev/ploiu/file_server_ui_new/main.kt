@@ -3,8 +3,11 @@ package dev.ploiu.file_server_ui_new
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.*
+import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
+import androidx.compose.foundation.LightDefaultContextMenuRepresentation
+import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,9 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.MessageTypes.FOCUS_SEARCHBAR
 import dev.ploiu.file_server_ui_new.MessageTypes.HIDE_ACTIVE_ELEMENT
-import dev.ploiu.file_server_ui_new.components.AppHeader
-import dev.ploiu.file_server_ui_new.components.NavBar
-import dev.ploiu.file_server_ui_new.components.NavState
+import dev.ploiu.file_server_ui_new.components.*
 import dev.ploiu.file_server_ui_new.components.dialog.CurrentDialog
 import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
 import dev.ploiu.file_server_ui_new.components.sidesheet.FolderDetailSheet
@@ -92,6 +93,8 @@ fun main() = application {
     } catch (_: Exception) {
         println("Koin already started")
     }
+    // pre-cache all generic file icons
+    loadResources()
     FileKit.init(appId = "PloiuFileServer")
     val messagePasser = remember { ObservableMessagePasser() }
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
@@ -234,21 +237,19 @@ fun MainDesktopBody(
     Row(modifier = Modifier.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = detectDragAndDrop)) {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
             if (shouldShowHeader) {
+                val status = dragStatus
                 // box that shows up to let you drop files from the file system TODO move to separate file to keep this one clean
-                asdfasdf
-                if (dragStatus is IsDragging) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(searchBarHeight + 8.dp)
-                            .padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                            .border(
-                                width = 2.dp,
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = MaterialTheme.shapes.small,
-                            )
-                    ) {}
-                } else {
+                UploadFileBox(
+                    height = searchBarHeight + 8.dp,
+                    shouldShow = status is IsDragging && status.isFilesystem,
+                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
+                ) {
+                    if (currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false) {
+                        val folderId = currentRoute.toRoute<FolderRoute>().id
+                        appViewModel.uploadBulk(it, folderId)
+                    }
+                }
+                if (status is NotDragging || (status is IsDragging && !status.isFilesystem)) {
                     AppHeader(
                         searchBarFocuser = searchBarFocuser,
                         navController = navController,
