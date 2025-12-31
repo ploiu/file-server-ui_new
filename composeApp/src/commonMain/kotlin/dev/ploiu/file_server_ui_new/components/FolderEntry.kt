@@ -29,7 +29,7 @@ fun FolderEntry(
     Surface(
         tonalElevation = 2.dp,
         color = surfaceColor ?: MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth().then(modifier),
+        modifier = Modifier then modifier,
         shape = MaterialTheme.shapes.small,
         onClick = { onClick(folder) },
     ) {
