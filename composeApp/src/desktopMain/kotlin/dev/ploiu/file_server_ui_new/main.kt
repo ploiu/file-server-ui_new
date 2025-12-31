@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.DragData
@@ -118,7 +119,7 @@ fun main() = application {
         },
     ) {
         AppTheme {
-            MainDesktopBody(appViewModel = koinInject(), messagePasser = messagePasser)
+            MainDesktopBody(appViewModel = koinInject(), messagePasser = messagePasser, window = this.window)
         }
     }
 }
@@ -131,16 +132,13 @@ val headerlessRoutes = listOf(
 
 private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
 
-private sealed interface DragStatus
-private object NotDragging : DragStatus
-private data class IsDragging(val isFilesystem: Boolean) : DragStatus
-
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainDesktopBody(
     navController: NavHostController = rememberNavController(),
     appViewModel: ApplicationViewModel,
     messagePasser: ObservableMessagePasser,
+    window: ComposeWindow,
     modalController: ModalController = koinViewModel(),
 ) {
     // not managed within navBar because navigation external to that component (like clicking a folder) gets bubbled up here
@@ -158,6 +156,7 @@ fun MainDesktopBody(
             ),
         )
     }
+    val mousePosition = rememberMousePos(window)
     val appState = appViewModel.state.collectAsState().value
     val searchBarFocuser = remember { FocusRequester() }
     val mainContentWidth = animateFloatAsState(
@@ -283,9 +282,10 @@ fun MainDesktopBody(
                     val route: FolderRoute = backStack.toRoute()
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
                     FolderPage(
-                        view = viewModel,
+                        viewModel = viewModel,
                         refreshKey = appState.updateKey,
                         isDragging = dragStatus is IsDragging,
+                        mousePosition = mousePosition.value,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = appViewModel::changeUpdateKey,

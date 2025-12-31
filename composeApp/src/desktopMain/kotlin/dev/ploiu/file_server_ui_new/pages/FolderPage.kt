@@ -6,10 +6,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.CustomDataFlavors
 import dev.ploiu.file_server_ui_new.FolderChildSelection
+import dev.ploiu.file_server_ui_new.MouseInsideWindow
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
@@ -34,6 +37,7 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
+import kotlinx.coroutines.launch
 import java.util.*
 
 private sealed interface DownloadingSelection
@@ -60,18 +64,19 @@ data class DownloadFileAction(val file: FileApi) : FileContextAction
 
 @Composable
 fun FolderPage(
-    view: FolderPageViewModel,
+    viewModel: FolderPageViewModel,
     /** used to force re-renders if data is updated externally (e.g. via a side sheet) */
     refreshKey: String,
     /** used to visually change the page when drag and drop is active */
     isDragging: Boolean,
+    mousePosition: MouseInsideWindow,
     /** used to tell other components to refresh their data when this one updates something internally */
     onUpdate: () -> Unit,
     onFolderInfo: (FolderApi) -> Unit,
     onFileInfo: (FileApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
 ) {
-    val (pageState, previews, updateKey, errorMessage) = view.state.collectAsState().value
+    val (pageState, previews, updateKey, errorMessage) = viewModel.state.collectAsState().value
     // needed as a glue storage object for when opening the system dialog to save a file / folder
     var downloadingType by remember { mutableStateOf<DownloadingSelection>(NoDownloadSelection) }
     val directoryPicker = rememberFileSaverLauncher { selectedFile ->
@@ -80,14 +85,14 @@ fun FolderPage(
         }
         val selection = downloadingType
         if (selection is DownloadingFolder) {
-            view.downloadFolder(selection.folder, selectedFile)
+            viewModel.downloadFolder(selection.folder, selectedFile)
         } else if (selection is DownloadingFile) {
-            view.downloadFile(selection.file, selectedFile)
+            viewModel.downloadFile(selection.file, selectedFile)
         }
         downloadingType = NoDownloadSelection
     }
-    LaunchedEffect(Objects.hash(view.folderId, refreshKey)) {
-        view.loadFolder()
+    LaunchedEffect(Objects.hash(viewModel.folderId, refreshKey)) {
+        viewModel.loadFolder()
     }
 
     // every time our controller makes an update to data, we trigger the app to refresh its views
@@ -107,9 +112,9 @@ fun FolderPage(
 
             is InfoFolderAction -> onFolderInfo(it.folder)
 
-            is RenameFolderAction -> view.openRenameFolderModal(it.folder)
+            is RenameFolderAction -> viewModel.openRenameFolderModal(it.folder)
 
-            is DeleteFolderAction -> view.openDeleteFolderModal(it.folder)
+            is DeleteFolderAction -> viewModel.openDeleteFolderModal(it.folder)
         }
     }
 
@@ -123,8 +128,8 @@ fun FolderPage(
 
             is InfoFileAction -> onFileInfo(it.file)
 
-            is RenameFileAction -> view.openRenameFileModal(it.file)
-            is DeleteFileAction -> view.openDeleteFileModal(it.file)
+            is RenameFileAction -> viewModel.openRenameFileModal(it.file)
+            is DeleteFileAction -> viewModel.openDeleteFileModal(it.file)
         }
     }
 
@@ -138,9 +143,18 @@ fun FolderPage(
                 folder = pageState.folder,
                 previews = previews,
                 isDragging = isDragging,
+                mousePosition = mousePosition,
                 onFolderNav = onFolderNav,
                 onFolderContextAction = onFolderContextAction,
                 onFileContextAction = onFileContextAction,
+                onFolderChildDropped = { targetFolder, child ->
+                    if (child is FileApi) {
+                        viewModel.updateFile(child.copy(folderId = targetFolder.id))
+                    } else if (child is FolderApi) {
+                        viewModel.updateFolder(child.copy(parentId = targetFolder.id))
+
+                    }
+                },
             )
             if (errorMessage != null) {
                 // we have to use weird stuff like this because we're not using the Scaffold for the desktop app
@@ -150,7 +164,7 @@ fun FolderPage(
                     containerColor = MaterialTheme.colorScheme.inverseSurface,
                     contentColor = MaterialTheme.colorScheme.inverseOnSurface,
                     dismissAction = {
-                        IconButton(onClick = { view.clearMessage() }) {
+                        IconButton(onClick = { viewModel.clearMessage() }) {
                             Icon(Icons.Default.Close, contentDescription = "Dismiss error message")
                         }
                     },
@@ -267,7 +281,9 @@ private fun DesktopFolderEntry(
             FolderEntry(
                 folder,
                 onClick = onClick,
-                modifier = Modifier.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget),
                 surfaceColor = if (isDraggingOver) {
                     MaterialTheme.colorScheme.tertiaryContainer
                 } else {
@@ -283,13 +299,53 @@ private fun DesktopFolderEntry(
 private fun LoadedFolderList(
     folder: FolderApi,
     previews: BatchFilePreview,
+    /** is any drag and drop action being performed */
     isDragging: Boolean,
+    /** the position of the mouse within the window */
+    mousePosition: MouseInsideWindow,
+    /** callback when the user wants to navigate to a folder */
     onFolderNav: (FolderApi) -> Unit,
     onFolderContextAction: (FolderContextAction) -> Unit,
     onFileContextAction: (FileContextAction) -> Unit,
+    /** when a folder or a file is dragged and dropped to another folder */
+    onFolderChildDropped: (FolderApi, FolderChild) -> Unit,
 ) {
+    val folders = folder.folders.sortedBy {it.name}
+    val files = folder.files.sortedByDescending { it.dateCreated }
     val children: List<FolderChild> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
+
+    val gridState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
+    var isDragScrolling by remember { mutableStateOf(false) }
+
+    /*
+        Scrolling rules:
+        1. if we're dragging and the mouse is close enough to the top of the screen, scroll to the very top
+        2. if we're dragging and the mouse is close enough to the bottom, scroll to the very bottom
+        3. if we're not dragging or the mouse is out the window, don't scroll
+        4. if we stop dragging, we stop scrolling
+        5. don't try and scroll if we're already scrolling, unless it's in the opposite direction
+     */
+    LaunchedEffect(mousePosition, isDragging) {
+        scope.launch {
+            if (isDragging && mousePosition != MouseInsideWindow.Invalid) {
+                if (!isDragScrolling) {
+                    if (mousePosition.percentFromTop <= .4f) {
+                        isDragScrolling = true
+                        gridState.animateScrollToItem(0)
+                    } else if (mousePosition.percentFromBottom <= .1f) {
+                        isDragScrolling = true
+                        gridState.animateScrollToItem(children.size - 1)
+                    }
+                }
+            } else {
+                isDragScrolling = false
+                gridState.stopScroll()
+            }
+        }
+    }
+
     LazyVerticalGrid(
         // if this is changed, be sure to update SearchResultsPage.kt
         contentPadding = PaddingValues(
@@ -298,29 +354,27 @@ private fun LoadedFolderList(
         columns = GridCells.Adaptive(150.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        state = gridState,
         // TODO look into Modifier.pointerInput(Unit) with detectDragGestures
     ) {
-        items(children) { child -> // make all items have the same height
-            when (child) {
+        items(children) { item ->
+            when (item) {
                 is FolderApi -> DesktopFolderEntry(
-                    folder = child,
+                    folder = item,
                     onClick = { onFolderNav(it) },
                     onContextAction = onFolderContextAction,
                     onDrop = {
                         if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
-                            val child = it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD)
-                            if (child is FileApi) {
-                                TODO("move file to new folder")
-                            } else if (child is FolderApi) {
-                                TODO("move folder to new folder")
-                            }
+                            val child =
+                                it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
+                            onFolderChildDropped(item, child)
                         }
                     },
                 )
 
                 is FileApi -> DesktopFileEntry(
-                    file = child,
-                    preview = previews[child.id],
+                    file = item,
+                    preview = previews[item.id],
                     onClick = { TODO("file single / double click not implemented") },
                     onContextAction = onFileContextAction,
                     imageModifier = if (isDragging) {
@@ -340,7 +394,7 @@ private fun LoadedFolderList(
                         },
                         transferData = { offset ->
                             DragAndDropTransferData(
-                                transferable = DragAndDropTransferable(FolderChildSelection(child)),
+                                transferable = DragAndDropTransferable(FolderChildSelection(item)),
                                 supportedActions = listOf(Move),
                                 dragDecorationOffset = offset,
                                 onTransferCompleted = {
