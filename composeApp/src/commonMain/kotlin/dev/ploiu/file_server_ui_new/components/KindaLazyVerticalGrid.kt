@@ -13,18 +13,24 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
+import kotlin.math.floor
+import kotlin.math.max
 
-sealed class KindaLazyScope {
+sealed class KindaLazyScope(val columnWidth: Dp) {
     var permanentItems: (@Composable FlowRowScope.() -> Unit)? = null
     var lazyItems: (LazyGridScope.() -> Unit)? = null
 }
 
-class KindaLazyContent(content: KindaLazyScope.() -> Unit) : KindaLazyScope() {
+class KindaLazyContent(tileWidth: Dp, content: KindaLazyScope.() -> Unit) : KindaLazyScope(tileWidth) {
     init {
         apply(content)
     }
@@ -34,12 +40,12 @@ class KindaLazyContent(content: KindaLazyScope.() -> Unit) : KindaLazyScope() {
  * adapted from [androidx.compose.foundation.lazy.grid.LazyGridItemProvider]
  */
 @Composable
-fun rememberKindaLazyGridItemProviderLambda(content: KindaLazyScope.() -> Unit): KindaLazyContent {
+fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLazyScope.() -> Unit): KindaLazyContent {
     // update the content lambda whenever it changes items
     val latestContent = rememberUpdatedState(content)
     return remember {
         // initial composition
-        KindaLazyContent {}
+        KindaLazyContent(flowTileWidth) {}
     }.apply {
         // and update internally whenever latestContent changes
         apply(latestContent.value)
@@ -51,7 +57,7 @@ fun rememberKindaLazyGridItemProviderLambda(content: KindaLazyScope.() -> Unit):
  */
 @Composable
 fun KindaLazyVerticalGrid(
-    columns: GridCells,
+    minColumnWidth: Dp,
     /** modifies the wrapper composable */
     modifier: Modifier = Modifier,
     /** modifies the internal [androidx.compose.foundation.lazy.grid.LazyVerticalGrid] */
@@ -65,9 +71,7 @@ fun KindaLazyVerticalGrid(
     /** The contents of this grid. The first param dictates the children that always render, the second param dictates how the lazy children render */
     content: KindaLazyScope.() -> Unit,
 ) {
-    val memoizedContent = rememberKindaLazyGridItemProviderLambda(content)
-    val permanentItems = memoizedContent.permanentItems
-    val lazyItems = memoizedContent.lazyItems
+    val columns = GridCells.Adaptive(minColumnWidth)
     val wrapperScroll = rememberScrollState(0)
 
     val nestedScrollConnection = remember {
@@ -98,21 +102,36 @@ fun KindaLazyVerticalGrid(
             a. while permanent items are not scrolled off the screen, lazy items cannot scroll
         2. lazy items have scrolling enabled when permanent items are done scrolling
      */
-    BoxWithConstraints {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().border(width = 2.dp, color = Color.Red)) {
         val viewportHeight = maxHeight
+        val density = LocalDensity.current
+        // the permanent items need to be sized and spaced the same as the lazy ones
+        // TODO cleanup and put inside a remember
+        val cellWidth = rememberPermanentFlowCellWidth(
+            density = density,
+            minWidth = minColumnWidth,
+            contentPadding = contentPadding,
+            maxWidth = maxWidth,
+            arrangement = horizontalArrangement,
+        )
+
+        val memoizedContent = rememberKindaLazyGridItemProviderLambda(cellWidth, content)
+        val permanentItems = memoizedContent.permanentItems
+        val lazyItems = memoizedContent.lazyItems
 
         Column(
             modifier = Modifier.fillMaxSize()
-                // .nestedScroll(nestedScrollConnection)
+                .border(width = 4.dp, color = Color.Yellow)
+                    // TODO this can scroll even if there's only 1 screen's worth of content, period
                 .verticalScroll(wrapperScroll) then modifier,
         ) {
             if (permanentItems != null) {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth().testTag("activeRow").padding(
-                            start = horizontalArrangement.spacing,
-                            // bottom is cut in half because the lazy grid will also have top padding due to contentPadding
-                            bottom = verticalArrangement.spacing / 2,
-                        ) then activeModifier,
+                        start = horizontalArrangement.spacing,
+                        // bottom is cut in half because the lazy grid will also have top padding due to contentPadding
+                        bottom = verticalArrangement.spacing / 2,
+                    ).border(width = 8.dp, color = Color.White) then activeModifier,
                     horizontalArrangement = horizontalArrangement,
                     verticalArrangement = verticalArrangement,
                     content = permanentItems,
@@ -134,6 +153,32 @@ fun KindaLazyVerticalGrid(
     }
 }
 
+@Composable
+private fun rememberPermanentFlowCellWidth(
+    density: Density,
+    minWidth: Dp,
+    contentPadding: PaddingValues,
+    maxWidth: Dp,
+    arrangement: Arrangement.Horizontal,
+): Dp {
+    return remember(density, minWidth, contentPadding, maxWidth, arrangement) {
+        with(density) {
+            val maxWidthPx = maxWidth.toPx()
+            val horizontalSpacing = arrangement.spacing.toPx()
+            val paddingPx = contentPadding.calculateLeftPadding(LayoutDirection.Ltr).toPx() + contentPadding
+                .calculateRightPadding(LayoutDirection.Ltr)
+                .toPx()
+            val minWidthPx = minWidth.toPx()
+            // account for our min width and in-between spacing to determine how many cells we can have (rounded down)
+            val numberOfItemsPerRow =
+                max(floor((maxWidthPx + horizontalSpacing) / (minWidthPx + horizontalSpacing)).toInt(), 1)
+            val numberOfGaps = numberOfItemsPerRow - 1
+            val totalHorizontalSpacing = horizontalSpacing * numberOfGaps
+            ((maxWidthPx - paddingPx - totalHorizontalSpacing) / numberOfItemsPerRow).dp
+        }
+    }
+}
+
 @Preview
 @Composable
 private fun WithPermanentItems() {
@@ -141,7 +186,7 @@ private fun WithPermanentItems() {
         contentPadding = PaddingValues(
             start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
         ),
-        columns = GridCells.Adaptive(150.dp),
+        minColumnWidth = 150.dp,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize().border(width = 2.dp, color = Color.Green),

@@ -8,7 +8,6 @@ import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
@@ -21,9 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draganddrop.DragAndDropTransferAction.Companion.Move
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.CustomDataFlavors
 import dev.ploiu.file_server_ui_new.FolderChildSelection
@@ -41,8 +38,6 @@ import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.math.floor
-import kotlin.math.max
 
 private sealed interface DownloadingSelection
 private data class DownloadingFolder(val folder: FolderApi) : DownloadingSelection
@@ -327,8 +322,6 @@ private fun LoadedFolderList(
     val contentPadding = PaddingValues(
         start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
     )
-    val columns = GridCells.Adaptive(150.dp)
-
     /*
         Scrolling rules:
         1. if we're dragging and the mouse is close enough to the top of the screen, scroll to the very top
@@ -356,84 +349,65 @@ private fun LoadedFolderList(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        // the permanent items need to be sized and spaced the same as the lazy ones
-        // TODO cleanup and try to move within KindaLazyVerticalGrid
-        val maxWidthPx = with(density) { maxWidth.toPx() }
-        val horizontalSpacing = with(density) { Arrangement.spacedBy(16.dp).spacing.toPx() }
-        val paddingInPixels = with(density) {
-            contentPadding.calculateLeftPadding(LayoutDirection.Ltr).toPx() + contentPadding
-                .calculateRightPadding(LayoutDirection.Ltr)
-                .toPx()
-        }
-        val cellWidthInPixels = with(density) {
-            val minInPixels = 150.dp.toPx()
-            val bonusSize = max(floor((maxWidthPx + horizontalSpacing) / (minInPixels + horizontalSpacing)).toInt(), 1)
-            (maxWidthPx - paddingInPixels - horizontalSpacing * (bonusSize - 1)) / bonusSize
-        }
-        val cellWidth = with(density) { cellWidthInPixels.toDp() }
-        KindaLazyVerticalGrid(
-            // if this is changed, be sure to update SearchResultsPage.kt
-            contentPadding = contentPadding,
-            // TODO change to minColumnSize and hard code adaptive internally
-            columns = columns,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            lazyState = gridState,
-        ) {
-            permanentItems = {
-                for (item in folders) {
-                    DesktopFolderEntry(
-                        folder = item,
-                        modifier = Modifier.width(cellWidth),
-                        onClick = { onFolderNav(it) },
-                        onContextAction = onFolderContextAction,
-                        onDrop = {
-                            if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
-                                val child =
-                                    it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
-                                onFolderChildDropped(item, child)
-                            }
-                        },
-                    )
-                }
+    KindaLazyVerticalGrid(
+        // if this is changed, be sure to update SearchResultsPage.kt
+        contentPadding = contentPadding,
+        minColumnWidth = 150.dp,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        lazyState = gridState,
+    ) {
+        permanentItems = {
+            for (item in folders) {
+                DesktopFolderEntry(
+                    folder = item,
+                    modifier = Modifier.width(columnWidth),
+                    onClick = { onFolderNav(it) },
+                    onContextAction = onFolderContextAction,
+                    onDrop = {
+                        if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
+                            val child =
+                                it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
+                            onFolderChildDropped(item, child)
+                        }
+                    },
+                )
             }
-            lazyItems = {
-                items(files) { item ->
-                    DesktopFileEntry(
-                        file = item,
-                        preview = previews[item.id],
-                        onClick = { TODO("file single / double click not implemented") },
-                        onContextAction = onFileContextAction,
-                        imageModifier = if (isDragging) {
-                            Modifier.alpha(.25f)
-                        } else {
-                            Modifier
+        }
+        lazyItems = {
+            items(files) { item ->
+                DesktopFileEntry(
+                    file = item,
+                    preview = previews[item.id],
+                    onClick = { TODO("file single / double click not implemented") },
+                    onContextAction = onFileContextAction,
+                    imageModifier = if (isDragging) {
+                        Modifier.alpha(.25f)
+                    } else {
+                        Modifier
+                    },
+                    modifier = Modifier.dragAndDropSource(
+                        drawDragDecoration = {
+                            // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
+                            /* val bitmap = previews[child.id]?.toImageBitmap() ?: determineBitmapIcon(child)
+                            drawImage(
+                                image = bitmap,
+                                dstSize = IntSize(width = bitmap.width, height = bitmap.height),
+                                dstOffset = IntOffset(0, 0)
+                            ) */
                         },
-                        modifier = Modifier.dragAndDropSource(
-                            drawDragDecoration = {
-                                // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
-                                /* val bitmap = previews[child.id]?.toImageBitmap() ?: determineBitmapIcon(child)
-                                drawImage(
-                                    image = bitmap,
-                                    dstSize = IntSize(width = bitmap.width, height = bitmap.height),
-                                    dstOffset = IntOffset(0, 0)
-                                ) */
-                            },
-                            transferData = { offset ->
-                                DragAndDropTransferData(
-                                    transferable = DragAndDropTransferable(FolderChildSelection(item)),
-                                    supportedActions = listOf(Move),
-                                    dragDecorationOffset = offset,
-                                    onTransferCompleted = {
-                                        // TODO move the file to the folder
-                                    },
-                                )
-                            },
-                        ),
-                    )
-                }
+                        transferData = { offset ->
+                            DragAndDropTransferData(
+                                transferable = DragAndDropTransferable(FolderChildSelection(item)),
+                                supportedActions = listOf(Move),
+                                dragDecorationOffset = offset,
+                                onTransferCompleted = {
+                                    // TODO move the file to the folder
+                                },
+                            )
+                        },
+                    ),
+                )
             }
         }
     }
