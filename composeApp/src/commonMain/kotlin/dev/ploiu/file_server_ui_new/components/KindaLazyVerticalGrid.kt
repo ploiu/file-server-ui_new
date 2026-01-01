@@ -1,18 +1,14 @@
 package dev.ploiu.file_server_ui_new.components
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,7 +39,7 @@ class KindaLazyContent(tileWidth: Dp, content: KindaLazyScope.() -> Unit) : Kind
 fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLazyScope.() -> Unit): KindaLazyContent {
     // update the content lambda whenever it changes items
     val latestContent = rememberUpdatedState(content)
-    return remember {
+    return remember(flowTileWidth, latestContent) {
         // initial composition
         KindaLazyContent(flowTileWidth) {}
     }.apply {
@@ -53,18 +49,68 @@ fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLaz
 }
 
 /**
+ * allows controlling the scrolling of a [KindaLazyVerticalGrid]
+ */
+sealed interface KindaLazyScrollState {
+    suspend fun animateScrollTo(location: Int)
+    suspend fun stopScroll()
+}
+
+/**
+ * Internal implementation of [KindaLazyScrollState]. This wraps the scroll trackers for the wrapper element and the internal lazy grid, and delegates scroll requests the caller sends accordingly
+ */
+private class KindaLazyScrollStateImpl : KindaLazyScrollState {
+    /** the scroll state of the wrapper element */
+    lateinit var rootScroll: ScrollState
+
+    /** the scroll state of the lazy grid **/
+    lateinit var gridScroll: LazyGridState
+
+    /** the height of the permanent child container, used to know which element to hand scrolling off to */
+    var permanentHeight: Int = 0
+
+    /**
+     * scrolls to the position in the list.
+     *
+     * Note that position does _not_ mean item position, but the position of the scroller in pixels
+     */
+    override suspend fun animateScrollTo(location: Int) {
+        val currentPosition = rootScroll.value
+        // are we scrolling towards the permanent items?
+        if (location < currentPosition) {
+            // if the lazy items can't scroll up any further, scroll our root scroller
+            if (!gridScroll.canScrollBackward) {
+                rootScroll.animateScrollTo(location)
+            } else {
+                gridScroll.animateScrollToItem(0)
+            }
+        }
+    }
+
+    override suspend fun stopScroll() {
+        gridScroll.stopScroll()
+        rootScroll.stopScroll()
+    }
+}
+
+@Composable
+fun rememberKindaLazyScrollState(): KindaLazyScrollState = remember { KindaLazyScrollStateImpl() }
+
+/**
  * Combines a [androidx.compose.foundation.lazy.grid.LazyVerticalGrid] with a list of items that _always_ render
  */
 @Composable
 fun KindaLazyVerticalGrid(
+    /** how big you want each column to be. The columns will never be smaller than this, but they may grow a bit */
     minColumnWidth: Dp,
     /** modifies the wrapper composable */
     modifier: Modifier = Modifier,
     /** modifies the internal [androidx.compose.foundation.lazy.grid.LazyVerticalGrid] */
     lazyModifier: Modifier = Modifier,
-    /** modifies the grid of items that always stays in the compose tree */
+    /** modifies the grid of items that always stays in the composition tree */
     activeModifier: Modifier = Modifier,
-    lazyState: LazyGridState = rememberLazyGridState(),
+    /** used to programmatically control the scroll state of this component */
+    scrollState: KindaLazyScrollState = rememberKindaLazyScrollState(),
     contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
@@ -72,41 +118,21 @@ fun KindaLazyVerticalGrid(
     content: KindaLazyScope.() -> Unit,
 ) {
     val columns = GridCells.Adaptive(minColumnWidth)
-    val wrapperScroll = rememberScrollState(0)
+    val wrapperScrollState = rememberScrollState()
+    val lazyState = rememberLazyGridState()
+    // need to track the height of the permanent items wrapper so that we know when to enable / disable lazy scrolling
+    var permanentHeight by remember { mutableIntStateOf(0) }
 
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val deltaY = available.y
-                val wrapperCanScroll =
-                    (deltaY < 0 && wrapperScroll.canScrollForward) || (deltaY > 0 && wrapperScroll.canScrollBackward)
-                return if (wrapperCanScroll) {
-                    val consumed = wrapperScroll.dispatchRawDelta(deltaY)
-                    Offset(0f, consumed)
-                } else {
-                    Offset.Zero
-                }
-            }
-
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                val deltaY = available.y
-                val consumedByGrid = lazyState.dispatchRawDelta(deltaY)
-                return Offset(0f, consumedByGrid)
-            }
-        }
+    // we're kind of dancing around ownership and how references get passed here. We can never re-init the scroll state passed here or else that severs the connection between us and the caller
+    (scrollState as KindaLazyScrollStateImpl).apply {
+        this.rootScroll = wrapperScrollState
+        this.gridScroll = lazyState
     }
 
-    /*
-        Scroll rules:
-        1. permanent items need to scroll first
-            a. while permanent items are not scrolled off the screen, lazy items cannot scroll
-        2. lazy items have scrolling enabled when permanent items are done scrolling
-     */
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().border(width = 2.dp, color = Color.Red)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
         val density = LocalDensity.current
         // the permanent items need to be sized and spaced the same as the lazy ones
-        // TODO cleanup and put inside a remember
         val cellWidth = rememberPermanentFlowCellWidth(
             density = density,
             minWidth = minColumnWidth,
@@ -114,24 +140,39 @@ fun KindaLazyVerticalGrid(
             maxWidth = maxWidth,
             arrangement = horizontalArrangement,
         )
-
         val memoizedContent = rememberKindaLazyGridItemProviderLambda(cellWidth, content)
         val permanentItems = memoizedContent.permanentItems
         val lazyItems = memoizedContent.lazyItems
+        LaunchedEffect(permanentItems) {
+            if (permanentItems == null) {
+                permanentHeight = 0
+            }
+        }
+        LaunchedEffect(permanentHeight) {
+            scrollState.permanentHeight = permanentHeight
+        }
+
+        // not inside the above LaunchedEffect because we look at the scroll state which can change a lot
+        val canScrollLazy = remember(permanentHeight) {
+            derivedStateOf {
+                wrapperScrollState.value > permanentHeight
+            }
+        }
 
         Column(
-            modifier = Modifier.fillMaxSize()
-                .border(width = 4.dp, color = Color.Yellow)
-                    // TODO this can scroll even if there's only 1 screen's worth of content, period
-                .verticalScroll(wrapperScroll) then modifier,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+                .verticalScroll(wrapperScrollState) then modifier,
         ) {
             if (permanentItems != null) {
+                // TODO use onGloballyPositioned to get the height when screen size changes
                 FlowRow(
                     modifier = Modifier.fillMaxWidth().testTag("activeRow").padding(
                         start = horizontalArrangement.spacing,
                         // bottom is cut in half because the lazy grid will also have top padding due to contentPadding
                         bottom = verticalArrangement.spacing / 2,
-                    ).border(width = 8.dp, color = Color.White) then activeModifier,
+                    ).onGloballyPositioned { permanentHeight = it.size.height } then activeModifier,
                     horizontalArrangement = horizontalArrangement,
                     verticalArrangement = verticalArrangement,
                     content = permanentItems,
@@ -139,9 +180,9 @@ fun KindaLazyVerticalGrid(
             }
             if (lazyItems != null) {
                 LazyVerticalGrid(
-                    userScrollEnabled = false,
+                    userScrollEnabled = canScrollLazy.value,
                     columns = columns,
-                    modifier = Modifier.fillMaxWidth().height(viewportHeight) then lazyModifier,
+                    modifier = Modifier.fillMaxWidth().heightIn(max = viewportHeight) then lazyModifier,
                     state = lazyState,
                     contentPadding = contentPadding,
                     verticalArrangement = verticalArrangement,
@@ -153,6 +194,9 @@ fun KindaLazyVerticalGrid(
     }
 }
 
+/**
+ * calculates and `remember`s how wide each cell needs to be in the row of permanent items
+ */
 @Composable
 private fun rememberPermanentFlowCellWidth(
     density: Density,
@@ -163,18 +207,26 @@ private fun rememberPermanentFlowCellWidth(
 ): Dp {
     return remember(density, minWidth, contentPadding, maxWidth, arrangement) {
         with(density) {
-            val maxWidthPx = maxWidth.toPx()
-            val horizontalSpacing = arrangement.spacing.toPx()
-            val paddingPx = contentPadding.calculateLeftPadding(LayoutDirection.Ltr).toPx() + contentPadding
+            val containerWidthPx = maxWidth.toPx()
+            val itemGapPx = arrangement.spacing.toPx()
+            // only left because the parent does not apply right padding
+            val containerPaddingPx = contentPadding.calculateLeftPadding(LayoutDirection.Ltr).toPx() + contentPadding
                 .calculateRightPadding(LayoutDirection.Ltr)
                 .toPx()
-            val minWidthPx = minWidth.toPx()
-            // account for our min width and in-between spacing to determine how many cells we can have (rounded down)
-            val numberOfItemsPerRow =
-                max(floor((maxWidthPx + horizontalSpacing) / (minWidthPx + horizontalSpacing)).toInt(), 1)
-            val numberOfGaps = numberOfItemsPerRow - 1
-            val totalHorizontalSpacing = horizontalSpacing * numberOfGaps
-            ((maxWidthPx - paddingPx - totalHorizontalSpacing) / numberOfItemsPerRow).dp
+            val minItemWidthPx = minWidth.toPx()
+            val usableContainerWidthPx = containerWidthPx - containerPaddingPx
+
+            /** each item doesn't take up just its own width, but its width + the gap. both numerator and denominator
+            having `+ itemGapPx` doesn't make sense to me intuitively, but when I do the math on paper I can see how the formula can be arranged to this
+            I looked up how to do this math somewhere but can't find where...oh well, it's probably common knowledge
+            basically, `W >= n * i + s(n - 1)`, where W = usable width, n = # of items, i = min width, s = gap size
+            this becomes `W >= n * i + sn - s` -> `W + s >= n * i + sn` -> `(s/n) + (W/n) >= i + s` etc etc etc. We're only solving for n, we know all the other variables*/
+            val itemsPerRow =
+                max(1f, floor((usableContainerWidthPx + itemGapPx) / (minItemWidthPx + itemGapPx))).toInt()
+            val sumRowGapSizePx = itemGapPx * (itemsPerRow - 1)
+            val sumItemSizePx = usableContainerWidthPx - sumRowGapSizePx
+            val realItemSizePx = sumItemSizePx / itemsPerRow
+            realItemSizePx.dp
         }
     }
 }
@@ -189,7 +241,7 @@ private fun WithPermanentItems() {
         minColumnWidth = 150.dp,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize().border(width = 2.dp, color = Color.Green),
+        modifier = Modifier.fillMaxSize(),
     ) {
         val baseFolder = FolderApi(
             id = 0L,

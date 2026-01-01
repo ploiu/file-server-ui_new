@@ -6,10 +6,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
-import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -28,6 +26,7 @@ import dev.ploiu.file_server_ui_new.MouseInsideWindow
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.components.KindaLazyVerticalGrid
+import dev.ploiu.file_server_ui_new.components.rememberKindaLazyScrollState
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -316,13 +315,12 @@ private fun LoadedFolderList(
     val children: List<FolderChild> =
         folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
 
-    val gridState = rememberLazyGridState()
+    val scrollState = rememberKindaLazyScrollState()
     val scope = rememberCoroutineScope()
     var isDragScrolling by remember { mutableStateOf(false) }
     val contentPadding = PaddingValues(
         start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
-    )
-    /*
+    )/*
         Scrolling rules:
         1. if we're dragging and the mouse is close enough to the top of the screen, scroll to the very top
         2. if we're dragging and the mouse is close enough to the bottom, scroll to the very bottom
@@ -336,15 +334,15 @@ private fun LoadedFolderList(
                 if (!isDragScrolling) {
                     if (mousePosition.percentFromTop <= .4f) {
                         isDragScrolling = true
-                        gridState.animateScrollToItem(0)
+                        scrollState.animateScrollTo(0)
                     } else if (mousePosition.percentFromBottom <= .1f) {
                         isDragScrolling = true
-                        gridState.animateScrollToItem(children.size - 1)
+                        scrollState.animateScrollTo(children.size - 1)
                     }
                 }
             } else {
                 isDragScrolling = false
-                gridState.stopScroll()
+                scrollState.stopScroll()
             }
         }
     }
@@ -355,13 +353,14 @@ private fun LoadedFolderList(
         minColumnWidth = 150.dp,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        lazyState = gridState,
+        scrollState = scrollState,
     ) {
         permanentItems = {
+            val x = 1 + 1
             for (item in folders) {
                 DesktopFolderEntry(
                     folder = item,
-                    modifier = Modifier.width(columnWidth),
+                    modifier = Modifier.requiredWidth(columnWidth),
                     onClick = { onFolderNav(it) },
                     onContextAction = onFolderContextAction,
                     onDrop = {
