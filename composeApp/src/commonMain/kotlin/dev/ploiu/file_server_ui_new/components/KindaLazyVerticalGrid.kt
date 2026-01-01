@@ -13,7 +13,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -103,19 +102,25 @@ fun KindaLazyVerticalGrid(
         val viewportHeight = maxHeight
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection)
+            modifier = Modifier.fillMaxSize()
+                // .nestedScroll(nestedScrollConnection)
                 .verticalScroll(wrapperScroll) then modifier,
         ) {
             if (permanentItems != null) {
                 FlowRow(
-                    modifier = Modifier.fillMaxWidth().testTag("activeRow") then activeModifier,
+                    modifier = Modifier.fillMaxWidth().testTag("activeRow").padding(
+                            start = horizontalArrangement.spacing,
+                            // bottom is cut in half because the lazy grid will also have top padding due to contentPadding
+                            bottom = verticalArrangement.spacing / 2,
+                        ) then activeModifier,
+                    horizontalArrangement = horizontalArrangement,
+                    verticalArrangement = verticalArrangement,
                     content = permanentItems,
                 )
             }
             if (lazyItems != null) {
                 LazyVerticalGrid(
+                    userScrollEnabled = false,
                     columns = columns,
                     modifier = Modifier.fillMaxWidth().height(viewportHeight) then lazyModifier,
                     state = lazyState,
