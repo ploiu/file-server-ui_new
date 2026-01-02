@@ -1,6 +1,7 @@
 package dev.ploiu.file_server_ui_new
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.annotation.FrequentlyChangingValue
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.geometry.Offset
 import dev.ploiu.file_server_ui_new.model.FolderChild
@@ -36,29 +37,29 @@ class FolderChildSelection(private val data: FolderChild) : Transferable {
 
 /** Sugar class used to represent the distance from a screen edge the mouse cursor is */
 data class MouseInsideWindow(
-    val fromLeftEdge: UInt,
-    val fromRightEdge: UInt,
-    val fromTop: UInt,
-    val fromBottom: UInt,
+    @get:FrequentlyChangingValue val fromLeftEdge: UInt,
+    @get:FrequentlyChangingValue val fromRightEdge: UInt,
+    @get:FrequentlyChangingValue val fromTop: UInt,
+    @get:FrequentlyChangingValue val fromBottom: UInt,
     private val windowWidth: UInt,
     private val windowHeight: UInt,
 ) {
 
     /** accounting for the screen width, how far the cursor is from the left of the screen in percentage */
     val percentFromLeft: Float
-        get() = fromLeftEdge.toFloat() / windowWidth.toFloat()
+        @FrequentlyChangingValue get() = fromLeftEdge.toFloat() / windowWidth.toFloat()
 
     /** accounting for the screen width, how far the cursor is from the right of the screen in percentage */
     val percentFromRight: Float
-        get() = fromRightEdge.toFloat() / windowWidth.toFloat()
+        @FrequentlyChangingValue get() = fromRightEdge.toFloat() / windowWidth.toFloat()
 
     /** accounting for the screen height, how far the cursor is from the top of the screen in percentage */
     val percentFromTop: Float
-        get() = fromTop.toFloat() / windowHeight.toFloat()
+        @FrequentlyChangingValue get() = fromTop.toFloat() / windowHeight.toFloat()
 
     /** accounting for the screen height, how far the cursor is from the bottom of the screen in percentage */
     val percentFromBottom: Float
-        get() = fromBottom.toFloat() / windowHeight.toFloat()
+        @FrequentlyChangingValue get() = fromBottom.toFloat() / windowHeight.toFloat()
 
     companion object {
         val Invalid = MouseInsideWindow(

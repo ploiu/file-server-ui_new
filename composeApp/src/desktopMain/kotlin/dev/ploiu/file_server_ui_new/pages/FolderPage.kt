@@ -25,8 +25,8 @@ import dev.ploiu.file_server_ui_new.FolderChildSelection
 import dev.ploiu.file_server_ui_new.MouseInsideWindow
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
-import dev.ploiu.file_server_ui_new.components.KindaLazyVerticalGrid
-import dev.ploiu.file_server_ui_new.components.rememberKindaLazyScrollState
+import dev.ploiu.file_server_ui_new.components.kindalazygrid.KindaLazyVerticalGrid
+import dev.ploiu.file_server_ui_new.components.kindalazygrid.rememberKindaLazyScrollState
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -59,6 +59,10 @@ data class InfoFileAction(val file: FileApi) : FileContextAction
 data class RenameFileAction(val file: FileApi) : FileContextAction
 data class DeleteFileAction(val file: FileApi) : FileContextAction
 data class DownloadFileAction(val file: FileApi) : FileContextAction
+
+private enum class MousePositionWithinPage {
+    TOP, MIDDLE, BOTTOM
+}
 
 @Composable
 fun FolderPage(
@@ -312,15 +316,14 @@ private fun LoadedFolderList(
 ) {
     val folders = folder.folders.sortedBy { it.name }
     val files = folder.files.sortedByDescending { it.dateCreated }
-    val children: List<FolderChild> =
-        folder.folders.sortedBy { it.name } + folder.files.sortedByDescending { it.dateCreated }
 
     val scrollState = rememberKindaLazyScrollState()
     val scope = rememberCoroutineScope()
-    var isDragScrolling by remember { mutableStateOf(false) }
     val contentPadding = PaddingValues(
         start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
-    )/*
+    )
+
+    /*
         Scrolling rules:
         1. if we're dragging and the mouse is close enough to the top of the screen, scroll to the very top
         2. if we're dragging and the mouse is close enough to the bottom, scroll to the very bottom
@@ -331,17 +334,19 @@ private fun LoadedFolderList(
     LaunchedEffect(mousePosition, isDragging) {
         scope.launch {
             if (isDragging && mousePosition != MouseInsideWindow.Invalid) {
-                if (!isDragScrolling) {
-                    if (mousePosition.percentFromTop <= .4f) {
-                        isDragScrolling = true
-                        scrollState.animateScrollTo(0)
-                    } else if (mousePosition.percentFromBottom <= .1f) {
-                        isDragScrolling = true
-                        scrollState.animateScrollTo(children.size - 1)
-                    }
+                val relativeMousePosition = if (mousePosition.percentFromTop <= .25f) {
+                    MousePositionWithinPage.TOP
+                } else if (mousePosition.percentFromBottom <= .25f) {
+                    MousePositionWithinPage.BOTTOM
+                } else {
+                    MousePositionWithinPage.MIDDLE
+                }
+                when (relativeMousePosition) {
+                    MousePositionWithinPage.TOP -> scrollState.scrollToTop(400 * (.25f - mousePosition.percentFromTop))
+                    MousePositionWithinPage.MIDDLE -> scrollState.stopScroll()
+                    MousePositionWithinPage.BOTTOM -> scrollState.scrollToBottom(400 * (.25f - mousePosition.percentFromBottom))
                 }
             } else {
-                isDragScrolling = false
                 scrollState.stopScroll()
             }
         }

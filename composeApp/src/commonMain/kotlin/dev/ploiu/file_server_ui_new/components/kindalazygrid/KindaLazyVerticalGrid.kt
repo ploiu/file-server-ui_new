@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.components
+package dev.ploiu.file_server_ui_new.components.kindalazygrid
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.stopScroll
@@ -11,15 +11,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import dev.ploiu.file_server_ui_new.model.FileApi
-import dev.ploiu.file_server_ui_new.model.FolderApi
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlin.math.floor
 import kotlin.math.max
+
+
+/**
+ * allows controlling the scrolling of a [KindaLazyVerticalGrid]
+ */
+sealed interface KindaLazyScrollState {
+    suspend fun scrollToTop(speed: Float)
+
+    suspend fun scrollToBottom(speed: Float)
+
+    suspend fun stopScroll()
+}
 
 sealed class KindaLazyScope(val columnWidth: Dp) {
     var permanentItems: (@Composable FlowRowScope.() -> Unit)? = null
@@ -33,7 +44,7 @@ class KindaLazyContent(tileWidth: Dp, content: KindaLazyScope.() -> Unit) : Kind
 }
 
 /**
- * adapted from [androidx.compose.foundation.lazy.grid.LazyGridItemProvider]
+ * adapted from [LazyGridItemProvider]
  */
 @Composable
 fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLazyScope.() -> Unit): KindaLazyContent {
@@ -48,56 +59,11 @@ fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLaz
     }
 }
 
-/**
- * allows controlling the scrolling of a [KindaLazyVerticalGrid]
- */
-sealed interface KindaLazyScrollState {
-    suspend fun animateScrollTo(location: Int)
-    suspend fun stopScroll()
-}
-
-/**
- * Internal implementation of [KindaLazyScrollState]. This wraps the scroll trackers for the wrapper element and the internal lazy grid, and delegates scroll requests the caller sends accordingly
- */
-private class KindaLazyScrollStateImpl : KindaLazyScrollState {
-    /** the scroll state of the wrapper element */
-    lateinit var rootScroll: ScrollState
-
-    /** the scroll state of the lazy grid **/
-    lateinit var gridScroll: LazyGridState
-
-    /** the height of the permanent child container, used to know which element to hand scrolling off to */
-    var permanentHeight: Int = 0
-
-    /**
-     * scrolls to the position in the list.
-     *
-     * Note that position does _not_ mean item position, but the position of the scroller in pixels
-     */
-    override suspend fun animateScrollTo(location: Int) {
-        val currentPosition = rootScroll.value
-        // are we scrolling towards the permanent items?
-        if (location < currentPosition) {
-            // if the lazy items can't scroll up any further, scroll our root scroller
-            if (!gridScroll.canScrollBackward) {
-                rootScroll.animateScrollTo(location)
-            } else {
-                gridScroll.animateScrollToItem(0)
-            }
-        }
-    }
-
-    override suspend fun stopScroll() {
-        gridScroll.stopScroll()
-        rootScroll.stopScroll()
-    }
-}
-
 @Composable
 fun rememberKindaLazyScrollState(): KindaLazyScrollState = remember { KindaLazyScrollStateImpl() }
 
 /**
- * Combines a [androidx.compose.foundation.lazy.grid.LazyVerticalGrid] with a list of items that _always_ render
+ * Combines a [LazyVerticalGrid] with a list of items that _always_ render
  */
 @Composable
 fun KindaLazyVerticalGrid(
@@ -105,7 +71,7 @@ fun KindaLazyVerticalGrid(
     minColumnWidth: Dp,
     /** modifies the wrapper composable */
     modifier: Modifier = Modifier,
-    /** modifies the internal [androidx.compose.foundation.lazy.grid.LazyVerticalGrid] */
+    /** modifies the internal [LazyVerticalGrid] */
     lazyModifier: Modifier = Modifier,
     /** modifies the grid of items that always stays in the composition tree */
     activeModifier: Modifier = Modifier,
@@ -231,53 +197,51 @@ private fun rememberPermanentFlowCellWidth(
     }
 }
 
-@Preview
-@Composable
-private fun WithPermanentItems() {
-    KindaLazyVerticalGrid(
-        contentPadding = PaddingValues(
-            start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,
-        ),
-        minColumnWidth = 150.dp,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        val baseFolder = FolderApi(
-            id = 0L,
-            parentId = 0L,
-            path = "/whatever",
-            name = "some folder",
-            folders = listOf(),
-            files = listOf(),
-            tags = listOf(),
-        )
-        val folders = (1..5L).map { baseFolder.copy(id = it) }
-        val baseFile = FileApi(
-            id = 0L,
-            folderId = 0L,
-            name = "some file",
-            tags = listOf(),
-            size = 0L,
-            dateCreated = "",
-            fileType = "application",
-        )
-        val files = (1..100L).map { baseFile.copy(id = it) }
-        permanentItems = @Composable {
-            for (folder in folders) {
-                FolderEntry(
-                    folder = folder,
-                    onClick = {},
-                )
-            }
-        }
+/**
+ * Internal implementation of [KindaLazyScrollState]. This wraps the scroll trackers for the wrapper element and the internal lazy grid, and delegates scroll requests the caller sends accordingly
+ */
+private class KindaLazyScrollStateImpl : KindaLazyScrollState {
+    /** the scroll state of the wrapper element */
+    lateinit var rootScroll: ScrollState
 
-        lazyItems = {
-            items(files) {
-                FileEntry(
-                    file = it,
-                )
+    /** the scroll state of the lazy grid **/
+    lateinit var gridScroll: LazyGridState
+
+    /** the height of the permanent child container, used to know which element to hand scrolling off to */
+    var permanentHeight: Int = 0
+
+    override suspend fun scrollToTop(speed: Float) = coroutineScope {
+        gridScroll.scroll {
+            while (gridScroll.canScrollBackward) {
+                scrollBy(-speed)
+                delay(25)
             }
         }
+        rootScroll.scroll {
+            while (rootScroll.canScrollBackward) {
+                scrollBy(-speed)
+                delay(25)
+            }
+        }
+    }
+
+    override suspend fun scrollToBottom(speed: Float) {
+        rootScroll.scroll {
+            while (rootScroll.canScrollForward) {
+                scrollBy(speed)
+                delay(25)
+            }
+        }
+        gridScroll.scroll {
+            while (gridScroll.canScrollForward) {
+                scrollBy(speed)
+                delay(25)
+            }
+        }
+    }
+
+    override suspend fun stopScroll() {
+        gridScroll.stopScroll()
+        rootScroll.stopScroll()
     }
 }
