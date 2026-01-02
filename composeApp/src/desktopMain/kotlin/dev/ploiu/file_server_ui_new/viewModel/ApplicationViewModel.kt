@@ -58,9 +58,9 @@ class ApplicationViewModel(
     val state = _state.asStateFlow()
 
     // TODO exception handler (look at folder detail view model)
-    fun addEmptyFolder(name: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun addEmptyFolder(name: String, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
         folderService
-            .createFolder(CreateFolder(name, 0L, listOf()))
+            .createFolder(CreateFolder(name, currentFolderId, listOf()))
             .onSuccess { /* TODO cause re-render */ }
             .onFailure { TODO("on Failure not handled for add empty folder") }
     }
@@ -189,7 +189,7 @@ class ApplicationViewModel(
         _state.update { it.copy(sideSheetState = sheetState) }
     }
 
-    fun openCreateEmptyFolderModal() {
+    fun openCreateEmptyFolderModal(currentFolderId: Long) {
         TextModal.open(
             TextModalProps(
                 title = "Create empty folder",
@@ -199,7 +199,7 @@ class ApplicationViewModel(
                 onConfirm = {
                     if (it.isNotBlank()) {
                         closeModal()
-                        addEmptyFolder(it)
+                        addEmptyFolder(name = it, currentFolderId = currentFolderId)
                         changeUpdateKey()
                     }
                 },

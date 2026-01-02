@@ -21,9 +21,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.CustomDataFlavors
 import dev.ploiu.file_server_ui_new.FolderChildSelection
+import dev.ploiu.file_server_ui_new.MessageTypes.JUMP_TO_BOTTOM
+import dev.ploiu.file_server_ui_new.MessageTypes.JUMP_TO_TOP
 import dev.ploiu.file_server_ui_new.MouseInsideWindow
+import dev.ploiu.file_server_ui_new.ObservableMessagePasser
 import dev.ploiu.file_server_ui_new.components.FileEntry
 import dev.ploiu.file_server_ui_new.components.FolderEntry
+import dev.ploiu.file_server_ui_new.components.kindalazygrid.KindaLazyScrollState
 import dev.ploiu.file_server_ui_new.components.kindalazygrid.KindaLazyVerticalGrid
 import dev.ploiu.file_server_ui_new.components.kindalazygrid.rememberKindaLazyScrollState
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
@@ -71,6 +75,7 @@ fun FolderPage(
     /** used to visually change the page when drag and drop is active */
     isDragging: Boolean,
     mousePosition: MouseInsideWindow,
+    messagePasser: ObservableMessagePasser,
     /** used to tell other components to refresh their data when this one updates something internally */
     onUpdate: () -> Unit,
     onFolderInfo: (FolderApi) -> Unit,
@@ -92,6 +97,8 @@ fun FolderPage(
         }
         downloadingType = NoDownloadSelection
     }
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(Objects.hash(viewModel.folderId, refreshKey)) {
         viewModel.loadFolder()
     }
@@ -134,6 +141,26 @@ fun FolderPage(
         }
     }
 
+    val scrollState = rememberKindaLazyScrollState()
+
+    DisposableEffect(scrollState) {
+        messagePasser handles JUMP_TO_TOP {
+            scope.launch {
+                scrollState.jumpToTop()
+            }
+        }
+        messagePasser handles JUMP_TO_BOTTOM {
+            scope.launch {
+                scrollState.jumpToBottom()
+            }
+        }
+
+        onDispose {
+            messagePasser ignores JUMP_TO_BOTTOM
+            messagePasser ignores JUMP_TO_TOP
+        }
+    }
+
     when (pageState) {
         is FolderPageLoading -> Column {
             CircularProgressIndicator()
@@ -146,6 +173,7 @@ fun FolderPage(
                 isDragging = isDragging,
                 mousePosition = mousePosition,
                 onFolderNav = onFolderNav,
+                scrollState = scrollState,
                 onFolderContextAction = onFolderContextAction,
                 onFileContextAction = onFileContextAction,
                 onFolderChildDropped = { targetFolder, child ->
@@ -306,6 +334,7 @@ private fun LoadedFolderList(
     isDragging: Boolean,
     /** the position of the mouse within the window */
     mousePosition: MouseInsideWindow,
+    scrollState: KindaLazyScrollState,
     /** callback when the user wants to navigate to a folder */
     onFolderNav: (FolderApi) -> Unit,
     onFolderContextAction: (FolderContextAction) -> Unit,
@@ -316,7 +345,6 @@ private fun LoadedFolderList(
     val folders = folder.folders.sortedBy { it.name }
     val files = folder.files.sortedByDescending { it.dateCreated }
 
-    val scrollState = rememberKindaLazyScrollState()
     val scope = rememberCoroutineScope()
     val contentPadding = PaddingValues(
         start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp,

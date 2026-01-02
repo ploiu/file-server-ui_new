@@ -4,7 +4,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
@@ -28,6 +27,10 @@ import kotlin.math.max
 sealed interface KindaLazyScrollState {
     suspend fun scrollToTop(speed: Float)
 
+    suspend fun jumpToTop()
+
+    suspend fun jumpToBottom()
+
     suspend fun scrollToBottom(speed: Float)
 
     suspend fun stopScroll()
@@ -39,7 +42,7 @@ sealed class KindaLazyScope<P, L>(val columnWidth: Dp) {
 }
 
 @Composable
-fun rememberKindaLazyScrollState(): KindaLazyScrollState = remember { KindaLazyScrollStateImpl() }
+fun rememberKindaLazyScrollState(vararg keys: Any): KindaLazyScrollState = remember(keys) { KindaLazyScrollStateImpl() }
 
 /**
  * Combines a [LazyVerticalGrid] with a list of items that _always_ render
@@ -55,7 +58,7 @@ fun <P, L> KindaLazyVerticalGrid(
     /** modifies the grid of items that always stays in the composition tree */
     activeModifier: Modifier = Modifier,
     /** used to programmatically control the scroll state of this component */
-    scrollState: KindaLazyScrollState = rememberKindaLazyScrollState(),
+    scrollState: KindaLazyScrollState,
     contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
@@ -248,6 +251,17 @@ private class KindaLazyScrollStateImpl : KindaLazyScrollState {
                 delay(25)
             }
         }
+    }
+
+    override suspend fun jumpToTop() {
+        gridScroll.scrollToItem(0)
+        rootScroll.animateScrollTo(0)
+    }
+
+    override suspend fun jumpToBottom() {
+        val lazyItems = gridScroll.layoutInfo.totalItemsCount
+        gridScroll.scrollToItem(lazyItems)
+        rootScroll.animateScrollTo(rootScroll.maxValue)
     }
 
     override suspend fun scrollToBottom(speed: Float) {

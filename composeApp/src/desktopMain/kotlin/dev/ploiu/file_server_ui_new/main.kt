@@ -21,9 +21,8 @@ import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -34,8 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dev.ploiu.file_server_ui_new.MessageTypes.FOCUS_SEARCHBAR
-import dev.ploiu.file_server_ui_new.MessageTypes.HIDE_ACTIVE_ELEMENT
+import dev.ploiu.file_server_ui_new.MessageTypes.*
 import dev.ploiu.file_server_ui_new.components.*
 import dev.ploiu.file_server_ui_new.components.dialog.CurrentDialog
 import dev.ploiu.file_server_ui_new.components.sidesheet.FileDetailSheet
@@ -104,16 +102,20 @@ fun main() = application {
         title = "file-server-ui_new",
         state = rememberWindowState(width = 1200.dp, height = 600.dp),
         onKeyEvent = {
-            when (it.key) {
-                Key.K -> {
-                    if (it.isCtrlPressed) {
-                        messagePasser.passMessage(FOCUS_SEARCHBAR)
+            if (it.type == KeyEventType.KeyUp) {
+                when (it.key) {
+                    Key.K -> {
+                        if (it.isCtrlPressed) {
+                            messagePasser.passMessage(FOCUS_SEARCHBAR)
+                        }
                     }
+
+                    Key.Escape -> messagePasser.passMessage(HIDE_ACTIVE_ELEMENT)
+                    Key.MoveHome -> messagePasser.passMessage(JUMP_TO_TOP)
+                    Key.MoveEnd -> messagePasser.passMessage(JUMP_TO_BOTTOM)
+
+                    else -> {}
                 }
-
-                Key.Escape -> messagePasser.passMessage(HIDE_ACTIVE_ELEMENT)
-
-                else -> {}
             }
             true
         },
@@ -253,7 +255,12 @@ fun MainDesktopBody(
                         searchBarFocuser = searchBarFocuser,
                         navController = navController,
                         sideSheetActive = appState.sideSheetState !is NoSideSheet,
-                        onCreateFolderClick = appViewModel::openCreateEmptyFolderModal,
+                        onCreateFolderClick = {
+                            if (currentRoute?.destination?.route?.contains(FolderRoute::class.simpleName!!) ?: false) {
+                                val folderId = currentRoute.toRoute<FolderRoute>().id
+                                appViewModel.openCreateEmptyFolderModal(folderId)
+                            }
+                        },
                         onUploadFolderClick = directoryPicker::launch,
                         onUploadFileClick = filePicker::launch,
                         onHeightChange = { searchBarHeight = it },
@@ -286,6 +293,7 @@ fun MainDesktopBody(
                         refreshKey = appState.updateKey,
                         isDragging = dragStatus is IsDragging,
                         mousePosition = mousePosition.value,
+                        messagePasser = messagePasser,
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = appViewModel::changeUpdateKey,
