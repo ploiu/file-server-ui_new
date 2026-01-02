@@ -392,7 +392,18 @@ private fun LoadedFolderList(
         permanentTemplate = { item ->
             DesktopFolderEntry(
                 folder = item,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().dragAndDropSource(
+                        drawDragDecoration = {
+                            // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
+                        },
+                        transferData = { offset ->
+                            DragAndDropTransferData(
+                                transferable = DragAndDropTransferable(FolderChildSelection(item)),
+                                supportedActions = listOf(Move),
+                                dragDecorationOffset = offset,
+                            )
+                        },
+                    ),
                 onClick = { onFolderNav(it) },
                 onContextAction = onFolderContextAction,
                 onDrop = {
@@ -429,9 +440,6 @@ private fun LoadedFolderList(
                             transferable = DragAndDropTransferable(FolderChildSelection(item)),
                             supportedActions = listOf(Move),
                             dragDecorationOffset = offset,
-                            onTransferCompleted = {
-                                // TODO move the file to the folder
-                            },
                         )
                     },
                 ),

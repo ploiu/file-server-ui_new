@@ -38,7 +38,6 @@ fun UploadFileBox(
     val dragAndDropHandler = remember {
         object : DragAndDropTarget {
             override fun onDrop(event: DragAndDropEvent): Boolean {
-                println("dropped!")
                 // this should only even show if the drag type is a file system drag, so we can just blindly assume
                 val files = (event.dragData() as DragData.FilesList).readFiles()
                 val platformFiles = files.map { URI.create(it) }.map(::File).map(::PlatformFile)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +23,10 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isBackPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -83,7 +87,7 @@ actual fun AppTheme(
     }
 }
 
-
+@OptIn(ExperimentalComposeUiApi::class)
 fun main() = application {
     try {
         startKoin {
@@ -113,15 +117,40 @@ fun main() = application {
                     Key.Escape -> messagePasser.passMessage(HIDE_ACTIVE_ELEMENT)
                     Key.MoveHome -> messagePasser.passMessage(JUMP_TO_TOP)
                     Key.MoveEnd -> messagePasser.passMessage(JUMP_TO_BOTTOM)
+                    Key.DirectionLeft -> {
+                        if (it.isAltPressed) {
+                            messagePasser.passMessage(NAVIGATE_BACKWARDS)
+                        }
+                    }
 
-                    else -> {}
+                    else -> {
+                        println(it.key)
+                    }
                 }
             }
             true
         },
     ) {
         AppTheme {
-            MainDesktopBody(appViewModel = koinInject(), messagePasser = messagePasser, window = this.window)
+            MainDesktopBody(
+                appViewModel = koinInject(),
+                modifier = Modifier.pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            // checking buttons.isBackPressed does not work on my mouse
+                            if (event.buttons.isBackPressed || event.type == PointerEventType.Press && event.button!! == PointerButton(
+                                    index = 5,
+                                )
+                            ) {
+                                messagePasser.passMessage(NAVIGATE_BACKWARDS)
+                            }
+                        }
+                    }
+                },
+                messagePasser = messagePasser,
+                window = this.window,
+            )
         }
     }
 }
@@ -137,10 +166,11 @@ private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainDesktopBody(
-    navController: NavHostController = rememberNavController(),
     appViewModel: ApplicationViewModel,
     messagePasser: ObservableMessagePasser,
     window: ComposeWindow,
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController(),
     modalController: ModalController = koinViewModel(),
 ) {
     // not managed within navBar because navigation external to that component (like clicking a folder) gets bubbled up here
@@ -212,7 +242,7 @@ fun MainDesktopBody(
         }
     }
     // set up global keybinds
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         messagePasser handles FOCUS_SEARCHBAR { searchBarFocuser.requestFocus() }
         messagePasser handles HIDE_ACTIVE_ELEMENT {
             // we're using this instead of the state variable because at this point, the state hasn't updated yet and we need a live version
@@ -228,6 +258,18 @@ fun MainDesktopBody(
                 modalController.clearJustClosed()
             }
         }
+        messagePasser handles NAVIGATE_BACKWARDS {
+            if (navBarState.size > 1) {
+                navBarState = navBarState.pop()
+                navController.popBackStack()
+            }
+        }
+
+        onDispose {
+            messagePasser ignores FOCUS_SEARCHBAR
+            messagePasser ignores HIDE_ACTIVE_ELEMENT
+            messagePasser ignores NAVIGATE_BACKWARDS
+        }
     }
 
     // show the header if the route should show one
@@ -235,7 +277,12 @@ fun MainDesktopBody(
         shouldShowHeader = !isHeaderless(currentRoute?.destination?.route)
     }
 
-    Row(modifier = Modifier.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = detectDragAndDrop)) {
+    Row(
+        modifier = Modifier.dragAndDropTarget(
+            shouldStartDragAndDrop = { true },
+            target = detectDragAndDrop,
+        ) then modifier,
+    ) {
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
             if (shouldShowHeader) {
                 val status = dragStatus
@@ -267,10 +314,19 @@ fun MainDesktopBody(
                     )
                 }
                 Spacer(Modifier.height(8.dp))
-                NavBar(state = navBarState) { folders ->
-                    navBarState = navBarState.copy(folders = folders)
-                    navController.navigate(FolderRoute(folders.last().id))
-                }
+                NavBar(
+                    state = navBarState,
+                    onFolderChildDropped = { newParent, movedChild ->
+                        appViewModel.moveChildToFolder(
+                            newParent,
+                            movedChild,
+                        )
+                    },
+                    clickEntry = { folders ->
+                        navBarState =
+                            navBarState.copy(folders = folders); navController.navigate(FolderRoute(folders.last().id))
+                    },
+                )
                 Spacer(Modifier.height(8.dp))
             }
             // stuff that changes

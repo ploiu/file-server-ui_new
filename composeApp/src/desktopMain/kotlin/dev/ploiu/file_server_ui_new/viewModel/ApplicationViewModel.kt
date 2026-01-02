@@ -57,12 +57,21 @@ class ApplicationViewModel(
     private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
 
-    // TODO exception handler (look at folder detail view model)
     fun addEmptyFolder(name: String, currentFolderId: Long) = viewModelScope.launch(Dispatchers.IO) {
         folderService
             .createFolder(CreateFolder(name, currentFolderId, listOf()))
-            .onSuccess { /* TODO cause re-render */ }
-            .onFailure { TODO("on Failure not handled for add empty folder") }
+            .onSuccess { changeUpdateKey() }
+            .onFailure {
+                ErrorModal.open(
+                    ErrorModalProps(
+                        title = "Failed to add folder",
+                        text = "Failed to add folder: $it",
+                        icon = Icons.Default.Error,
+                        iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                        onClose = { this@ApplicationViewModel.closeModal() },
+                    ),
+                )
+            }
     }
 
     /**
@@ -200,11 +209,38 @@ class ApplicationViewModel(
                     if (it.isNotBlank()) {
                         closeModal()
                         addEmptyFolder(name = it, currentFolderId = currentFolderId)
-                        changeUpdateKey()
                     }
                 },
             ),
         )
+    }
+
+    /**
+     * attempts to move a [FolderChild] to a new parent [FolderApi]
+     */
+    fun moveChildToFolder(newParent: FolderApi, child: FolderChild) = viewModelScope.launch(Dispatchers.IO) {
+        // we can rely on the server to check that the new parent doesn't have this child already
+        when (child) {
+            is FileApi -> {
+                val req = child.toFileRequest().copy(folderId = newParent.id)
+                fileService.updateFile(req)
+            }
+
+            is FolderApi -> {
+                val req = child.toUpdateFolder().copy(parentId = newParent.id)
+                folderService.updateFolder(req)
+            }
+        }.onSuccess { changeUpdateKey() }.onFailure {
+            ErrorModal.open(
+                ErrorModalProps(
+                    title = "Failed to move item",
+                    text = "Failed to move item to parent folder: $it",
+                    icon = Icons.Default.Error,
+                    iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
+                    onClose = { this@ApplicationViewModel.closeModal() },
+                ),
+            )
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
