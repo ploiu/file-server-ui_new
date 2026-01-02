@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
@@ -32,31 +33,9 @@ sealed interface KindaLazyScrollState {
     suspend fun stopScroll()
 }
 
-sealed class KindaLazyScope(val columnWidth: Dp) {
-    var permanentItems: (@Composable FlowRowScope.() -> Unit)? = null
-    var lazyItems: (LazyGridScope.() -> Unit)? = null
-}
-
-class KindaLazyContent(tileWidth: Dp, content: KindaLazyScope.() -> Unit) : KindaLazyScope(tileWidth) {
-    init {
-        apply(content)
-    }
-}
-
-/**
- * adapted from [LazyGridItemProvider]
- */
-@Composable
-fun rememberKindaLazyGridItemProviderLambda(flowTileWidth: Dp, content: KindaLazyScope.() -> Unit): KindaLazyContent {
-    // update the content lambda whenever it changes items
-    val latestContent = rememberUpdatedState(content)
-    return remember(flowTileWidth, latestContent) {
-        // initial composition
-        KindaLazyContent(flowTileWidth) {}
-    }.apply {
-        // and update internally whenever latestContent changes
-        apply(latestContent.value)
-    }
+sealed class KindaLazyScope<P, L>(val columnWidth: Dp) {
+    var permanentTemplate: (@Composable (P) -> Unit)? = null
+    var lazyTemplate: (@Composable (L) -> Unit)? = null
 }
 
 @Composable
@@ -66,7 +45,7 @@ fun rememberKindaLazyScrollState(): KindaLazyScrollState = remember { KindaLazyS
  * Combines a [LazyVerticalGrid] with a list of items that _always_ render
  */
 @Composable
-fun KindaLazyVerticalGrid(
+fun <P, L> KindaLazyVerticalGrid(
     /** how big you want each column to be. The columns will never be smaller than this, but they may grow a bit */
     minColumnWidth: Dp,
     /** modifies the wrapper composable */
@@ -80,8 +59,12 @@ fun KindaLazyVerticalGrid(
     contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    /** The children that should _always_ be permanent items. These children are _guaranteed_ to always remain in the composition tree until this composable leaves the tree */
+    permanentChildren: List<P> = listOf(),
+    /** The children that are _desired_ to be lazily-loaded. In order to make items flow better, some of these children _may_ be made permanent, depending on screen size, [minColumnWidth], [contentPadding], and [horizontalArrangement] */
+    lazyChildren: List<L> = listOf(),
     /** The contents of this grid. The first param dictates the children that always render, the second param dictates how the lazy children render */
-    content: KindaLazyScope.() -> Unit,
+    content: KindaLazyScope<P, L>.() -> Unit,
 ) {
     val columns = GridCells.Adaptive(minColumnWidth)
     val wrapperScrollState = rememberScrollState()
@@ -99,16 +82,23 @@ fun KindaLazyVerticalGrid(
         val viewportHeight = maxHeight
         val density = LocalDensity.current
         // the permanent items need to be sized and spaced the same as the lazy ones
-        val cellWidth = rememberPermanentFlowCellWidth(
+        val (cellWidth, cellsPerRow) = rememberPermanentFlowCellLayout(
             density = density,
             minWidth = minColumnWidth,
             contentPadding = contentPadding,
             maxWidth = maxWidth,
             arrangement = horizontalArrangement,
         )
-        val memoizedContent = rememberKindaLazyGridItemProviderLambda(cellWidth, content)
-        val permanentItems = memoizedContent.permanentItems
-        val lazyItems = memoizedContent.lazyItems
+        val memoizedContent = rememberKindaLazyGridItemProviderLambda(
+            flowTileWidth = cellWidth,
+            containerWidth = maxWidth,
+            content = content,
+            tilesPerRow = cellsPerRow,
+            permanentChildren = permanentChildren,
+            lazyChildren = lazyChildren.toMutableList(),
+        )
+        val permanentItems = memoizedContent.wrappedPermanentChildren
+        val lazyItems = memoizedContent.wrappedLazyChildren
         LaunchedEffect(permanentItems) {
             if (permanentItems == null) {
                 permanentHeight = 0
@@ -164,13 +154,13 @@ fun KindaLazyVerticalGrid(
  * calculates and `remember`s how wide each cell needs to be in the row of permanent items
  */
 @Composable
-private fun rememberPermanentFlowCellWidth(
+private fun rememberPermanentFlowCellLayout(
     density: Density,
     minWidth: Dp,
     contentPadding: PaddingValues,
     maxWidth: Dp,
     arrangement: Arrangement.Horizontal,
-): Dp {
+): Pair<Dp, Int> {
     return remember(density, minWidth, contentPadding, maxWidth, arrangement) {
         with(density) {
             val containerWidthPx = maxWidth.toPx()
@@ -192,8 +182,43 @@ private fun rememberPermanentFlowCellWidth(
             val sumRowGapSizePx = itemGapPx * (itemsPerRow - 1)
             val sumItemSizePx = usableContainerWidthPx - sumRowGapSizePx
             val realItemSizePx = sumItemSizePx / itemsPerRow
-            realItemSizePx.dp
+            Pair(realItemSizePx.dp, itemsPerRow)
         }
+    }
+}
+
+/**
+ * adapted from [LazyGridItemProvider]
+ */
+@Composable
+private fun <P, L> rememberKindaLazyGridItemProviderLambda(
+    flowTileWidth: Dp,
+    tilesPerRow: Int,
+    containerWidth: Dp,
+    permanentChildren: List<P>,
+    lazyChildren: MutableList<L>,
+    content: KindaLazyScope<P, L>.() -> Unit,
+): KindaLazyContent<P, L> {
+    // update the content lambda whenever it changes items
+    val latestContent = rememberUpdatedState(content)
+    return remember(tilesPerRow, permanentChildren, lazyChildren, flowTileWidth, latestContent) {
+        // if our permanent children isn't evenly divisible by tilesPerRow, we need to move some of the lazy children from the _beginning_ of the lazyChildren list
+        val itemsToMove = tilesPerRow - (permanentChildren.size % tilesPerRow)
+        val movedLazyChildren = lazyChildren.take(itemsToMove)
+        val updatedLazyChildren = lazyChildren.drop(itemsToMove)
+        // initial composition
+        KindaLazyContent(
+            tileWidth = flowTileWidth,
+            permanentChildren = permanentChildren,
+            movedLazyChildren = movedLazyChildren,
+            lazyChildren = updatedLazyChildren,
+            // initial composition has no children, because it stops errors on the first render (can't recompose a composable, which is what we'd be doing down below)
+            // this is all to stop re-initializing a brand new KindaLazyContent on every recompose
+            content = {},
+        )
+    }.apply {
+        // and update internally whenever latestContent changes
+        update(latestContent.value)
     }
 }
 
@@ -243,5 +268,57 @@ private class KindaLazyScrollStateImpl : KindaLazyScrollState {
     override suspend fun stopScroll() {
         gridScroll.stopScroll()
         rootScroll.stopScroll()
+    }
+}
+
+/**
+ * the transformed version of [KindaLazyScope]
+ */
+private class KindaLazyContent<P, L>(
+    /** how wide each flow row tile needs to be */
+    tileWidth: Dp,
+    /** The children that are _always_ permanent */
+    private val permanentChildren: List<P>,
+    /** The lazy children that, for layout reasons, are shifted to the permanent section */
+    private val movedLazyChildren: List<L>,
+    /** the adjusted items to render in the lazy grid */
+    private val lazyChildren: List<L>,
+    content: KindaLazyScope<P, L>.() -> Unit,
+) : KindaLazyScope<P, L>(tileWidth) {
+    var wrappedPermanentChildren: (@Composable FlowRowScope.() -> Unit)? = null
+    var wrappedLazyChildren: (LazyGridScope.() -> Unit)? = null
+
+    init {
+        apply(content)
+    }
+
+    fun update(content: KindaLazyScope<P, L>.() -> Unit) {
+        apply(content)
+        require(lazyTemplate != null) {
+            "lazy template required for KindaLazyVerticalGrid"
+        }
+        require(permanentTemplate != null) {
+            "permanent template required for KindaLazyVerticalGrid"
+        }
+
+        wrappedPermanentChildren = @Composable {
+            for (child in permanentChildren) {
+                Box(modifier = Modifier.requiredWidth(columnWidth)) {
+                    permanentTemplate!!.invoke(child)
+                }
+            }
+            for (moved in movedLazyChildren) {
+                // need to wrap in a box here
+                Box(modifier = Modifier.requiredWidth(columnWidth)) {
+                    lazyTemplate!!.invoke(moved)
+                }
+            }
+        }
+
+        wrappedLazyChildren = {
+            items(lazyChildren) {
+                lazyTemplate!!.invoke(it)
+            }
+        }
     }
 }

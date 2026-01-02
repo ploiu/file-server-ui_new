@@ -7,7 +7,6 @@ import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -359,60 +358,56 @@ private fun LoadedFolderList(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         scrollState = scrollState,
+        permanentChildren = folders,
+        lazyChildren = files,
     ) {
-        permanentItems = {
-            val x = 1 + 1
-            for (item in folders) {
-                DesktopFolderEntry(
-                    folder = item,
-                    modifier = Modifier.requiredWidth(columnWidth),
-                    onClick = { onFolderNav(it) },
-                    onContextAction = onFolderContextAction,
-                    onDrop = {
-                        if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
-                            val child =
-                                it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
-                            onFolderChildDropped(item, child)
-                        }
-                    },
-                )
-            }
+        permanentTemplate = { item ->
+            DesktopFolderEntry(
+                folder = item,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onFolderNav(it) },
+                onContextAction = onFolderContextAction,
+                onDrop = {
+                    if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
+                        val child = it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
+                        onFolderChildDropped(item, child)
+                    }
+                },
+            )
         }
-        lazyItems = {
-            items(files) { item ->
-                DesktopFileEntry(
-                    file = item,
-                    preview = previews[item.id],
-                    onClick = { TODO("file single / double click not implemented") },
-                    onContextAction = onFileContextAction,
-                    imageModifier = if (isDragging) {
-                        Modifier.alpha(.25f)
-                    } else {
-                        Modifier
+        lazyTemplate = { item ->
+            DesktopFileEntry(
+                file = item,
+                preview = previews[item.id],
+                onClick = { TODO("file single / double click not implemented") },
+                onContextAction = onFileContextAction,
+                imageModifier = if (isDragging) {
+                    Modifier.alpha(.25f)
+                } else {
+                    Modifier
+                },
+                modifier = Modifier.dragAndDropSource(
+                    drawDragDecoration = {
+                        // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
+                        /* val bitmap = previews[child.id]?.toImageBitmap() ?: determineBitmapIcon(child)
+                        drawImage(
+                            image = bitmap,
+                            dstSize = IntSize(width = bitmap.width, height = bitmap.height),
+                            dstOffset = IntOffset(0, 0)
+                        ) */
                     },
-                    modifier = Modifier.dragAndDropSource(
-                        drawDragDecoration = {
-                            // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
-                            /* val bitmap = previews[child.id]?.toImageBitmap() ?: determineBitmapIcon(child)
-                            drawImage(
-                                image = bitmap,
-                                dstSize = IntSize(width = bitmap.width, height = bitmap.height),
-                                dstOffset = IntOffset(0, 0)
-                            ) */
-                        },
-                        transferData = { offset ->
-                            DragAndDropTransferData(
-                                transferable = DragAndDropTransferable(FolderChildSelection(item)),
-                                supportedActions = listOf(Move),
-                                dragDecorationOffset = offset,
-                                onTransferCompleted = {
-                                    // TODO move the file to the folder
-                                },
-                            )
-                        },
-                    ),
-                )
-            }
+                    transferData = { offset ->
+                        DragAndDropTransferData(
+                            transferable = DragAndDropTransferable(FolderChildSelection(item)),
+                            supportedActions = listOf(Move),
+                            dragDecorationOffset = offset,
+                            onTransferCompleted = {
+                                // TODO move the file to the folder
+                            },
+                        )
+                    },
+                ),
+            )
         }
     }
 }
