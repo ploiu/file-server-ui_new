@@ -7,7 +7,6 @@ import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.LightDefaultContextMenuRepresentation
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
@@ -129,7 +128,6 @@ fun main() = application {
                     }
 
                     else -> {
-                        println(it.key)
                     }
                 }
             }
@@ -366,7 +364,13 @@ fun MainDesktopBody(
                 composable<SearchResultsRoute> { backStack ->
                     val route: SearchResultsRoute = backStack.toRoute()
                     val viewModel = koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
-                    SearchResultsPage(viewModel = viewModel, onFileClick = { appViewModel.sideSheetItem(it) })
+                    SearchResultsPage(
+                        viewModel = viewModel,
+                        onUpdate = appViewModel::changeUpdateKey,
+                        onFileClick = { appViewModel.sideSheetItem(it) },
+                        refreshKey = appState.updateKey,
+                        isDragging = dragStatus is IsDragging,
+                    )
                 }
             }
             CurrentDialog()

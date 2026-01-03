@@ -1,6 +1,8 @@
 package dev.ploiu.file_server_ui_new.components.sidesheet
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,12 +15,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction.Companion.Move
+import androidx.compose.ui.draganddrop.DragAndDropTransferData
+import androidx.compose.ui.draganddrop.DragAndDropTransferable
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.FolderChildSelection
 import dev.ploiu.file_server_ui_new.components.Pill
 import dev.ploiu.file_server_ui_new.components.TagList
 import dev.ploiu.file_server_ui_new.components.pillColors
@@ -107,6 +114,7 @@ fun FolderDetailSheet(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun MainFolderDetails(
     folder: FolderApi,
@@ -123,11 +131,22 @@ private fun MainFolderDetails(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // image and title
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable(enabled = true, onClick = {}),
+        ) {
             Image(
                 painter = painterResource(Res.drawable.folder),
                 contentDescription = "folder icon",
-                Modifier.width(108.dp).height(108.dp).testTag("folderImage"),
+                Modifier.width(108.dp).height(108.dp).testTag("folderImage").dragAndDropSource(
+                    transferData = { offset ->
+                        DragAndDropTransferData(
+                            transferable = DragAndDropTransferable(FolderChildSelection(folder)),
+                            supportedActions = listOf(Move),
+                            dragDecorationOffset = offset,
+                        )
+                    },
+                ),
                 contentScale = ContentScale.Fit,
             )
             Text(folder.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("folderName"))

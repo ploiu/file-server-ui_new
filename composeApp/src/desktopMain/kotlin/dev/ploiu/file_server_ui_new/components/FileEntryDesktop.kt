@@ -61,7 +61,12 @@ fun determineBitmapIcon(file: FileApi): ImageBitmap =
     CachedResources.internalBitmaps[file.fileType.lowercase()] ?: CachedResources.internalBitmaps["unknown"]!!
 
 fun ByteArray.toImageBitmap(): ImageBitmap {
-    return Image.makeFromEncoded(this).toComposeImageBitmap()
+    // sometimes this fails when running a proxy server to check reqs and responses. Something something byte order I can't tell
+    return try {
+        Image.makeFromEncoded(this).toComposeImageBitmap()
+    } catch (e: Exception) {
+        CachedResources.internalBitmaps["unknown"]!!
+    }
 }
 
 @Composable

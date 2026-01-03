@@ -146,7 +146,7 @@ class FileDetailViewModel(
 
     fun renameFile(newName: String) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
-        if (currentState is FileDetailLoaded) {
+        if (currentState is FileDetailHasFile) {
             val toUpdate = currentState.file.copy(name = newName).toFileRequest()
             updateFile(toUpdate)
         }
@@ -313,33 +313,36 @@ class FileDetailViewModel(
         )
     }
 
-    private fun updateFile(toUpdate: FileRequest) =
-        viewModelScope.launch(Dispatchers.IO + exceptionHandler) { // this is nice just in case
-            clearNonCriticalError()
-            val currentState =
-                _state.value.sheetState // basically the same exact behavior as without the non-critical error
-            if (currentState is FileDetailHasFile) {
-                _state.update { it.copy(sheetState = FileDetailLoading()) }
-                fileService.updateFile(toUpdate).onSuccess { loadFile() }.onFailure { msg ->
-                    _state.update {
-                        it.copy(
-                            sheetState = FileDetailMessage(
-                                file = currentState.file,
-                                folder = currentState.folder,
-                                message = "Failed to update file: $msg",
-                            ),
-                        )
-                    }
-                    delay(5_000L)
-                    _state.update {
-                        it.copy(
-                            sheetState = FileDetailLoaded(
-                                file = currentState.file,
-                                folder = currentState.folder,
-                            ),
-                        )
-                    }
+    private fun updateFile(toUpdate: FileRequest) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+        // this is nice just in case
+        clearNonCriticalError()
+        val currentState = _state.value.sheetState
+        // basically the same exact behavior as without the non-critical error
+        if (currentState is FileDetailHasFile) {
+            _state.update { it.copy(sheetState = FileDetailLoading()) }
+            fileService.updateFile(toUpdate).onSuccess {
+                _state.update { it.copy(updateKey = it.updateKey + 1) }
+                loadFile()
+            }.onFailure { msg ->
+                _state.update {
+                    it.copy(
+                        sheetState = FileDetailMessage(
+                            file = currentState.file,
+                            folder = currentState.folder,
+                            message = "Failed to update file: $msg",
+                        ),
+                    )
+                }
+                delay(5_000L)
+                _state.update {
+                    it.copy(
+                        sheetState = FileDetailLoaded(
+                            file = currentState.file,
+                            folder = currentState.folder,
+                        ),
+                    )
                 }
             }
         }
+    }
 }

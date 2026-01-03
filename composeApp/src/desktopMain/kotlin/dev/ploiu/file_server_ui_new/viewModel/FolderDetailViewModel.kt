@@ -214,7 +214,10 @@ class FolderDetailViewModel(
         // basically the same exact behavior as without the non-critical error
         if (currentState is FolderDetailHasFolder) {
             _state.update { it.copy(sheetState = FolderDetailLoading()) }
-            folderService.updateFolder(toUpdate).onSuccess { loadFolder() }.onFailure { msg ->
+            folderService.updateFolder(toUpdate).onSuccess {
+                _state.update { it.copy(updateKey = it.updateKey + 1) }
+                loadFolder()
+            }.onFailure { msg ->
                 _state.update {
                     it.copy(
                         sheetState = FolderDetailMessage(

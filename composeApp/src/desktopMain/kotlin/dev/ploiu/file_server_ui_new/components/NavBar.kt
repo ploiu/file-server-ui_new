@@ -1,5 +1,6 @@
 package dev.ploiu.file_server_ui_new.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.FlowRow
@@ -75,7 +76,7 @@ fun NavBar(
                 onFolderChildDropped = onFolderChildDropped,
                 clickEntry = clickEntry,
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            // Spacer(modifier = Modifier.width(8.dp))
             if (index < state.size - 1) {
                 Text("/")
                 Spacer(modifier = Modifier.width(8.dp))
@@ -118,7 +119,11 @@ private fun NavEntry(
 
     Text(
         folder.name,
-        color = MaterialTheme.colorScheme.primary,
+        color = if (!isDraggedOver) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        },
         textDecoration = TextDecoration.Underline,
         modifier = Modifier.pointerHoverIcon(
             PointerIcon.Hand,
@@ -128,6 +133,12 @@ private fun NavEntry(
                 val newFolders = state[0.toUInt()..(index + 1).toUInt()]
                 clickEntry(LinkedList(newFolders))
             }
-        }.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget),
+        }.dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget) then if (isDraggedOver) {
+            Modifier
+                .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.small)
+                .padding(horizontal = 4.dp)
+        } else {
+            Modifier.padding(horizontal = 4.dp)
+        },
     )
 }

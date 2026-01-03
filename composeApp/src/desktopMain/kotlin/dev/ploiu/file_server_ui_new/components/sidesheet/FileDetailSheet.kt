@@ -1,5 +1,7 @@
 package dev.ploiu.file_server_ui_new.components.sidesheet
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,11 +14,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction.Companion.Move
+import androidx.compose.ui.draganddrop.DragAndDropTransferData
+import androidx.compose.ui.draganddrop.DragAndDropTransferable
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.FolderChildSelection
 import dev.ploiu.file_server_ui_new.components.PickFileImage
 import dev.ploiu.file_server_ui_new.components.Pill
 import dev.ploiu.file_server_ui_new.components.TagList
@@ -41,7 +48,7 @@ fun FileDetailSheet(
     closeSelf: () -> Unit,
     onChange: () -> Unit,
 ) {
-    val (pageState, updateKey) = viewModel.state.collectAsState().value
+    val state = viewModel.state.collectAsState().value
     val filePicker = rememberFileSaverLauncher { file ->
         if (file != null) {
             viewModel.downloadFile(file)
@@ -54,13 +61,13 @@ fun FileDetailSheet(
     }
 
     // for when a change is made and we need to signal to the parent to refresh
-    LaunchedEffect(updateKey) {
-        if (updateKey > 0) {
+    LaunchedEffect(state.updateKey) {
+        if (state.updateKey > 0) {
             onChange()
         }
     }
 
-    when (pageState) {
+    when (state.sheetState) {
         is FileDetailLoading -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -73,27 +80,27 @@ fun FileDetailSheet(
 
         is FileDetailHasFile -> {
             MainFileDetails(
-                file = pageState.file,
-                filePath = pageState.filePath,
+                file = state.sheetState.file,
+                filePath = state.sheetState.filePath,
                 onRenameClick = viewModel::openRenameModal,
                 onSaveClick = {
                     println("save clicked!")
                     viewModel.closeModal()
-                    filePicker.launch(pageState.file.nameWithoutExtension, pageState.file.extension)
+                    filePicker.launch(state.sheetState.file.nameWithoutExtension, state.sheetState.file.extension)
                 },
                 onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
                 onOpenClick = viewModel::openFile,
                 onAddTagClicked = viewModel::openAddTagDialog,
-                preview = if (pageState is FilePreviewLoaded) {
-                    pageState.preview
+                preview = if (state.sheetState is FilePreviewLoaded) {
+                    state.sheetState.preview
                 } else {
                     null
                 },
             )
-            if (pageState is FileDetailMessage) {
+            if (state.sheetState is FileDetailMessage) {
                 Snackbar {
-                    Text(pageState.message, modifier = Modifier.testTag("message"))
+                    Text(state.sheetState.message, modifier = Modifier.testTag("message"))
                 }
             }
         }
@@ -108,12 +115,13 @@ fun FileDetailSheet(
             ) {
                 Icon(Icons.Default.Error, "Error Icon", tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(32.dp))
-                Text(pageState.message, textAlign = TextAlign.Center)
+                Text(state.sheetState.message, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun MainFileDetails(
     file: FileApi,
@@ -133,8 +141,23 @@ private fun MainFileDetails(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // image and title
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            PickFileImage(file, preview, Modifier.width(108.dp).height(108.dp).testTag("fileImage"))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            // probably abusing the clickable modifier just for styling but oh well
+            modifier = Modifier.clickable(enabled = true, onClick = {}),
+        ) {
+            PickFileImage(
+                file, preview,
+                Modifier.width(108.dp).height(108.dp).testTag("fileImage").dragAndDropSource(
+                    transferData = { offset ->
+                        DragAndDropTransferData(
+                            transferable = DragAndDropTransferable(FolderChildSelection(file)),
+                            supportedActions = listOf(Move),
+                            dragDecorationOffset = offset,
+                        )
+                    },
+                ),
+            )
             Text(file.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("fileName"))
         }
         Spacer(Modifier.height(16.dp))
