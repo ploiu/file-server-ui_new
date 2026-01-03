@@ -4,8 +4,11 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import dev.ploiu.file_server_ui_new.model.ErrorMessage
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
 import retrofit2.Response
+
+private val log = KotlinLogging.logger("ApiUtils")
 
 /**
  * Meant to give both the human-readable message from the server and the actual status code a response returned,

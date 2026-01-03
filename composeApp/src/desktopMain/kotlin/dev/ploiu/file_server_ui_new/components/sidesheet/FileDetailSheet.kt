@@ -83,7 +83,7 @@ fun FileDetailSheet(
                 },
                 onDeleteClick = viewModel::openDeleteDialog,
                 onUpdateTags = { viewModel.updateTags(it) },
-                onOpenClick = { viewModel.openFile() },
+                onOpenClick = viewModel::openFile,
                 onAddTagClicked = viewModel::openAddTagDialog,
                 preview = if (pageState is FilePreviewLoaded) {
                     pageState.preview

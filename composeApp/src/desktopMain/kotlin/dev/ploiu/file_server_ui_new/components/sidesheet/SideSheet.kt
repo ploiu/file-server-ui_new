@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 /** attempts to adhere to a modified (read, for my purposes)
  * [Material Standard Side Sheet Specification] (https://m3.material .io/components/side-sheets/overview),
  * since it is currently not implemented in compose multiplatform */
-// TODO escape key close?, somehow sending title to this thing from a child component (probably a data class tbh)
 @Composable
 fun StandardSideSheet(
     title: String = "",

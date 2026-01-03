@@ -15,7 +15,6 @@ import dev.ploiu.file_server_ui_new.model.*
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.FolderUploadService
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.isDirectory
 import io.github.vinceglb.filekit.isRegularFile
@@ -53,7 +52,6 @@ class ApplicationViewModel(
     private val folderUploadService: FolderUploadService,
     modalController: ModalController,
 ) : ViewModelWithModal(modalController) {
-    private val log = KotlinLogging.logger("ApplicationViewModel")
     private val _state = MutableStateFlow(ApplicationUiModel(NoSideSheet()))
     val state = _state.asStateFlow()
 

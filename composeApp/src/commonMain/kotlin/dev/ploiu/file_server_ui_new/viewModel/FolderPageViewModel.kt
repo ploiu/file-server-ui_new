@@ -6,6 +6,10 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewModelScope
+import com.github.michaelbull.result.flatMap
+import com.github.michaelbull.result.map
+import com.github.michaelbull.result.mapBoth
+import com.github.michaelbull.result.mapEither
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dev.ploiu.file_server_ui_new.components.dialog.ErrorModalProps
@@ -17,8 +21,11 @@ import dev.ploiu.file_server_ui_new.model.FolderApi
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
-import io.github.oshai.kotlinlogging.KotlinLogging
+import dev.ploiu.file_server_ui_new.util.getCachedFile
+import dev.ploiu.file_server_ui_new.util.writeTempFile
+import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.openFileWithDefaultApplication
 import io.github.vinceglb.filekit.sink
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.Serializable
+import org.koin.ext.getFullName
 
 @Serializable
 data class FolderRoute(val id: Long)
@@ -51,7 +59,6 @@ class FolderPageViewModel(
     val folderId: Long,
     modalController: ModalController,
 ) : ViewModelWithModal(modalController) {
-    private val log = KotlinLogging.logger { }
     private val _state = MutableStateFlow(FolderPageUiModel(FolderPageLoading(), emptyMap()))
     val state = _state.asStateFlow()
 
@@ -75,11 +82,12 @@ class FolderPageViewModel(
                     it.copy(previews = previews)
                 }
             }.catch {
+                log.error(it) { "Failed to load previews" }
                 _state.update { it.copy(message = "Failed to load previews: ${it.message}") }
             }.launchIn(this)
         }.onFailure { error ->
             // failed to pull folder at _all_
-            openErrorModal(error)
+            openErrorModal(message = error)
             log.error { "Failed to get folder information: $error" }
         }
     }
@@ -118,7 +126,7 @@ class FolderPageViewModel(
                 //  having to pull again...will need refresh logic though (ctrl + r)
                 // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                 _state.update { it.copy(updateKey = it.updateKey + 1) }
-            }.onFailure(this@FolderPageViewModel::openErrorModal)
+            }.onFailure { openErrorModal(message = it) }
         }
     }
 
@@ -145,7 +153,7 @@ class FolderPageViewModel(
             }
             res.close()
             _state.update { it.copy(message = "File downloaded successfully") }
-        }.onFailure(this@FolderPageViewModel::openErrorModal)
+        }.onFailure { openErrorModal(message = it) }
     }
 
     fun updateFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO) {
@@ -156,7 +164,7 @@ class FolderPageViewModel(
             updateRes.onSuccess {
                 // we don't re-pull the folder because we update the update key, which forces everything in the app to sync
                 _state.update { it.copy(updateKey = it.updateKey + 1) }
-            }.onFailure(this@FolderPageViewModel::openErrorModal)
+            }.onFailure { openErrorModal(message = it) }
         }
     }
 
@@ -234,15 +242,36 @@ class FolderPageViewModel(
         )
     }
 
-    fun openErrorModal(message: String) {
+    fun openErrorModal(title: String = "An error occurred", message: String) {
         ErrorModal.open(
             ErrorModalProps(
-                title = "An error occurred",
+                title = title,
                 text = message,
                 icon = Icons.Default.Error,
                 iconColorProvider = @Composable { MaterialTheme.colorScheme.error },
                 onClose = this::closeModal,
             ),
         )
+    }
+
+    fun openFile(file: FileApi) = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+        val cached = getCachedFile(file.id, file.name)
+        if (cached != null) {
+            FileKit.openFileWithDefaultApplication(cached)
+            return@launch
+        }
+        fileService.getFileContents(file.id).flatMap { res ->
+            res.use { inputStream ->
+                writeTempFile(file.id, file.name, inputStream)
+            }.mapEither(
+                success = FileKit::openFileWithDefaultApplication,
+                failure = { e -> e.message ?: (e::class.getFullName() + " (no exception message)") },
+            )
+        }.onFailure { msg ->
+            openErrorModal(
+                title = "Failed to open file",
+                message = msg,
+            )
+        }
     }
 }

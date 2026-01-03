@@ -5,6 +5,8 @@ import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.PreviewClient
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
+import dev.ploiu.file_server_ui_new.model.FolderApproximator
+import io.github.vinceglb.filekit.PlatformFile
 import io.mockk.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
@@ -19,7 +21,6 @@ class PreviewServiceTest {
     @get:Rule
     val currentTestName = TestName()
 
-    private lateinit var directoryService: DirectoryService
     private lateinit var cacheDir: File
 
     private fun getTestName(): String {
@@ -28,11 +29,11 @@ class PreviewServiceTest {
 
     @BeforeTest
     fun setUp() {
-        directoryService = mockk()
+        mockkObject(DirectoryService)
 
         val testName = getTestName()
         val rootDir = File("./testDirs/$testName")
-        every { directoryService.getRootDirectory() } returns rootDir
+        every { DirectoryService.getCacheDir() } returns PlatformFile(rootDir)
         cacheDir = File(rootDir, "/cache")
         if (cacheDir.exists()) {
             cacheDir.deleteRecursively()
@@ -49,7 +50,7 @@ class PreviewServiceTest {
     fun `getFolderPreview creates the folder cache directory if it doesn't exist`() = runTest {
         val previewClient: PreviewClient = mockk()
         val fileClient: FileClient = mockk()
-        val previewService = DesktopPreviewService(fileClient, previewClient, directoryService)
+        val previewService = DesktopPreviewService(fileClient, previewClient)
         previewService.getFolderPreview(
             FolderApi(
                 1,
@@ -79,7 +80,6 @@ class PreviewServiceTest {
             val previewService = DesktopPreviewService(
                 fileClient = fileClient,
                 previewClient = previewClient,
-                directoryService = directoryService,
             )
             previewService.getFolderPreview(folder).collect()
             assertFalse { oldFile.exists() }
@@ -107,7 +107,6 @@ class PreviewServiceTest {
         val previewService = DesktopPreviewService(
             fileClient = fileClient,
             previewClient = previewClient,
-            directoryService = directoryService,
         )
         previewService.getFolderPreview(folder).collect()
         assertTrue { validFile.exists() }
@@ -137,7 +136,6 @@ class PreviewServiceTest {
             val previewService = DesktopPreviewService(
                 fileClient = fileClient,
                 previewClient = previewClient,
-                directoryService = directoryService,
             )
             val result = previewService.getFolderPreview(folder).map { it.first }.toSet()
 
@@ -177,7 +175,6 @@ class PreviewServiceTest {
             val previewService = DesktopPreviewService(
                 fileClient = fileClient,
                 previewClient = previewClient,
-                directoryService = directoryService,
             )
             val result = previewService.getFolderPreview(folder).toList()
             // Should not cache the file
@@ -193,7 +190,6 @@ class PreviewServiceTest {
         val previewService = DesktopPreviewService(
             fileClient = fileClient,
             previewClient = previewClient,
-            directoryService = directoryService,
         )
         val bytes = byteArrayOf(1, 2, 3)
         coEvery { fileClient.getFilePreview(any()) } returns Response.success(
@@ -211,7 +207,6 @@ class PreviewServiceTest {
         val previewService = DesktopPreviewService(
             fileClient = fileClient,
             previewClient = previewClient,
-            directoryService = directoryService,
         )
         coEvery { fileClient.getFilePreview(any()) } returns Response.error(
             404,

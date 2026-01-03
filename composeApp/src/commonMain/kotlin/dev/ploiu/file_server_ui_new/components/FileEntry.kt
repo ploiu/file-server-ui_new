@@ -1,12 +1,17 @@
 package dev.ploiu.file_server_ui_new.components
 
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FileApi
@@ -30,8 +35,7 @@ fun FileEntry(
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth().then(modifier),
-        onClick = { TODO("fileEntry click") },
+        modifier = Modifier.fillMaxWidth() then modifier,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))

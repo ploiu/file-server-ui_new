@@ -16,16 +16,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsError
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsLoaded
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsLoading
 import dev.ploiu.file_server_ui_new.viewModel.SearchResultsPageViewModel
 
 @Composable
-fun SearchResultsPage(model: SearchResultsPageViewModel) {
-    val (pageState) = model.state.collectAsState().value
+fun SearchResultsPage(
+    viewModel: SearchResultsPageViewModel,
+    onFileClick: (FileApi) -> Unit,
+) {
+    val (pageState) = viewModel.state.collectAsState().value
     LaunchedEffect(Unit) {
-        model.performSearch()
+        viewModel.performSearch()
     }
     when (pageState) {
         is SearchResultsLoading -> Row(
@@ -54,7 +58,8 @@ fun SearchResultsPage(model: SearchResultsPageViewModel) {
                         DesktopFileEntry(
                             file = it,
                             preview = pageState.previews[it.id],
-                            onClick = { TODO() },
+                            onClick = onFileClick,
+                            onDoubleClick = viewModel::openFile,
                             onContextAction = { TODO() },
                         )
                     }

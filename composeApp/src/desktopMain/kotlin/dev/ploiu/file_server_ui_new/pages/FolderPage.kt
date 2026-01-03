@@ -1,11 +1,9 @@
 package dev.ploiu.file_server_ui_new.pages
 
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.*
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -30,6 +28,7 @@ import dev.ploiu.file_server_ui_new.components.FolderEntry
 import dev.ploiu.file_server_ui_new.components.kindalazygrid.KindaLazyScrollState
 import dev.ploiu.file_server_ui_new.components.kindalazygrid.KindaLazyVerticalGrid
 import dev.ploiu.file_server_ui_new.components.kindalazygrid.rememberKindaLazyScrollState
+import dev.ploiu.file_server_ui_new.composables.rememberClickCounter
 import dev.ploiu.file_server_ui_new.model.BatchFilePreview
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
@@ -184,6 +183,10 @@ fun FolderPage(
 
                     }
                 },
+                onFileClick = {
+                    onFileInfo(it)
+                },
+                onFileDoubleClicked = viewModel::openFile,
             )
             if (errorMessage != null) {
                 // we have to use weird stuff like this because we're not using the Scaffold for the desktop app
@@ -212,9 +215,13 @@ fun DesktopFileEntry(
     modifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier,
     preview: ByteArray? = null,
-    onClick: (f: FileApi) -> Unit = { TODO("normal file click") },
+    clickable: Boolean = true,
+    onClick: (FileApi) -> Unit,
+    onDoubleClick: (FileApi) -> Unit,
     onContextAction: (FileContextAction) -> Unit,
 ) {
+    val clickCounter = rememberClickCounter(onSingleClick = { onClick(file) }, onDoubleClick = { onDoubleClick(file) })
+    val interactionSource = remember { MutableInteractionSource() }
     ContextMenuArea(
         items = {
             listOf(
@@ -240,7 +247,17 @@ fun DesktopFileEntry(
                 ) { Text(file.name) }
             },
         ) {
-            FileEntry(file, modifier = modifier, preview = preview, imageModifier = imageModifier)
+            FileEntry(
+                file,
+                modifier = modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(),
+                    enabled = clickable,
+                    onClick = clickCounter,
+                ),
+                preview = preview,
+                imageModifier = imageModifier,
+            )
         }
     }
 }
@@ -337,6 +354,10 @@ private fun LoadedFolderList(
     scrollState: KindaLazyScrollState,
     /** callback when the user wants to navigate to a folder */
     onFolderNav: (FolderApi) -> Unit,
+    /** callback when a file is clicked */
+    onFileClick: (FileApi) -> Unit,
+    /** callback when a file is double-clicked */
+    onFileDoubleClicked: (FileApi) -> Unit,
     onFolderContextAction: (FolderContextAction) -> Unit,
     onFileContextAction: (FileContextAction) -> Unit,
     /** when a folder or a file is dragged and dropped to another folder */
@@ -393,17 +414,17 @@ private fun LoadedFolderList(
             DesktopFolderEntry(
                 folder = item,
                 modifier = Modifier.fillMaxWidth().dragAndDropSource(
-                        drawDragDecoration = {
-                            // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
-                        },
-                        transferData = { offset ->
-                            DragAndDropTransferData(
-                                transferable = DragAndDropTransferable(FolderChildSelection(item)),
-                                supportedActions = listOf(Move),
-                                dragDecorationOffset = offset,
-                            )
-                        },
-                    ),
+                    drawDragDecoration = {
+                        // TODO this doesn't work on linux, and neither does the example on jetbrains' own website. So skipping this for now
+                    },
+                    transferData = { offset ->
+                        DragAndDropTransferData(
+                            transferable = DragAndDropTransferable(FolderChildSelection(item)),
+                            supportedActions = listOf(Move),
+                            dragDecorationOffset = offset,
+                        )
+                    },
+                ),
                 onClick = { onFolderNav(it) },
                 onContextAction = onFolderContextAction,
                 onDrop = {
@@ -418,8 +439,10 @@ private fun LoadedFolderList(
             DesktopFileEntry(
                 file = item,
                 preview = previews[item.id],
-                onClick = { TODO("file single / double click not implemented") },
+                onClick = onFileClick,
+                onDoubleClick = onFileDoubleClicked,
                 onContextAction = onFileContextAction,
+                clickable = !isDragging,
                 imageModifier = if (isDragging) {
                     Modifier.alpha(.25f)
                 } else {

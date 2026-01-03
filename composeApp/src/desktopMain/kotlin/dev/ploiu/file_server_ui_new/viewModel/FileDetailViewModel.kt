@@ -3,17 +3,15 @@ package dev.ploiu.file_server_ui_new.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewModelScope
-import com.github.michaelbull.result.andThen
-import com.github.michaelbull.result.map
-import com.github.michaelbull.result.onFailure
-import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.*
 import dev.ploiu.file_server_ui_new.components.dialog.PromptModalProps
 import dev.ploiu.file_server_ui_new.components.dialog.TextModalProps
 import dev.ploiu.file_server_ui_new.model.*
 import dev.ploiu.file_server_ui_new.service.FileService
 import dev.ploiu.file_server_ui_new.service.FolderService
 import dev.ploiu.file_server_ui_new.service.PreviewService
-import io.github.oshai.kotlinlogging.KotlinLogging
+import dev.ploiu.file_server_ui_new.util.getCachedFile
+import dev.ploiu.file_server_ui_new.util.writeTempFile
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.openFileWithDefaultApplication
@@ -27,9 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.io.asSource
 import kotlinx.io.buffered
-import kotlin.io.path.createTempFile
-import kotlin.io.path.deleteExisting
-import kotlin.io.path.outputStream
+import org.koin.ext.getFullName
 
 /** controls the display of the entire file detail view sheet itself */
 sealed interface FileDetailUiState
@@ -89,7 +85,6 @@ class FileDetailViewModel(
     val fileId: Long,
     modalController: ModalController,
 ) : ViewModelWithModal(modalController) {
-    private val log = KotlinLogging.logger { }
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         log.error(throwable) {
             "Failed to process file information"
@@ -179,17 +174,19 @@ class FileDetailViewModel(
     fun openFile() = viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
         val currentState = _state.value.sheetState
         if (currentState is FileDetailHasFile) {
-            // TODO move this to cross-platform version
-            val tempFile = createTempFile()
-            fileService.getFileContents(currentState.file.id).onSuccess { res ->
-                res.use { inputStream ->
-                    tempFile.outputStream().use { os ->
-                        inputStream.transferTo(os)
-                    }
-                }
-                val file = PlatformFile(file = tempFile.toFile())
-                FileKit.openFileWithDefaultApplication(file)
-            }.onFailure { msg ->
+            val file = currentState.file
+            // don't re-fetch the file if it's already cached
+            val cached = getCachedFile(file.id, file.name)
+            if (cached != null) {
+                FileKit.openFileWithDefaultApplication(cached)
+                return@launch
+            }
+            fileService.getFileContents(file.id).flatMap { res ->
+                res.use { inputStream -> writeTempFile(file.id, file.name, inputStream) }.mapEither(
+                    success = { it },
+                    failure = { e -> e.message ?: (e::class.getFullName() + " (no exception message)") },
+                )
+            }.onSuccess(FileKit::openFileWithDefaultApplication).onFailure { msg ->
                 _state.update {
                     it.copy(
                         sheetState = FileDetailMessage(
@@ -199,7 +196,6 @@ class FileDetailViewModel(
                         ),
                     )
                 }
-                tempFile.deleteExisting()
             }
         }
 

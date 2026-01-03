@@ -52,6 +52,7 @@ import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoadingPage
 import dev.ploiu.file_server_ui_new.pages.LoginPage
 import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
+import dev.ploiu.file_server_ui_new.service.DirectoryService
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
@@ -98,7 +99,11 @@ fun main() = application {
     }
     // pre-cache all generic file icons
     loadResources()
-    FileKit.init(appId = "PloiuFileServer")
+    FileKit.init(
+        appId = "PloiuFileServer",
+        filesDir = DirectoryService.getRootDirectory().file,
+        cacheDir = DirectoryService.getCacheDir().file,
+    )
     val messagePasser = remember { ObservableMessagePasser() }
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)
     Window(
@@ -138,7 +143,7 @@ fun main() = application {
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent()
-                            // checking buttons.isBackPressed does not work on my mouse
+                            // checking buttons.isBackPressed does not work on my mouse (key codes listed at https://github.com/l5l/Table-of-vk-and-sc-codes-keyboard-keys-and-mouse-buttons#XButton1)
                             if (event.buttons.isBackPressed || event.type == PointerEventType.Press && event.button!! == PointerButton(
                                     index = 5,
                                 )
@@ -361,7 +366,7 @@ fun MainDesktopBody(
                 composable<SearchResultsRoute> { backStack ->
                     val route: SearchResultsRoute = backStack.toRoute()
                     val viewModel = koinInject<SearchResultsPageViewModel> { parametersOf(route.searchTerm) }
-                    SearchResultsPage(viewModel)
+                    SearchResultsPage(viewModel = viewModel, onFileClick = { appViewModel.sideSheetItem(it) })
                 }
             }
             CurrentDialog()

@@ -143,7 +143,7 @@ class ModalController : ViewModel() {
 /**
  * used to provide helper functions for ease of use to child classes
  */
-abstract class ViewModelWithModal(protected val modalController: ModalController) : ViewModel() {
+abstract class ViewModelWithModal(protected val modalController: ModalController) : BaseViewModel() {
     protected fun openModal(state: ApplicationModalState<*>) {
         modalController.open(modal = state, opener = this)
     }

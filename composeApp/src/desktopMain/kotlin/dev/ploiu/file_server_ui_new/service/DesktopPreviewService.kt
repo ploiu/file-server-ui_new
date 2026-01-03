@@ -27,9 +27,8 @@ private data class CachedReadResult(
 class DesktopPreviewService(
     private val fileClient: FileClient,
     private val previewClient: PreviewClient,
-    directoryService: DirectoryService,
 ) : PreviewService {
-    private val cacheDir = File(directoryService.getRootDirectory(), "/cache")
+    private val cacheDir = DirectoryService.getCacheDir().file
     private val log = KotlinLogging.logger { }
 
     companion object {

@@ -1,8 +1,20 @@
 package dev.ploiu.file_server_ui_new.util
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.cacheDir
+import io.github.vinceglb.filekit.exists
+import io.github.vinceglb.filekit.sink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+import java.io.InputStream
+import kotlin.use
 
-val log = KotlinLogging.logger("Utils")
+private val log = KotlinLogging.logger("Utils")
 
 fun trimToSize(name: String, maxLength: Int = 25): String {
     if (name.length <= maxLength) {
@@ -36,7 +48,6 @@ fun formatFileOrFolderName(name: String) =
  * 1024.toShortHandBytes // "1KiB"
  * 1536.toShortHandBytes // "1.5KiB"
  * ```
- * @param bytes the byte value to format
  * @returns a string representation with an appropriate unit (Bytes, KiB, MiB, GiB, or TiB)
  */
 fun Long.toShortHandBytes(): String {
@@ -80,5 +91,36 @@ fun Long.getFileSizeAlias(): String {
         "Large"
     } else {
         "ExtraLarge"
+    }
+}
+
+/**
+ * Common code for writing contents to a temp file using [FileKit]
+ * @param fileId the id of the file. Used to guarantee unique file names if multiples are downloaded from different locations
+ * @param fileName the name of the file
+ * @param contents the contents of the file. Must be closed by the caller
+ *
+ * This calls IO operations, and must be launched in an IO thread to prevent blocking the UI
+ *
+ * @see getCachedFile for checking if the file needs to be downloaded first at all
+ */
+fun writeTempFile(fileId: Long, fileName: String, contents: InputStream): Result<PlatformFile, Exception> {
+    val file = PlatformFile(FileKit.cacheDir, "${fileId}_$fileName")
+    return try {
+        file.sink(append = false).buffered().use { sink ->
+            sink.transferFrom(contents.asSource())
+        }
+        Ok(file)
+    } catch (e: Exception) {
+        Err(e)
+    }
+}
+
+fun getCachedFile(fileId: Long, fileName: String): PlatformFile? {
+    val checkLocation = PlatformFile(FileKit.cacheDir, "${fileId}_$fileName")
+    return if (checkLocation.exists()) {
+        checkLocation
+    } else {
+        null
     }
 }
