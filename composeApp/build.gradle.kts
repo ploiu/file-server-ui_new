@@ -118,10 +118,11 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "dev.ploiu.file_server_ui_new"
+            packageName = "Ploiu File Server"
             packageVersion = "1.0.0"
             linux {
                 modules("jdk.security.auth")
+                iconFile.set(project.file("icon.png"))
             }
         }
     }

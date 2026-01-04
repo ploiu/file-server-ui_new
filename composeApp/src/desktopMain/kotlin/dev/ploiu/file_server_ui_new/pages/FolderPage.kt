@@ -36,8 +36,11 @@ import dev.ploiu.file_server_ui_new.model.FolderChild
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoaded
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageLoading
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
+import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.launch
+import java.io.File
+import java.net.URI
 import java.util.*
 
 private sealed interface DownloadingSelection
@@ -80,6 +83,7 @@ fun FolderPage(
     onFolderInfo: (FolderApi) -> Unit,
     onFileInfo: (FileApi) -> Unit,
     onFolderNav: (FolderApi) -> Unit,
+    onFileSystemDropped: (Collection<PlatformFile>, folderId: Long) -> Unit,
 ) {
     val (pageState, previews, updateKey, errorMessage) = viewModel.state.collectAsState().value
     // needed as a glue storage object for when opening the system dialog to save a file / folder
@@ -187,6 +191,7 @@ fun FolderPage(
                     onFileInfo(it)
                 },
                 onFileDoubleClicked = viewModel::openFile,
+                onFileSystemDropped = onFileSystemDropped,
             )
             if (errorMessage != null) {
                 // we have to use weird stuff like this because we're not using the Scaffold for the desktop app
@@ -362,6 +367,8 @@ private fun LoadedFolderList(
     onFileContextAction: (FileContextAction) -> Unit,
     /** when a folder or a file is dragged and dropped to another folder */
     onFolderChildDropped: (FolderApi, FolderChild) -> Unit,
+    /** when file system files are dragged and dropped to a folder */
+    onFileSystemDropped: (Collection<PlatformFile>, Long) -> Unit,
 ) {
     val folders = folder.folders.sortedBy { it.name }
     val files = folder.files.sortedByDescending { it.dateCreated }
@@ -431,6 +438,10 @@ private fun LoadedFolderList(
                     if (it.awtTransferable.isDataFlavorSupported(CustomDataFlavors.FOLDER_CHILD)) {
                         val child = it.awtTransferable.getTransferData(CustomDataFlavors.FOLDER_CHILD) as FolderChild
                         onFolderChildDropped(item, child)
+                    } else if (it.dragData() is DragData.FilesList) {
+                        val files = (it.dragData() as DragData.FilesList).readFiles()
+                        val platformFiles = files.map { f -> URI.create(f) }.map(::File).map(::PlatformFile)
+                        onFileSystemDropped(platformFiles, item.id)
                     }
                 },
             )

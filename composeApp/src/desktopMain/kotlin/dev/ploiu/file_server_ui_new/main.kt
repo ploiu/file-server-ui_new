@@ -55,11 +55,14 @@ import dev.ploiu.file_server_ui_new.service.DirectoryService
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
+import file_server_ui_new.composeapp.generated.resources.Res
+import file_server_ui_new.composeapp.generated.resources.appIcon
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.isDirectory
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.context.startKoin
@@ -109,6 +112,7 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "file-server-ui_new",
         state = rememberWindowState(width = 1200.dp, height = 600.dp),
+        icon = painterResource(Res.drawable.appIcon),
         onKeyEvent = {
             if (it.type == KeyEventType.KeyUp) {
                 when (it.key) {
@@ -356,10 +360,12 @@ fun MainDesktopBody(
                         onFolderInfo = { appViewModel.sideSheetItem(it) },
                         onFileInfo = { appViewModel.sideSheetItem(it) },
                         onUpdate = appViewModel::changeUpdateKey,
-                    ) {
-                        navController.navigate(FolderRoute(it.id))
-                        navBarState += it
-                    }
+                        onFileSystemDropped = { files, folderId -> appViewModel.uploadBulk(files, folderId) },
+                        onFolderNav = {
+                            navController.navigate(FolderRoute(it.id))
+                            navBarState += it
+                        },
+                    )
                 }
                 composable<SearchResultsRoute> { backStack ->
                     val route: SearchResultsRoute = backStack.toRoute()
