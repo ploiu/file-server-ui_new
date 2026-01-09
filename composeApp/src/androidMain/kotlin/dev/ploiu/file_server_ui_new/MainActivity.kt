@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.GlobalContext.startKoin
 
 
 @Composable
 actual fun AppTheme(
-    content: @Composable() () -> Unit,
+    content: @Composable () -> Unit,
 ) {
     val darkTheme = isSystemInDarkTheme()
     // Dynamic color is available on Android 12+
@@ -45,7 +47,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
         setContent {
             AppTheme {
                 Column(
