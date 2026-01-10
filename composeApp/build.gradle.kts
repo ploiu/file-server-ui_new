@@ -128,18 +128,18 @@ compose.desktop {
     }
 }
 
-val credsFfiDir = file("../creds-ffi")
-
 tasks.named("desktopProcessResources") {
-    dependsOn("buildCredsFfi")
+    // there is a stupid bug with _something_ in intellij, where running in debug mode makes the buildCredsFfi task hang permanently. ONLY in debug mode
+    if (System.getenv("INTELLIJ_RUN") != "true") {
+        dependsOn("buildCredsFfi")
+    }
 }
 
 tasks.register<Exec>("buildCredsFfi") {
     workingDir = projectDir.parentFile
     if (Os.isFamily(Os.FAMILY_UNIX)) {
-        commandLine("sh", "-c", "./scripts/buildCredsFfi.sh")
+        executable = "./scripts/buildCredsFfi.sh"
     } else {
         TODO("windows support")
     }
-
 }
