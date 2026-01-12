@@ -51,7 +51,7 @@ import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoadingPage
 import dev.ploiu.file_server_ui_new.pages.LoginPage
 import dev.ploiu.file_server_ui_new.pages.SearchResultsPage
-import dev.ploiu.file_server_ui_new.service.DirectoryService
+import dev.ploiu.file_server_ui_new.service.AppSettings
 import dev.ploiu.file_server_ui_new.ui.theme.darkScheme
 import dev.ploiu.file_server_ui_new.ui.theme.lightScheme
 import dev.ploiu.file_server_ui_new.viewModel.*
@@ -103,8 +103,8 @@ fun main() = application {
     loadResources()
     FileKit.init(
         appId = "PloiuFileServer",
-        filesDir = DirectoryService.getRootDirectory().file,
-        cacheDir = DirectoryService.getCacheDir().file,
+        filesDir = AppSettings.getRootDirectory().file,
+        cacheDir = AppSettings.getCacheDir().file,
     )
     val messagePasser = remember { ObservableMessagePasser() }
     // TODO window breakpoints (jetbrains has a lib, see https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-adaptive-layouts.html)

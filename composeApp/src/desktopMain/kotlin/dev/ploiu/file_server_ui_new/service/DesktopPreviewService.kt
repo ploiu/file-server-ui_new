@@ -28,7 +28,7 @@ class DesktopPreviewService(
     private val fileClient: FileClient,
     private val previewClient: PreviewClient,
 ) : PreviewService {
-    private val cacheDir = DirectoryService.getCacheDir().file
+    private val cacheDir = AppSettings.getCacheDir().file
     private val log = KotlinLogging.logger { }
 
     companion object {

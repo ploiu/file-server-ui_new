@@ -14,13 +14,37 @@ example).
 On top of that, Compose Multiplatform allows both the desktop and android apps share a lot of logic, with mostly only
 the ui pages being different
 
+## Installing
+
+### Linux
+
+```shell
+./gradlew clean packageDeb
+sudo apt install ./composeApp/build/compose/binaries/main/deb/ploiu-file-server_1.0.1*.deb
+```
+
 ## Building
 
-Dependencies:
+### Dependencies:
 
 - java21
 - rust 1.88.0 (for desktop, building native code to store and retrieve the password set by you when logging into the
   server)
+
+### Setup
+
+due to a bug(?) in intellij with running apps in debug mode, gradle `Exec` tasks don't run _at all_ when debug is
+selected.
+Because of this, the ffi bindings for desktop credential manager aren't generated when running the `main [desktop]` run
+config.
+Run this to generate them
+
+```shell
+./gradlew :composeApp:buildCredsFfi
+```
+
+This will generate the bindings for your current platform and will need to be re-run if you ever delete the bindings
+from `./composeApp/src/desktopMain/resources`
 
 ## Running
 
