@@ -56,6 +56,7 @@ class LoginPageViewModel(
         _state.update { it.copy(pageState = LoginLoading()) }
         when (val creds = retrieveCreds()) {
             is NoCredsFound -> {
+                _state.update { it.copy(pageState = LoginUntried()) }
                 // do nothing - the user never saved creds so we can't auto login
                 return@launch
             }

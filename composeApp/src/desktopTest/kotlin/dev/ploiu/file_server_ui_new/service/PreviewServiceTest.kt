@@ -5,7 +5,6 @@ import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.client.PreviewClient
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FolderApi
-import dev.ploiu.file_server_ui_new.model.FolderApproximator
 import io.github.vinceglb.filekit.PlatformFile
 import io.mockk.*
 import kotlinx.coroutines.flow.*
@@ -29,11 +28,11 @@ class PreviewServiceTest {
 
     @BeforeTest
     fun setUp() {
-        mockkObject(DirectoryService)
+        mockkObject(AppSettings)
 
         val testName = getTestName()
         val rootDir = File("./testDirs/$testName")
-        every { DirectoryService.getCacheDir() } returns PlatformFile(rootDir)
+        every { AppSettings.getCacheDir() } returns PlatformFile(rootDir)
         cacheDir = File(rootDir, "/cache")
         if (cacheDir.exists()) {
             cacheDir.deleteRecursively()
