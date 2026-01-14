@@ -8,5 +8,5 @@ actual fun saveCreds(
     username: String,
     password: String,
 ): SaveCredsResult {
-    TODO("Not yet implemented")
+    TODO("Android encrypted shared preferences https://developer.android.com/topic/libraries/architecture/datastore")
 }

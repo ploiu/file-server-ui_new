@@ -1,6 +1,7 @@
 package dev.ploiu.file_server_ui_new.model
 
-import dev.ploiu.file_server_ui_new.model.FolderApproximator.convertDir
+import dev.ploiu.file_server_ui_new.FolderApproximation
+import dev.ploiu.file_server_ui_new.FolderApproximator.convertDir
 import org.junit.jupiter.api.Assertions.assertThrows
 import java.io.File
 import java.io.IOException

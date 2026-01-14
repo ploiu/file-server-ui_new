@@ -12,7 +12,7 @@ val pageModule = module {
     viewModel { (searchTerm: String) -> SearchResultsPageViewModel(get(), get(), searchTerm, get()) }
     viewModel { (folderId: Long) -> FolderDetailViewModel(get(), folderId, get()) }
     viewModel { (fileId: Long) -> FileDetailViewModel(get(), get(), get(), fileId, get()) }
-    viewModelOf(::ApplicationViewModel)
+    viewModelOf(::DesktopApplicationViewModel)
     viewModelOf(::LoginPageViewModel)
 }
 

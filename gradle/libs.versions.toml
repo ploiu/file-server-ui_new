@@ -33,6 +33,8 @@ composeUi = "1.10.0-rc02"
 junit-jupiter = "6.0.1"
 androidx-testExt = "1.3.0"
 mockk = "1.14.7"
+lifecycleRuntimeKtx = "2.6.1"
+composeBom = "2024.09.00"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }

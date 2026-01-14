@@ -173,7 +173,7 @@ private fun isHeaderless(route: String?) = headerlessRoutes.contains(route)
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainDesktopBody(
-    appViewModel: ApplicationViewModel,
+    appViewModel: DesktopApplicationViewModel,
     messagePasser: ObservableMessagePasser,
     window: ComposeWindow,
     modifier: Modifier = Modifier,
@@ -293,7 +293,7 @@ fun MainDesktopBody(
         Column(modifier = Modifier.animateContentSize().weight(mainContentWidth.value, true)) {
             if (shouldShowHeader) {
                 val status = dragStatus
-                // box that shows up to let you drop files from the file system TODO move to separate file to keep this one clean
+                // box that shows up to let you drop files from the file system
                 UploadFileBox(
                     height = searchBarHeight + 8.dp,
                     shouldShow = status is IsDragging && status.isFilesystem,

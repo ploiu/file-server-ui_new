@@ -1,4 +1,4 @@
-package dev.ploiu.file_server_ui_new.model
+package dev.ploiu.file_server_ui_new
 
 import java.io.File
 import java.nio.file.Files

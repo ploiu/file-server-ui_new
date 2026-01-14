@@ -1,5 +1,6 @@
 package dev.ploiu.file_server_ui_new.module
 
+import dev.ploiu.file_server_ui_new.viewModel.AndroidApplicationViewModel
 import dev.ploiu.file_server_ui_new.viewModel.ApplicationViewModel
 import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import dev.ploiu.file_server_ui_new.viewModel.LoadingPageViewModel
@@ -15,6 +16,6 @@ val pageModule = module {
     viewModel { (searchTerm: String) -> SearchResultsPageViewModel(get(), get(), searchTerm, get()) }
     // viewModel { (folderId: Long) -> FolderDetailViewModel(get(), folderId, get()) }
     // viewModel { (fileId: Long) -> FileDetailViewModel(get(), get(), get(), fileId, get()) }
-    viewModelOf(::ApplicationViewModel)
+    viewModelOf(::AndroidApplicationViewModel)
     viewModelOf(::LoginPageViewModel)
 }
