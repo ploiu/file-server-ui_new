@@ -32,8 +32,8 @@ class PreviewServiceTest {
 
         val testName = getTestName()
         val rootDir = File("./testDirs/$testName")
-        every { AppSettings.getCacheDir() } returns PlatformFile(rootDir)
         cacheDir = File(rootDir, "/cache")
+        every { AppSettings.getCacheDir() } returns PlatformFile(cacheDir)
         if (cacheDir.exists()) {
             cacheDir.deleteRecursively()
         }
@@ -85,8 +85,8 @@ class PreviewServiceTest {
         }
 
     @Test
-    @Suppress("UnusedFlow")
-    fun `previews that are still in FolderApi are not removed from the disk`() = runTest {
+    @Suppress("UnusedFlow") // we're asserting on a method call and don't need to consume it
+    fun `getFolderPreview should not clean up previews the folder still has files for`() = runTest {
         val previewClient: PreviewClient = mockk()
         val fileClient: FileClient = mockk()
         // FolderApi contains file with id 2

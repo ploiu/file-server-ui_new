@@ -4,19 +4,22 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import dev.ploiu.file_server_ui_new.FolderApproximation
 import dev.ploiu.file_server_ui_new.FolderApproximator
-import dev.ploiu.file_server_ui_new.model.*
+import dev.ploiu.file_server_ui_new.model.CreateFileRequest
+import dev.ploiu.file_server_ui_new.model.CreateFolder
+import dev.ploiu.file_server_ui_new.model.FileApi
+import dev.ploiu.file_server_ui_new.model.FolderApi
 import io.github.vinceglb.filekit.PlatformFile
 import io.mockk.*
 import io.mockk.junit5.MockKExtension
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.createTempFile
-import kotlin.test.*
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 @MockKExtension.CheckUnnecessaryStub
 @MockKExtension.ConfirmVerification
@@ -57,8 +60,8 @@ class DesktopFolderUploadServiceTests {
             ),
         )
         val res = service.uploadFolder(file, 0L).toList()
-        // should be no elements, since each emit is for an uploaded child file / folder
-        assertTrue { res.isEmpty() }
+        // should include the initial emit for the folder itself
+        assertEquals(1, res.size)
         coVerify { folderService.createFolder(CreateFolder(name = tempFile.name, parentId = 1L, tags = listOf())) }
     }
 
@@ -139,7 +142,11 @@ class DesktopFolderUploadServiceTests {
             )
         }
         val expected = childFiles.map { it.name }.toSet()
-        val actual = service.uploadFolder(file, 0L).map { it as BatchUploadFileResult }.map { it.file!!.name }.toSet()
+        val actual = service.uploadFolder(file, 0L)
+            // the first one is the folder itself being uploaded
+            .drop(1)
+            // ...and the rest are files
+            .map { it as BatchUploadFileResult }.map { it.file!!.name }.toSet()
         assertEquals(expected, actual)
         coVerifyCount {
             1 * { folderService.createFolder(any()) }

@@ -112,8 +112,8 @@ class FolderDetailSheetTests {
         setContent {
             FolderDetailSheet(viewModel, "", {}, {})
         }
-        val image = onNodeWithTag("folderImage")
-        val folderName = onNodeWithTag("folderName")
+        val image = onNodeWithTag("folderImage", useUnmergedTree = true)
+        val folderName = onNodeWithTag("folderName", useUnmergedTree = true)
 
         image.assertIsDisplayed()
         folderName.assertIsDisplayed()
@@ -121,14 +121,8 @@ class FolderDetailSheetTests {
     }
 }
 
-class FolderDetailSheetStatsTests {
+class FolderDetailSheetStatsTests
 
-}
+class FolderDetailSheetTagsTests
 
-class FolderDetailSheetTagsTests {
-
-}
-
-class FolderDetailSheetActionsPanelTests {
-
-}
+class FolderDetailSheetActionsPanelTests
