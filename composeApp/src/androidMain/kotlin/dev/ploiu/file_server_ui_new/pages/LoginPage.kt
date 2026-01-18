@@ -19,7 +19,7 @@ fun LoginPage(viewModel: LoginPageViewModel = koinInject(), navController: NavCo
     val (pageState, shouldSavePassword) = viewModel.state.collectAsState().value
 
     LaunchedEffect(Unit) {
-        // viewModel.attemptAutoLogin()
+        viewModel.attemptAutoLogin()
     }
 
     LaunchedEffect(pageState) {

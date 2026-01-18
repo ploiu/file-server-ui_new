@@ -13,13 +13,13 @@ object AppStorage {
         serializer = EncryptedSettingsSerializer,
     )
 
-    suspend fun Context.getSavedPassword(): String? = getSavedPassword(this)
+    suspend fun Context.getSavedPassword(): String? = _getSavedPassword(this)
 
-    suspend fun Context.savePassword(creds: String?) = savePassword(this, creds)
+    suspend fun Context.savePassword(creds: String?) = _savePassword(this, creds)
 
-    private suspend fun getSavedPassword(context: Context): String? = context.datastore.data.firstOrNull()?.credentials
+    private suspend fun _getSavedPassword(context: Context): String? = context.datastore.data.firstOrNull()?.credentials
 
-    private suspend fun savePassword(context: Context, creds: String?): Boolean {
+    private suspend fun _savePassword(context: Context, creds: String?): Boolean {
         return try {
             context.datastore.updateData { settings -> settings.copy(credentials = creds) }
             true

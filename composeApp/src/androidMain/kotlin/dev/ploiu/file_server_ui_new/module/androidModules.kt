@@ -20,6 +20,5 @@ val pageModule = module {
 }
 
 val androidServiceModule = module {
-    single<Context> { androidContext() }
-    single<CredsService> { AndroidCredsService(get()) }
+    single<CredsService> { AndroidCredsService(androidContext()) }
 }

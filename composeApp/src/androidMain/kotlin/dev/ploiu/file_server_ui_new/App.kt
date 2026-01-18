@@ -35,7 +35,7 @@ class App : Application() {
         try {
             startKoin {
                 androidContext(this@App)
-                modules(pageModule, configModule, clientModule, serviceModule, miscModule)
+                modules(pageModule, configModule, clientModule, serviceModule, miscModule, androidServiceModule)
             }
         } catch (_: Exception) {
             println("koin already started")
