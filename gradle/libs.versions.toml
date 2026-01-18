@@ -2,9 +2,8 @@
 agp = "8.12.3"
 android-compileSdk = "36"
 android-minSdk = "30"
-#noinspection OldTargetApi
 android-targetSdk = "35"
-androidx-activity = "1.12.1"
+androidx-activity = "1.12.2"
 androidx-appcompat = "1.7.1"
 androidx-constraintlayout = "2.2.1"
 androidx-core = "1.17.0"
@@ -13,8 +12,8 @@ androidx-lifecycle = "2.9.6"
 compose-navigation = "2.9.1"
 jetbrains-compose = "1.7.3"
 koin = "4.1.1"
-kotlin = "2.2.21"
-kotlinLoggingJvm = "7.0.13"
+kotlin = "2.3.0"
+kotlinLoggingJvm = "7.0.14"
 kotlinx = "1.9.0"
 kotlinx-coroutines = "1.10.2"
 material3 = "1.9.0"
@@ -27,10 +26,12 @@ kotlin-result = "2.1.0"
 filekit = "0.12.0"
 # for bindings with rust_credential_manager
 jna = "5.18.1"
-composeUi = "1.10.0-rc02"
+composeUi = "1.10.0"
+# android data store
+android-datastore = "1.2.0"
 
 # for testing
-junit-jupiter = "6.0.1"
+junit-jupiter = "6.0.2"
 androidx-testExt = "1.3.0"
 mockk = "1.14.7"
 lifecycleRuntimeKtx = "2.6.1"
@@ -78,6 +79,7 @@ jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeUi" }
 ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeUi" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeUi" }
+android-datastore = { module = "androidx.datastore:datastore", version.ref = "android-datastore" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

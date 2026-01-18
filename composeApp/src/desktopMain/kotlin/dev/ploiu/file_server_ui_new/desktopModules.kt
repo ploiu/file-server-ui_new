@@ -19,4 +19,5 @@ val pageModule = module {
 val desktopServiceModule = module {
     single<PreviewService> { DesktopPreviewService(get(), get()) }
     single<FolderUploadService> { DesktopFolderUploadService(get(), get()) }
+    single<CredsService> { DesktopCredsService() }
 }

@@ -57,7 +57,7 @@ class ApiService(private val serverConfig: ServerConfig, private val client: Api
      */
     suspend fun authenticatedPing(): Result<Unit, Int> {
         return try {
-            val res = client.getStorageInfo()
+            val res = client.authenticatedPing()
             if (res.isSuccessful) {
                 Ok(Unit)
             } else {

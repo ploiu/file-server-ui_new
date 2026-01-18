@@ -11,4 +11,7 @@ interface ApiClient {
 
     @GET("/api/disk")
     suspend fun getStorageInfo(): Response<DiskInfo>
+
+    @GET("/api/ping")
+    suspend fun authenticatedPing(): Response<Unit>
 }

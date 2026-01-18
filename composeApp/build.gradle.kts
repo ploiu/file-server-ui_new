@@ -38,6 +38,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.android.datastore)
         }
         commonMain.dependencies {
             implementation(libs.runtime)

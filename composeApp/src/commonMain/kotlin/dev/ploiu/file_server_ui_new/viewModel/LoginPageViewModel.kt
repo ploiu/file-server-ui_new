@@ -35,6 +35,7 @@ data class LoginPageUiModel(val pageState: LoginPageState, val savePassword: Boo
 
 class LoginPageViewModel(
     val apiService: ApiService,
+    val credsService: CredsService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LoginPageUiModel(LoginUntried(), false))
     val state = _state.asStateFlow()
@@ -54,7 +55,7 @@ class LoginPageViewModel(
     fun attemptAutoLogin() = viewModelScope.launch(Dispatchers.IO) {
         // first step is attempt to load any stored creds
         _state.update { it.copy(pageState = LoginLoading()) }
-        when (val creds = retrieveCreds()) {
+        when (val creds = credsService.retrieveCreds()) {
             is NoCredsFound -> {
                 _state.update { it.copy(pageState = LoginUntried()) }
                 // do nothing - the user never saved creds so we can't auto login
@@ -107,8 +108,8 @@ class LoginPageViewModel(
     /**
      * should be called after creds are tested via _manual_ login and the user has indicated that they want to save their creds
      */
-    fun savePassword(username: String, password: String) {
-        saveCreds(username, password)
+    fun savePassword(username: String, password: String) = viewModelScope.launch(Dispatchers.IO) {
+        credsService.saveCreds(username, password)
     }
 }
 

@@ -11,12 +11,16 @@ sealed interface SaveCredsResult
 data class SaveCredsError(val message: String) : SaveCredsResult
 class SaveCredsSuccess : SaveCredsResult
 
-/**
- * retrieves the credentials to the server for the current user
- */
-expect fun retrieveCreds(): RetrieveCredsResult
+interface CredsService {
 
-/**
- * saves the credentials as an encrypted value using the default OS keystore (encrypted app storage for android, rust_credential_manager for desktop)
- */
-expect fun saveCreds(username: String, password: String): SaveCredsResult
+    /**
+     * retrieves the credentials to the server for the current user
+     */
+    suspend fun retrieveCreds(): RetrieveCredsResult
+
+    /**
+     * saves the credentials as an encrypted value using the default OS keystore (encrypted app storage for android, rust_credential_manager for desktop)
+     */
+    suspend fun saveCreds(username: String, password: String): SaveCredsResult
+
+}
