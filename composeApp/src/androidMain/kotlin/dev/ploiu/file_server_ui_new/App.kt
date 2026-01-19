@@ -15,8 +15,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.ploiu.file_server_ui_new.module.*
+import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoginPage
+import dev.ploiu.file_server_ui_new.storage.AppSettings
 import dev.ploiu.file_server_ui_new.viewModel.AndroidApplicationViewModel
+import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
 import dev.ploiu.file_server_ui_new.viewModel.FolderRoute
 import dev.ploiu.file_server_ui_new.viewModel.LoginRoute
 import dev.ploiu.file_server_ui_new.viewModel.ModalController
@@ -24,14 +27,17 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import org.koin.android.ext.koin.androidContext
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.context.startKoin
+import org.koin.core.parameter.parametersOf
 
 class App : Application() {
     private val log = KotlinLogging.logger { }
     override fun onCreate() {
         super.onCreate()
         log.info { "Starting app" }
+        AppSettings.init(this)
         try {
             startKoin {
                 androidContext(this@App)
@@ -68,6 +74,12 @@ fun AppContent(
             NavHost(navController = navController, startDestination = LoginRoute()) {
                 composable<LoginRoute> {
                     LoginPage(navController = navController)
+                }
+
+                composable<FolderRoute> { backStack ->
+                    val route: FolderRoute = backStack.toRoute()
+                    val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
+                    FolderPage(viewModel = viewModel)
                 }
             }
         }

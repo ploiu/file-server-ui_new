@@ -1,22 +1,49 @@
 package dev.ploiu.file_server_ui_new.service
 
 import android.content.Context
-import dev.ploiu.file_server_ui_new.storage.AppStorage
+import com.google.crypto.tink.Aead
+import com.google.crypto.tink.KeysetHandle
+import com.google.crypto.tink.RegistryConfiguration
+import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.aead.AesGcmKeyManager
+import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import dev.ploiu.file_server_ui_new.storage.AppSettings
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private const val SEPARATOR = "\u001E"
 
 class AndroidCredsService(private val context: Context) : CredsService {
+    private val handle: KeysetHandle
+    private val log = KotlinLogging.logger {}
+
+    init {
+        val appId = AppSettings.appId
+        // set up aead with tink runtime
+        AeadConfig.register()
+        handle = AndroidKeysetManager
+            .Builder()
+            .withSharedPref(this.context, appId, "key")
+            .withKeyTemplate(AesGcmKeyManager.aes256GcmTemplate())
+            .withMasterKeyUri("android-keystore://$appId")
+            .build().keysetHandle
+    }
+
     override suspend fun retrieveCreds(): RetrieveCredsResult {
-        val creds = with(context) {
-            AppStorage.run { getSavedPassword() }
-        }
+        val creds = AppSettings.getSavedPassword()
 
         return if (creds == null) {
             NoCredsFound()
         } else {
-            // TODO decrypt!
-            val (username, password) = splitPassword(creds)
-            RetrieveCredsSuccess(username = username, password = password)
+            try {
+                // TODO show biometric prompt first
+                val aead = handle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+                val decrypted = aead.decrypt(creds, null)
+                val (username, password) = splitPassword(decrypted.decodeToString())
+                RetrieveCredsSuccess(username = username, password = password)
+            } catch (e: Exception) {
+                log.error(e) { "Failed to decrypt stored creds" }
+                RetrieveCredsError("Failed to read creds")
+            }
         }
     }
 
@@ -24,10 +51,10 @@ class AndroidCredsService(private val context: Context) : CredsService {
         username: String,
         password: String,
     ): SaveCredsResult {
-        // TODO encrypt!
-        val res = with(context) {
-            AppStorage.run { savePassword(separatePassword(username, password)) }
-        }
+        // TODO show biometric prompt first
+        val aead = handle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+        val encrypted = aead.encrypt(separatePassword(username, password).encodeToByteArray(), null)
+        val res = AppSettings.savePassword(encrypted)
         return if (res) {
             SaveCredsSuccess()
         } else {

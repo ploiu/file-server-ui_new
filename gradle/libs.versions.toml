@@ -29,6 +29,7 @@ jna = "5.18.1"
 composeUi = "1.10.0"
 # android data store
 android-datastore = "1.2.0"
+tink = "1.20.0"
 
 # for testing
 junit-jupiter = "6.0.2"
@@ -80,6 +81,7 @@ ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeUi" }
 ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeUi" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeUi" }
 android-datastore = { module = "androidx.datastore:datastore", version.ref = "android-datastore" }
+android-tink = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

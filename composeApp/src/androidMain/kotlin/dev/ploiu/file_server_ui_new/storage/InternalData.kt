@@ -12,26 +12,44 @@ import java.io.OutputStream
 private val log = KotlinLogging.logger("InternalDataStore")
 
 /**
- * values that need to be encrypted before placing into the data store
- * @param [credentials] the saved username and password, if the user has elected to save them
+ * values that need are used to configure the application itself
+ * @param [credentials] the saved username and password, if the user has elected to save them. Must be encrypted before writing
  */
 @Serializable
-data class EncryptedSettings(val credentials: String?)
+data class SettingsObject(val credentials: ByteArray?, val appId: String?) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-object EncryptedSettingsSerializer : Serializer<EncryptedSettings> {
-    override val defaultValue = EncryptedSettings(null)
+        other as SettingsObject
 
-    override suspend fun readFrom(input: InputStream): EncryptedSettings {
+        if (!credentials.contentEquals(other.credentials)) return false
+        if (appId != other.appId) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = credentials?.contentHashCode() ?: 0
+        result = 31 * result + (appId?.hashCode() ?: 0)
+        return result
+    }
+}
+
+object SettingsObjectSerializer : Serializer<SettingsObject> {
+    override val defaultValue = SettingsObject(credentials = null, appId = null)
+
+    override suspend fun readFrom(input: InputStream): SettingsObject {
         return try {
-            Json.decodeFromString<EncryptedSettings>(input.readBytes().decodeToString())
+            Json.decodeFromString<SettingsObject>(input.readBytes().decodeToString())
         } catch (e: Exception) {
-            log.error(e) { "Failed to read encrypted user settings from store" }
+            log.error(e) { "Failed to read application settings from store" }
             defaultValue
         }
     }
 
     override suspend fun writeTo(
-        t: EncryptedSettings,
+        t: SettingsObject,
         output: OutputStream,
     ) {
         withContext(Dispatchers.IO) {

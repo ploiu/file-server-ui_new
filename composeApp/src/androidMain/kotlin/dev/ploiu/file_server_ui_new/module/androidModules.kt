@@ -2,7 +2,9 @@ package dev.ploiu.file_server_ui_new.module
 
 import android.content.Context
 import dev.ploiu.file_server_ui_new.service.AndroidCredsService
+import dev.ploiu.file_server_ui_new.service.AndroidPreviewService
 import dev.ploiu.file_server_ui_new.service.CredsService
+import dev.ploiu.file_server_ui_new.service.PreviewService
 import dev.ploiu.file_server_ui_new.viewModel.*
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -21,4 +23,5 @@ val pageModule = module {
 
 val androidServiceModule = module {
     single<CredsService> { AndroidCredsService(androidContext()) }
+    single<PreviewService> { AndroidPreviewService(get(), get()) }
 }
