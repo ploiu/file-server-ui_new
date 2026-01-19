@@ -9,6 +9,7 @@ androidx-constraintlayout = "2.2.1"
 androidx-core = "1.17.0"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.9.6"
+androidx-biometrics = "1.4.0-alpha05"
 compose-navigation = "2.9.1"
 jetbrains-compose = "1.7.3"
 koin = "4.1.1"
@@ -27,6 +28,7 @@ filekit = "0.12.0"
 # for bindings with rust_credential_manager
 jna = "5.18.1"
 composeUi = "1.10.0"
+
 # android data store
 android-datastore = "1.2.0"
 tink = "1.20.0"
@@ -82,6 +84,7 @@ ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeU
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeUi" }
 android-datastore = { module = "androidx.datastore:datastore", version.ref = "android-datastore" }
 android-tink = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
+androidx-biometrics = { module = "androidx.biometric:biometric-compose", version.ref = "androidx-biometrics" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

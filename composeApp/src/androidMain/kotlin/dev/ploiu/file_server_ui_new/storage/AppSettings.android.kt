@@ -21,7 +21,7 @@ object AppSettings {
         appContext = context.applicationContext
     }
 
-    @OptIn(ExperimentalUuidApi::class, ExperimentalUnsignedTypes::class)
+    @OptIn(ExperimentalUuidApi::class)
     val appId: String by lazy {
         with(appContext) {
             runBlocking {
@@ -38,7 +38,6 @@ object AppSettings {
         serializer = SettingsObjectSerializer,
     )
 
-    @OptIn(ExperimentalUnsignedTypes::class)
     suspend fun getSavedPassword(): ByteArray? = with(appContext) { this.appSettingsStore.data.first().credentials }
 
     suspend fun savePassword(creds: ByteArray) = with(appContext) {
@@ -47,6 +46,15 @@ object AppSettings {
             true
         } catch (e: Exception) {
             log.error(e) { "Failed to save creds" }
+            false
+        }
+    }
+
+    suspend fun doesHavePasswordSaved(): Boolean = with(appContext) {
+        try {
+            appSettingsStore.data.first().credentials != null
+        } catch (e: Exception) {
+            log.error(e) { "could not retrieve app settings data" }
             false
         }
     }

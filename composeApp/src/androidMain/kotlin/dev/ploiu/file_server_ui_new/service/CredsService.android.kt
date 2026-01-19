@@ -1,6 +1,8 @@
 package dev.ploiu.file_server_ui_new.service
 
 import android.content.Context
+import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeysetHandle
 import com.google.crypto.tink.RegistryConfiguration
@@ -30,7 +32,6 @@ class AndroidCredsService(private val context: Context) : CredsService {
 
     override suspend fun retrieveCreds(): RetrieveCredsResult {
         val creds = AppSettings.getSavedPassword()
-
         return if (creds == null) {
             NoCredsFound()
         } else {
