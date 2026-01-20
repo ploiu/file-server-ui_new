@@ -18,9 +18,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlin.math.floor
 import kotlin.math.max
 
@@ -85,6 +85,32 @@ fun <P, L> KindaLazyVerticalGrid(
         this.gridScroll = lazyState
     }
 
+    // not inside the above LaunchedEffect because we look at the scroll state which can change a lot
+    val canScrollLazy = remember(permanentHeight) {
+        derivedStateOf {
+            wrapperScrollState.value >= permanentHeight
+        }
+    }
+
+    val scrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val atBottom = wrapperScrollState.value >= permanentHeight
+                // if the flowRow is done scrolling, there's more scroll left to be done, _and_ the grid can scroll more, pass that scroll to the grid
+                if (atBottom && available.y < 0 && lazyState.canScrollForward) {
+                    runBlocking {
+                        lazyState.scroll {
+                            scrollBy(-available.y)
+                        }
+                    }
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+
+            }
+        }
+    }
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
         val density = LocalDensity.current
@@ -115,17 +141,11 @@ fun <P, L> KindaLazyVerticalGrid(
             scrollState.permanentHeight = permanentHeight
         }
 
-        // not inside the above LaunchedEffect because we look at the scroll state which can change a lot
-        val canScrollLazy = remember(permanentHeight) {
-            derivedStateOf {
-                wrapperScrollState.value > permanentHeight
-            }
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = maxHeight)
+                .nestedScroll(scrollConnection)
                 .verticalScroll(wrapperScrollState) then modifier,
         ) {
             if (permanentItems != null) {
