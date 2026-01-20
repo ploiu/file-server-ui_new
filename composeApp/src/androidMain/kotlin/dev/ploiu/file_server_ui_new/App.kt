@@ -2,11 +2,15 @@ package dev.ploiu.file_server_ui_new
 
 import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -69,7 +73,10 @@ fun AppContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+                .background(MaterialTheme.colorScheme.background)
+                .statusBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             NavHost(navController = navController, startDestination = LoginRoute()) {
                 composable<LoginRoute> {
@@ -79,7 +86,9 @@ fun AppContent(
                 composable<FolderRoute> { backStack ->
                     val route: FolderRoute = backStack.toRoute()
                     val viewModel = koinInject<FolderPageViewModel> { parametersOf(route.id) }
-                    FolderPage(viewModel = viewModel)
+                    FolderPage(viewModel = viewModel) {
+                        navController.navigate(FolderRoute(id = it.id))
+                    }
                 }
             }
         }

@@ -8,6 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -125,7 +129,6 @@ fun <P, L> KindaLazyVerticalGrid(
                 .verticalScroll(wrapperScrollState) then modifier,
         ) {
             if (permanentItems != null) {
-                // TODO use onGloballyPositioned to get the height when screen size changes
                 FlowRow(
                     modifier = Modifier.fillMaxWidth().testTag("activeRow").padding(
                         start = horizontalArrangement.spacing,
@@ -185,7 +188,7 @@ private fun rememberPermanentFlowCellLayout(
             val sumRowGapSizePx = itemGapPx * (itemsPerRow - 1)
             val sumItemSizePx = usableContainerWidthPx - sumRowGapSizePx
             val realItemSizePx = sumItemSizePx / itemsPerRow
-            Pair(realItemSizePx.dp, itemsPerRow)
+            Pair(realItemSizePx.toDp(), itemsPerRow)
         }
     }
 }

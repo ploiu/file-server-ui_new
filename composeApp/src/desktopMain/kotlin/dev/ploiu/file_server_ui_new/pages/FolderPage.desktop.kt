@@ -347,8 +347,8 @@ private fun DesktopFolderEntry(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
+@OptIn(ExperimentalComposeUiApi::class)
 private fun LoadedFolderList(
     folder: FolderApi,
     previews: BatchFilePreview,

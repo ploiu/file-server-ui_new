@@ -1,8 +1,6 @@
 package dev.ploiu.file_server_ui_new.service
 
 import android.content.Context
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeysetHandle
 import com.google.crypto.tink.RegistryConfiguration
@@ -36,7 +34,6 @@ class AndroidCredsService(private val context: Context) : CredsService {
             NoCredsFound()
         } else {
             try {
-                // TODO show biometric prompt first
                 val aead = handle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
                 val decrypted = aead.decrypt(creds, null)
                 val (username, password) = splitPassword(decrypted.decodeToString())
@@ -52,7 +49,6 @@ class AndroidCredsService(private val context: Context) : CredsService {
         username: String,
         password: String,
     ): SaveCredsResult {
-        // TODO show biometric prompt first
         val aead = handle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
         val encrypted = aead.encrypt(separatePassword(username, password).encodeToByteArray(), null)
         val res = AppSettings.savePassword(encrypted)
