@@ -1,0 +1,18 @@
+{
+	"nodes":[
+		{"id":"ab00bae44cefdeab","type":"text","text":"Main Screen\n\n","x":-700,"y":-360,"width":860,"height":680,"color":"3"},
+		{"id":"293b495e08a19696","type":"file","file":"mobile/Folder + File List.md","x":-682,"y":-280,"width":363,"height":400},
+		{"id":"51e64304f4fdb367","type":"file","file":"mobile/Main Screen Fab.md","x":-270,"y":-280,"width":400,"height":400},
+		{"id":"a6c1c79a42781cd4","type":"text","text":"File Details Screen","x":-1780,"y":-660,"width":780,"height":580,"color":"4"},
+		{"id":"fa003bdef6f59897","type":"text","text":"Tap file","x":-720,"y":150,"width":125,"height":60,"color":"4"},
+		{"id":"d52a577e028dfe70","type":"text","text":"Tap folder","x":-720,"y":240,"width":125,"height":60,"color":"5"},
+		{"id":"f9d0ab3c6da38c55","type":"text","text":"[[Using Gestures]] instead of context menus","x":-539,"y":180,"width":220,"height":60,"color":"6"},
+		{"id":"30d0c6cd91b8e59c","type":"text","text":"Folder Details Screen","x":-1620,"y":35,"width":620,"height":290,"color":"5"},
+		{"id":"45447d72df1fa29f","type":"file","file":"mobile/File Details Contents.md","x":-1760,"y":-575,"width":340,"height":410},
+		{"id":"9feae6370f903e16","type":"file","file":"mobile/file details fab.md","x":-1390,"y":-575,"width":340,"height":410}
+	],
+	"edges":[
+		{"id":"cab69807f7defd39","fromNode":"fa003bdef6f59897","fromSide":"left","toNode":"a6c1c79a42781cd4","toSide":"right"},
+		{"id":"49033c23b9caf2f8","fromNode":"d52a577e028dfe70","fromSide":"left","toNode":"30d0c6cd91b8e59c","toSide":"right"}
+	]
+}
