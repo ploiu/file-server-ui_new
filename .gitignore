@@ -22,3 +22,5 @@ testDirs
 
 *.so
 *.dll
+
+designNotes/.obsidian
