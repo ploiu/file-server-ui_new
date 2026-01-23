@@ -9,7 +9,6 @@ import dev.ploiu.file_server_ui_new.client.FileClient
 import dev.ploiu.file_server_ui_new.model.CreateFileRequest
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.model.FileRequest
-import dev.ploiu.file_server_ui_new.util.getCachedFile
 import dev.ploiu.file_server_ui_new.util.processResponse
 import dev.ploiu.file_server_ui_new.util.processResponseUnit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull

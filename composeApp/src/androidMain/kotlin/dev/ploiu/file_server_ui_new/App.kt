@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,11 +21,7 @@ import dev.ploiu.file_server_ui_new.module.*
 import dev.ploiu.file_server_ui_new.pages.FolderPage
 import dev.ploiu.file_server_ui_new.pages.LoginPage
 import dev.ploiu.file_server_ui_new.storage.AppSettings
-import dev.ploiu.file_server_ui_new.viewModel.AndroidApplicationViewModel
-import dev.ploiu.file_server_ui_new.viewModel.FolderPageViewModel
-import dev.ploiu.file_server_ui_new.viewModel.FolderRoute
-import dev.ploiu.file_server_ui_new.viewModel.LoginRoute
-import dev.ploiu.file_server_ui_new.viewModel.ModalController
+import dev.ploiu.file_server_ui_new.viewModel.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
@@ -71,10 +66,7 @@ fun AppContent(
 
     AppTheme {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .statusBarsPadding(),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

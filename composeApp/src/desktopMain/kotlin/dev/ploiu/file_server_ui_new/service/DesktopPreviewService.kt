@@ -52,7 +52,9 @@ class DesktopPreviewService(
             for (toDelete in cached.toDeleteFromDisk) {
                 toDelete.delete()
             }
-        }/* if the number of files to pull is small, we can pull them individually batched into even smaller groups.
+        }
+
+        /* if the number of files to pull is small, we can pull them individually batched into even smaller groups.
             The number here is so small because the server is designed to run on a raspi, and we don't want to overwhelm it */
         if (cached.missingFromDisk.size <= 100) {
             val diskCache = cached.read.toMutableMap()
@@ -96,7 +98,8 @@ class DesktopPreviewService(
         val res = fileClient.getFilePreview(fileId)
         return if (res.isSuccessful) {
             Ok(res.body()!!.bytes())
-        } else if (res.code() == 404) { // 404 means there's no preview, but it's not an error, so ignore it
+        } else if (res.code() == 404) {
+            // 404 means there's no preview, but it's not an error, so ignore it
             Ok(null)
         } else {
             Err(parseErrorFromResponse(res).message)
@@ -157,7 +160,8 @@ class DesktopPreviewService(
         val missingFromDisk = apiFileIndex.keys - cachedFilesIndex.keys
         val toDeleteFromDisk = (cachedFilesIndex.keys - apiFileIndex.keys).map { cachedFilesIndex.getValue(it) }
         val fileCache = mutableMapOf<Long, ByteArray>()
-        for ((id, file) in cachedFilesIndex) { // using readBytes here is fine because each preview is only around ~30-50kib
+        for ((id, file) in cachedFilesIndex) {
+            // using readBytes here is fine because each preview is only around ~30-50kib
             fileCache[id] = file.readBytes()
         }
         return CachedReadResult(fileCache, missingFromDisk, toDeleteFromDisk)

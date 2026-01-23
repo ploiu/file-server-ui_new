@@ -7,9 +7,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import dev.ploiu.file_server_ui_new.model.FileApi
-import file_server_ui_new.composeapp.generated.resources.*
+import file_server_ui_new.composeapp.generated.resources.Res
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.skia.Image
 

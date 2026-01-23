@@ -5,13 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import dev.ploiu.file_server_ui_new.model.FileApi
-import file_server_ui_new.composeapp.generated.resources.Res
-import file_server_ui_new.composeapp.generated.resources.application
 import org.jetbrains.compose.resources.painterResource
 
 @Composable

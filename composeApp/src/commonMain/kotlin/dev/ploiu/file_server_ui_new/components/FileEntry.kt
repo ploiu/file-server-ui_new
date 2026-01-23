@@ -1,44 +1,17 @@
 package dev.ploiu.file_server_ui_new.components
 
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ploiu.file_server_ui_new.model.FileApi
 import dev.ploiu.file_server_ui_new.util.formatFileOrFolderName
-import file_server_ui_new.composeapp.generated.resources.Res
-import file_server_ui_new.composeapp.generated.resources.application
-import file_server_ui_new.composeapp.generated.resources.archive
-import file_server_ui_new.composeapp.generated.resources.audio
-import file_server_ui_new.composeapp.generated.resources.cad
-import file_server_ui_new.composeapp.generated.resources.code
-import file_server_ui_new.composeapp.generated.resources.configuration
-import file_server_ui_new.composeapp.generated.resources.diagram
-import file_server_ui_new.composeapp.generated.resources.document
-import file_server_ui_new.composeapp.generated.resources.folder
-import file_server_ui_new.composeapp.generated.resources.font
-import file_server_ui_new.composeapp.generated.resources.image
-import file_server_ui_new.composeapp.generated.resources.material
-import file_server_ui_new.composeapp.generated.resources.model
-import file_server_ui_new.composeapp.generated.resources.`object`
-import file_server_ui_new.composeapp.generated.resources.presentation
-import file_server_ui_new.composeapp.generated.resources.rom
-import file_server_ui_new.composeapp.generated.resources.savefile
-import file_server_ui_new.composeapp.generated.resources.spreadsheet
-import file_server_ui_new.composeapp.generated.resources.text
-import file_server_ui_new.composeapp.generated.resources.unknown
-import file_server_ui_new.composeapp.generated.resources.video
-import file_server_ui_new.composeapp.generated.resources.video_svg
+import file_server_ui_new.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 
 /** a mapping of all drawables directly bundled with the app, paired to their resource drawable */

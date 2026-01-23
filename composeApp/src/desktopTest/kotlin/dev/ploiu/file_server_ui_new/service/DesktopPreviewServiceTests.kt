@@ -16,7 +16,7 @@ import retrofit2.Response
 import java.io.File
 import kotlin.test.*
 
-class PreviewServiceTest {
+class DesktopPreviewServiceTests {
     @get:Rule
     val currentTestName = TestName()
 

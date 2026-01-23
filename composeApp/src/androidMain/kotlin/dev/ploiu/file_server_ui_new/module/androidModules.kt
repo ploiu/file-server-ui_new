@@ -1,6 +1,5 @@
 package dev.ploiu.file_server_ui_new.module
 
-import android.content.Context
 import dev.ploiu.file_server_ui_new.service.AndroidCredsService
 import dev.ploiu.file_server_ui_new.service.AndroidPreviewService
 import dev.ploiu.file_server_ui_new.service.CredsService
@@ -23,5 +22,5 @@ val pageModule = module {
 
 val androidServiceModule = module {
     single<CredsService> { AndroidCredsService(androidContext()) }
-    single<PreviewService> { AndroidPreviewService(get(), get()) }
+    single<PreviewService> { AndroidPreviewService(get(), get(), androidContext()) }
 }

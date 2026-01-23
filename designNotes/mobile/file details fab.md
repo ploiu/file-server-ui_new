@@ -4,6 +4,7 @@ tags:
 description: The fab button when on the file details page
 link: "[[File Details Contents]]"
 ---
+
 - save
 - rename
 - open

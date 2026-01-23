@@ -79,9 +79,9 @@ class FolderPageViewModel(
                     previews[preview.first] = preview.second
                     it.copy(previews = previews)
                 }
-            }.catch {
-                log.error(it) { "Failed to load previews" }
-                _state.update { it.copy(message = "Failed to load previews: ${it.message}") }
+            }.catch { e ->
+                log.error(e) { "Failed to load previews: $e" }
+                _state.update { it.copy(message = "Failed to load previews: ${e.message}") }
             }.launchIn(this)
         }.onFailure { error ->
             // failed to pull folder at _all_
