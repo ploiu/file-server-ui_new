@@ -2,6 +2,7 @@
 tags:
   - mobile
 description: The fab button when inside a folder's contents
+links: "[[Folder + File List]]"
 ---
 
 - Search

@@ -4,7 +4,6 @@ tags:
 description: contents of the file details page in the mobile app
 link: "[[file details fab]]"
 ---
-
 - Maybe a bottom drawer?
 - File Icon / Preview (60% of height if have preview, otherwise normal file icon height)
 - tag section
