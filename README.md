@@ -1,5 +1,8 @@
 # New! File Server UI
 
+>[!NOTE]
+>This repository is now archived. New repo url is https://codeberg.org/ploiu/file-server-ui_new
+
 A rewrite of the original frontend to [ploiu/file_server](https://github.com/ploiu/file_server), written in Kotlin
 Compose Multiplatform.
 
